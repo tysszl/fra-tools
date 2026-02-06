@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Front Row Ag · Feed Calculator</title>
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --card-border: #2a2a2a;
+    --accent: #3ee6b6;
+    --accent-dim: rgba(62,230,182,0.15);
+    --text: #e8e8e8;
+    --text-dim: #888;
+    --text-muted: #555;
+    --input-bg: #1c1c1c;
+    --input-border: #3a3a3a;
+    --danger: #e63e3e;
+    --part-a: #8bb83a;
+    --part-b: #4488dd;
+    --bloom: #d44040;
+    --phoszyme: #d45e78;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ───────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-top: 8px;
+  }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header h1 span { color: var(--accent); }
+  .header p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+
+  /* ── Cards ────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 24px 24px 20px;
+    margin-bottom: 16px;
+  }
+  .card h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  /* ── Toggle Buttons ───────────────────── */
+  .toggle-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .toggle-btn {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .toggle-btn:hover { border-color: var(--accent); }
+  .toggle-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Section Labels ───────────────────── */
+  .section-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+  .config-spacer { height: 16px; }
+
+  /* ── Feed Schedule Table ──────────────── */
+  .feed-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .feed-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    text-align: center;
+    border-bottom: none;
+  }
+  .feed-table th:first-child { text-align: left; }
+  .feed-table .header-row-last th {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .feed-table td {
+    padding: 14px 8px;
+    text-align: center;
+    border-bottom: 1px solid #1e1e1e;
+    font-size: 0.92rem;
+  }
+  .feed-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+  .feed-table tr:last-child td { border-bottom: none; }
+
+  .val { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+  .val-a { color: var(--part-a); }
+  .val-b { color: var(--part-b); }
+  .val-bloom { color: var(--bloom); }
+  .val-phz { color: var(--phoszyme); }
+  .val-total { color: var(--text); }
+
+  .ec-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .unit-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  .phase-ec {
+    display: inline-block;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    color: var(--text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .component-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .dot-a { background: var(--part-a); }
+  .dot-b { background: var(--part-b); }
+  .dot-bloom { background: var(--bloom); }
+  .dot-phz { background: var(--phoszyme); }
+
+  .dash { color: var(--text-muted); font-weight: 400; }
+
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -2px;
+    padding: 0 2px;
+  }
+
+  .unit-badge {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-radius: 5px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  /* ── Custom EC Inputs ─────────────────── */
+  .ec-input {
+    width: 48px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 1px 4px;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .ec-input::-webkit-inner-spin-button,
+  .ec-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .ec-input:focus {
+    border-color: var(--accent);
+  }
+
+  .phase-ec.editable {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .phase-ec.editable .ec-input {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    width: 32px;
+    font-size: 0.75rem;
+    padding: 0;
+  }
+  .phase-ec.editable .ec-input:focus {
+    border: none;
+  }
+  .phase-ec.editable .ec-label {
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  /* ── Recipe Select ────────────────────── */
+  .recipe-select {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 2px 8px;
+    outline: none;
+    cursor: pointer;
+  }
+  .recipe-select:focus {
+    border-color: var(--accent);
+  }
+  .recipe-select.modified {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Stock Tank Table ─────────────────── */
+  .stock-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .stock-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 6px 10px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .stock-table th:first-child { text-align: left; }
+  .stock-table td {
+    padding: 10px 10px;
+    text-align: center;
+    border-bottom: 1px solid #1e1e1e;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .stock-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .stock-table tr:last-child td { border-bottom: none; }
+  .validation-ec { color: var(--danger); font-weight: 700; font-size: 1rem; }
+
+  .stock-table .val-col {
+    background: rgba(62,230,182,0.03);
+  }
+  .stock-table .val-col-first {
+    border-left: 1px solid var(--card-border);
+  }
+  .validation-group-label {
+    text-align: center;
+    color: var(--accent);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 10px 2px;
+    border-bottom: none !important;
+    border-left: 1px solid var(--card-border);
+    background: rgba(62,230,182,0.03);
+  }
+  .validation-group-spacer {
+    padding: 0;
+    border-bottom: none !important;
+  }
+
+  /* ── Mixing Instructions ──────────────── */
+  .instructions-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 2px 0;
+    user-select: none;
+  }
+  .instructions-toggle h2 { margin-bottom: 0; }
+  .chevron {
+    transition: transform 0.2s;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+  }
+  .chevron.open { transform: rotate(180deg); }
+  .instructions-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .instructions-body.open { max-height: 300px; }
+  .instructions-body ol {
+    padding: 14px 0 4px 20px;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+  .instructions-body li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── Bottom Buttons ───────────────────── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .btn {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 16px; height: 16px; }
+  .copied {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+
+  /* ── Footer ───────────────────────────── */
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-top: 24px;
+    padding-bottom: 12px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 600px) {
+    body { padding: 12px 8px 30px; }
+    .card { padding: 16px 14px; }
+    .feed-table th, .feed-table td { padding: 10px 4px; font-size: 0.82rem; }
+    .val { font-size: 0.95rem; }
+    .phase-header { font-size: 0.7rem; }
+    .toggle-btn { padding: 7px 12px; font-size: 0.82rem; }
+  }
+
+  /* ── Print ────────────────────────────── */
+  @media print {
+    body { background: #fff; color: #000; padding: 0; }
+    .card { border: 1px solid #ccc; break-inside: avoid; }
+    .btn-row, .footer { display: none; }
+    .val-a, .val-b, .val-bloom, .val-phz { color: #000 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1><span>Front Row Ag</span> · Feed Calculator</h1>
+    <p>Stock concentrate mixing rates & feed schedules</p>
+  </div>
+
+  <!-- Configuration Card -->
+  <div class="card">
+    <h2>Configuration</h2>
+
+    <div class="section-label">Application</div>
+    <div class="toggle-group" id="app-group">
+      <button class="toggle-btn active" data-val="stock">Stock Concentrate</button>
+      <button class="toggle-btn" data-val="direct">Direct to Reservoir</button>
+    </div>
+
+    <div id="method-section">
+      <div class="config-spacer"></div>
+      <div class="section-label">Mixing Method</div>
+      <div class="toggle-group" id="method-group">
+        <button class="toggle-btn" data-val="4-3-3">4-3-3</button>
+        <button class="toggle-btn active" data-val="3-2-2">3-2-2</button>
+        <button class="toggle-btn" data-val="1-1-1">1-1-1</button>
+      </div>
+    </div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label">Output Units</div>
+    <div class="toggle-group" id="unit-group"></div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label">EC Presets</div>
+    <div class="toggle-group" id="ec-preset-group">
+      <button class="toggle-btn active" data-val="high">High Strength</button>
+      <button class="toggle-btn" data-val="standard">Standard</button>
+      <button class="toggle-btn" data-val="custom">Custom</button>
+    </div>
+
+  </div>
+
+  <!-- Feed Schedule Card -->
+  <div class="card">
+    <h2>Feed Schedule <span class="unit-badge" id="unit-badge"></span></h2>
+    <div class="table-scroll">
+    <table class="feed-table" id="feed-table">
+      <thead>
+        <tr>
+          <th style="width:18%">Phase</th>
+          <th>Veg / Moms</th>
+          <th>Wk 1–2</th>
+          <th>Wk 3–4</th>
+          <th>Wk 5–7</th>
+          <th>Final Wks</th>
+        </tr>
+        <tr>
+          <th>Recipe</th>
+          <th><select class="recipe-select" id="recipe-veg" onchange="handleRecipeChange('Veg',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-stretch" onchange="handleRecipeChange('Stretch',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-stack" onchange="handleRecipeChange('Stack',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-swell" onchange="handleRecipeChange('Swell',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-ripen" onchange="handleRecipeChange('Ripen',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+        </tr>
+        <tr class="header-row-last">
+          <th>Target EC</th>
+          <th><div class="phase-ec" id="ec-veg"></div></th>
+          <th><div class="phase-ec" id="ec-stretch"></div></th>
+          <th><div class="phase-ec" id="ec-stack"></div></th>
+          <th><div class="phase-ec" id="ec-swell"></div></th>
+          <th><div class="phase-ec" id="ec-ripen"></div></th>
+        </tr>
+      </thead>
+      <tbody id="feed-body"></tbody>
+    </table>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" id="btn-copy" onclick="copySummary()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy Summary
+      </button>
+      <button class="btn" id="btn-share" onclick="shareLink()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        Share Link
+      </button>
+    </div>
+  </div>
+
+  <!-- Stock Tank Card -->
+  <div class="card" id="stock-card">
+    <h2 id="stock-title">Stock Concentrate Rates</h2>
+    <div class="table-scroll">
+    <table class="stock-table" id="stock-table">
+      <thead>
+        <tr>
+          <th colspan="5" class="validation-group-spacer"></th>
+          <th colspan="3" class="validation-group-label">Validation</th>
+        </tr>
+        <tr>
+          <th>Tank</th>
+          <th>Part</th>
+          <th id="vol-header">gal</th>
+          <th id="wt-header">lbs</th>
+          <th id="conc-header">lbs/gal</th>
+          <th id="sample-header" class="val-col val-col-first">mL / 5gal</th>
+          <th id="ec-gal-header" class="val-col">EC/g/gal</th>
+          <th class="val-col">Valid. EC</th>
+        </tr>
+      </thead>
+      <tbody id="stock-body"></tbody>
+    </table>
+    </div>
+    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:10px; font-style:italic;">
+      * When mixed with Part B stock solution, PhosZyme will increase the validation EC.
+    </p>
+  </div>
+
+  <!-- Mixing Instructions Card (collapsible) -->
+  <div class="card" id="instructions-card">
+    <div class="instructions-toggle" onclick="toggleInstructions()">
+      <h2>📋 Mixing Instructions</h2>
+      <span class="chevron" id="chevron">▾</span>
+    </div>
+    <div class="instructions-body" id="instructions-body">
+      <ol id="instructions-list"></ol>
+    </div>
+  </div>
+
+  <div class="footer">
+    <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · Feed Calculator
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA — extracted from Ref sheet
+// ═══════════════════════════════════════════════
+
+const CONSTANTS = {
+  g_per_lb: 454,
+  mL_per_gal: 3785,
+  pct_mult: 100,
+  phoszyme_ratio: 0.12,
+  L_per_gal: 3.785
+};
+
+const EC_PER_GRAM = { partA: 0.322, partB: 0.255, bloom: 0.200, phoszyme: 0.220 };
+
+const STOCK_RATES = {
+  "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
+  "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
+  "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 }
+};
+
+const TANK_VOLUMES = {
+  "4-3-3": { tankA: 53.5, tankB: 60 },
+  "3-2-2": { tankA: 50, tankB: 50 },
+  "1-1-1": { tankA: 50, tankB: 50 }
+};
+
+const RECIPES = {
+  Veg:     { partA: 0.654471544715447, partB: 0.345528455284553, bloom: 0 },
+  Stretch: { partA: 0.55, partB: 0.29, bloom: 0.16 },
+  Stack:   { partA: 0.51499, partB: 0.2719123506099, bloom: 0.2130976493901 },
+  Swell:   { partA: 0.441, partB: 0.234, bloom: 0.325 },
+  Ripen:   { partA: 0.35, partB: 0.30, bloom: 0.35 }
+};
+
+const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
+
+const EC_PRESETS = {
+  high:     { Veg: 3.0, Stretch: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
+  standard: { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.6 }
+};
+
+const UNIT_FACTORS = {
+  "g/gal":       1,
+  "mL/gal":      CONSTANTS.mL_per_gal / CONSTANTS.g_per_lb,
+  "injection %": CONSTANTS.pct_mult / CONSTANTS.g_per_lb,
+  "ratio":       "ratio",
+  "g/L":         1 / CONSTANTS.L_per_gal,
+  "mL/L":        (CONSTANTS.mL_per_gal / CONSTANTS.g_per_lb) / CONSTANTS.L_per_gal
+};
+
+const PHOSZYME_FIXED_G_GAL = 0.4;
+
+const STOCK_UNITS  = ["mL/gal", "injection %", "ratio", "mL/L"];
+const DIRECT_UNITS = ["g/gal", "g/L"];
+
+const VALID_APPS    = ["stock", "direct"];
+const VALID_METHODS = Object.keys(STOCK_RATES);
+const VALID_UNITS   = Object.keys(UNIT_FACTORS);
+const VALID_PRESETS = ["high", "standard", "custom"];
+
+const INSTRUCTIONS = [
+  "Start with clean stock tanks marked at target volume.",
+  "Add RO water to 50% of target volume; begin agitating tank.",
+  "Add fertilizer over 5 minutes, while continuing to agitate tank.",
+  "Add RO water to target volume; mix for 10 more minutes.",
+  "Validate and adjust stock tank as necessary."
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  application: "stock",
+  method: "3-2-2",
+  unit: "mL/gal",
+  ecPreset: "high",
+  targetEC: { ...EC_PRESETS.high },
+  phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" }
+};
+
+// ═══════════════════════════════════════════════
+// CALCULATION ENGINE
+// ═══════════════════════════════════════════════
+
+function isMetric(unit) {
+  return unit === "g/L" || unit === "mL/L";
+}
+
+function getDecimals(unit) {
+  if (unit === "mL/gal" || unit === "mL/L") return 1;
+  if (unit === "g/gal" || unit === "g/L") return 1;
+  return 2;
+}
+
+function getUnitFactor(unit) {
+  if (unit === "ratio") return null;
+  return UNIT_FACTORS[unit];
+}
+
+function getStockConc(method, component) {
+  if (state.application === "direct") return 1;
+  return STOCK_RATES[method][component];
+}
+
+function getStockConcDisplay(method, component, unit) {
+  const base = STOCK_RATES[method][component];
+  if (isMetric(unit)) {
+    return Math.round(base * CONSTANTS.g_per_lb / CONSTANTS.L_per_gal);
+  }
+  return base;
+}
+
+function getRecipe(phase) {
+  return RECIPES[state.phaseRecipe[phase]];
+}
+
+function calcEcContribution(phase, component, targetEC) {
+  return getRecipe(phase)[component] * targetEC;
+}
+
+function calcDosage(phase, component, method, unit, targetEC) {
+  const ecContrib = calcEcContribution(phase, component, targetEC);
+  if (ecContrib === 0) return { dosage: 0, ec: 0, display: "–" };
+
+  const ecPerG = EC_PER_GRAM[component];
+  const stockConc = getStockConc(method, component);
+
+  if (unit === "ratio") {
+    const gramsPerGal = ecContrib / ecPerG / stockConc;
+    const injPct = gramsPerGal * (CONSTANTS.pct_mult / CONSTANTS.g_per_lb);
+    const ratio = Math.round(CONSTANTS.pct_mult / injPct);
+    return { dosage: ratio, ec: ecContrib, display: `1:${ratio}` };
+  }
+
+  const factor = getUnitFactor(unit);
+  const dosage = ecContrib / ecPerG / stockConc * factor;
+  const dec = getDecimals(unit);
+
+  return { dosage: +dosage.toFixed(dec), ec: ecContrib, display: dosage.toFixed(dec) };
+}
+
+function calcPhoszymeDosage(phase, method, unit, targetEC) {
+  const partBResult = calcDosage(phase, "partB", method, unit, targetEC);
+  if (partBResult.dosage === 0) return { dosage: 0, ec: 0, display: "–" };
+
+  const partBEc = calcEcContribution(phase, "partB", targetEC);
+  const phzEc = partBEc * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+
+  if (unit === "g/gal" || unit === "g/L") {
+    const val = isMetric(unit) ? PHOSZYME_FIXED_G_GAL / CONSTANTS.L_per_gal : PHOSZYME_FIXED_G_GAL;
+    return { dosage: +val.toFixed(getDecimals(unit)), ec: phzEc, display: val.toFixed(getDecimals(unit)) };
+  }
+
+  return { dosage: partBResult.dosage, ec: phzEc, display: partBResult.display };
+}
+
+function calcStockTanks(method, unit) {
+  const met = isMetric(unit);
+  const vols = TANK_VOLUMES[method];
+  const rates = STOCK_RATES[method];
+
+  const volA = met ? Math.round(vols.tankA * CONSTANTS.L_per_gal) : vols.tankA;
+  const volB = met ? Math.round(vols.tankB * CONSTANTS.L_per_gal) : vols.tankB;
+
+  const wtA = met ? +(volA * getStockConcDisplay(method, "partA", unit) / 1000).toFixed(1) : +(vols.tankA * rates.partA).toFixed(1);
+  const wtB = met ? +(volB * getStockConcDisplay(method, "partB", unit) / 1000).toFixed(1) : +(vols.tankB * rates.partB).toFixed(1);
+  const wtPhz = +(wtB * CONSTANTS.phoszyme_ratio).toFixed(1);
+  const wtBloom = met ? +(volB * getStockConcDisplay(method, "bloom", unit) / 1000).toFixed(1) : +(vols.tankB * rates.bloom).toFixed(1);
+
+  const sampleVol = met ? 400 : 250;
+
+  function ecPerUnit_raw(ecBase) {
+    return met ? ecBase * CONSTANTS.L_per_gal : ecBase;
+  }
+
+  const concA = getStockConcDisplay(method, "partA", unit);
+  const concB = getStockConcDisplay(method, "partB", unit);
+  const concPhz = met ? Math.round(concB * CONSTANTS.phoszyme_ratio) : +(concB * CONSTANTS.phoszyme_ratio).toFixed(2);
+  const concBloom = getStockConcDisplay(method, "bloom", unit);
+
+  const sampleDilution = met ? 20 : 5;
+  function valEC(conc, ecBase) {
+    return +(conc * ecPerUnit_raw(ecBase) * (sampleVol / sampleDilution / 1000)).toFixed(2);
+  }
+  function valEC_imp(rateLbs, ecBase) {
+    return +(rateLbs * CONSTANTS.g_per_lb * ecBase * (sampleVol / 5 / CONSTANTS.mL_per_gal)).toFixed(2);
+  }
+
+  const valA    = met ? valEC(concA, EC_PER_GRAM.partA)       : valEC_imp(rates.partA, EC_PER_GRAM.partA);
+  const valB    = met ? valEC(concB, EC_PER_GRAM.partB)       : valEC_imp(rates.partB, EC_PER_GRAM.partB);
+  const valPhz  = met ? valEC(concPhz, EC_PER_GRAM.phoszyme)  : valEC_imp(rates.partB * CONSTANTS.phoszyme_ratio, EC_PER_GRAM.phoszyme);
+  const valBlm  = met ? valEC(concBloom, EC_PER_GRAM.bloom)   : valEC_imp(rates.bloom, EC_PER_GRAM.bloom);
+
+  return {
+    volUnit: met ? "L" : "gal",
+    wtUnit: met ? "kg" : "lbs",
+    concUnit: met ? "g / L" : "lbs / gal",
+    sampleUnit: met ? "mL / 20L" : "mL / 5gal",
+    ecUnit: met ? "EC / g / L" : "EC / g / gal",
+    rows: [
+      { tank: 1, part: "A",          vol: volA, wt: wtA,    conc: concA,    sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.partA).toFixed(3)    : EC_PER_GRAM.partA,    valEC: valA,   cls: "val-a" },
+      { tank: 2, part: "B",          vol: volB, wt: wtB,    conc: concB,    sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.partB).toFixed(3)    : EC_PER_GRAM.partB,    valEC: valB,   cls: "val-b" },
+      { tank: "–", part: "PhosZyme*", vol: volB, wt: wtPhz,  conc: concPhz,  sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.phoszyme).toFixed(3) : EC_PER_GRAM.phoszyme, valEC: valPhz, cls: "val-phz" },
+      { tank: 3, part: "Bloom",      vol: volB, wt: wtBloom, conc: concBloom, sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.bloom).toFixed(3)   : EC_PER_GRAM.bloom,   valEC: valBlm, cls: "val-bloom" }
+    ]
+  };
+}
+
+// ═══════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function render() {
+  const { method, unit, targetEC } = state;
+  const isStock = state.application === "stock";
+  const components = [
+    { key: "partA", label: "Part A", cls: "val-a", dotCls: "dot-a" },
+    { key: "partB", label: "Part B", cls: "val-b", dotCls: "dot-b" },
+    { key: "bloom", label: "Bloom", cls: "val-bloom", dotCls: "dot-bloom" },
+    { key: "phoszyme", label: "PhosZyme", cls: "val-phz", dotCls: "dot-phz" }
+  ];
+
+  // Unit badge
+  document.getElementById("unit-badge").textContent = unit === "ratio" ? "ratio" : unit;
+
+  // EC displays
+  PHASES.forEach(p => {
+    const el = document.getElementById(`ec-${p.toLowerCase()}`);
+    el.textContent = `${targetEC[p]} EC`;
+    el.classList.remove('editable');
+  });
+
+  // Recipe selects
+  PHASES.forEach(p => {
+    const sel = document.getElementById(`recipe-${p.toLowerCase()}`);
+    sel.value = state.phaseRecipe[p];
+    sel.classList.toggle('modified', state.phaseRecipe[p] !== p);
+  });
+
+  // Feed table body
+  let html = "";
+  components.forEach(comp => {
+    html += `<tr><td><span class="component-dot ${comp.dotCls}"></span>${comp.label}</td>`;
+    PHASES.forEach(phase => {
+      let result;
+      if (comp.key === "phoszyme") {
+        result = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
+      } else {
+        result = calcDosage(phase, comp.key, method, unit, targetEC[phase]);
+      }
+      if (result.dosage === 0 || result.display === "–") {
+        html += `<td><span class="dash">–</span></td>`;
+      } else {
+        html += `<td>
+          <div class="val ${comp.cls}">${result.display}</div>
+          <div class="ec-sub">${result.ec.toFixed(2)} EC</div>
+        </td>`;
+      }
+    });
+    html += "</tr>";
+  });
+
+  // Total EC row
+  html += `<tr style="border-top:1px solid var(--card-border)"><td style="color:var(--text-dim)">Total EC</td>`;
+  PHASES.forEach(phase => {
+    let total = 0;
+    ["partA", "partB", "bloom"].forEach(comp => {
+      total += calcEcContribution(phase, comp, targetEC[phase]);
+    });
+    const phzEc = calcEcContribution(phase, "partB", targetEC[phase]) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+    total += phzEc;
+    html += `<td><span class="val val-total">${total.toFixed(2)}</span><span class="unit-sub">EC</span></td>`;
+  });
+  html += "</tr>";
+
+  document.getElementById("feed-body").innerHTML = html;
+
+  // Stock tank table (only when stock concentrate)
+  if (isStock) {
+    const stock = calcStockTanks(method, unit);
+    document.getElementById("stock-title").textContent = `${method} Stock Concentrate Rates`;
+    document.getElementById("vol-header").textContent = stock.volUnit;
+    document.getElementById("wt-header").textContent = stock.wtUnit;
+    document.getElementById("conc-header").textContent = stock.concUnit;
+    document.getElementById("sample-header").textContent = stock.sampleUnit;
+    document.getElementById("ec-gal-header").textContent = stock.ecUnit;
+
+    let stockHtml = "";
+    stock.rows.forEach(r => {
+      stockHtml += `<tr>
+        <td>${r.tank}</td>
+        <td><span class="${r.cls}" style="font-weight:600">${r.part}</span></td>
+        <td>${r.vol}</td>
+        <td>${r.wt}</td>
+        <td>${r.conc}</td>
+        <td class="val-col val-col-first">${r.sample}</td>
+        <td class="val-col">${r.ecG}</td>
+        <td class="val-col"><span class="validation-ec">${r.valEC}</span></td>
+      </tr>`;
+    });
+    document.getElementById("stock-body").innerHTML = stockHtml;
+
+    const instrList = document.getElementById("instructions-list");
+    instrList.innerHTML = INSTRUCTIONS.map(s => `<li>${s}</li>`).join("");
+  }
+
+  // URL state
+  updateURL();
+
+  // Restore custom EC inputs if needed
+  if (state.ecPreset === "custom") renderECInputs();
+}
+
+// ═══════════════════════════════════════════════
+// UI INTERACTIONS
+// ═══════════════════════════════════════════════
+
+function setupToggle(groupId, stateKey, callback) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      group.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (callback) callback(btn.dataset.val);
+      else {
+        state[stateKey] = btn.dataset.val;
+        render();
+      }
+    });
+  });
+}
+
+function rebuildUnitGroup() {
+  const units = state.application === "stock" ? STOCK_UNITS : DIRECT_UNITS;
+  const group = document.getElementById("unit-group");
+  group.innerHTML = units.map(u =>
+    `<button class="toggle-btn${u === state.unit ? ' active' : ''}" data-val="${u}">${u}</button>`
+  ).join("");
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      group.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.unit = btn.dataset.val;
+      render();
+    });
+  });
+}
+
+function applyApplicationState() {
+  const isStock = state.application === "stock";
+  document.getElementById("method-section").style.display = isStock ? "" : "none";
+  document.getElementById("stock-card").style.display = isStock ? "" : "none";
+  document.getElementById("instructions-card").style.display = isStock ? "" : "none";
+}
+
+function handleApplicationChange(val) {
+  state.application = val;
+
+  // Switch to a valid unit for the new application
+  const validUnits = val === "stock" ? STOCK_UNITS : DIRECT_UNITS;
+  if (!validUnits.includes(state.unit)) {
+    if (isMetric(state.unit)) {
+      state.unit = validUnits.find(u => isMetric(u)) || validUnits[0];
+    } else {
+      state.unit = validUnits.find(u => !isMetric(u)) || validUnits[0];
+    }
+  }
+
+  applyApplicationState();
+  rebuildUnitGroup();
+  render();
+}
+
+function toggleInstructions() {
+  document.getElementById("instructions-body").classList.toggle("open");
+  document.getElementById("chevron").classList.toggle("open");
+}
+
+function handleECPreset(val) {
+  state.ecPreset = val;
+  if (val === "high" || val === "standard") {
+    state.targetEC = { ...EC_PRESETS[val] };
+  }
+  render();
+}
+
+function handleRecipeChange(phase, recipeName) {
+  state.phaseRecipe[phase] = recipeName;
+  render();
+}
+
+function renderECInputs() {
+  PHASES.forEach(p => {
+    const el = document.getElementById(`ec-${p.toLowerCase()}`);
+    if (state.ecPreset === "custom") {
+      el.classList.add('editable');
+      el.innerHTML = `<input type="number" class="ec-input" step="0.1" min="0" max="10" value="${state.targetEC[p]}"
+        onchange="state.targetEC['${p}']=parseFloat(this.value)||0; render();" /><span class="ec-label">EC</span>`;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// URL STATE (Share Link)
+// ═══════════════════════════════════════════════
+
+function updateURL() {
+  const p = new URLSearchParams();
+  p.set("a", state.application);
+  if (state.application === "stock") p.set("m", state.method);
+  p.set("u", state.unit);
+  p.set("p", state.ecPreset);
+  if (state.ecPreset === "custom") {
+    PHASES.forEach(ph => p.set(`ec_${ph.toLowerCase()}`, state.targetEC[ph]));
+  }
+  PHASES.forEach(ph => {
+    if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
+  });
+  history.replaceState(null, "", "?" + p.toString());
+}
+
+function loadFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.has("a") && VALID_APPS.includes(p.get("a"))) state.application = p.get("a");
+  if (p.has("m") && VALID_METHODS.includes(p.get("m"))) state.method = p.get("m");
+  if (p.has("u") && VALID_UNITS.includes(p.get("u"))) state.unit = p.get("u");
+  if (p.has("p") && VALID_PRESETS.includes(p.get("p"))) {
+    state.ecPreset = p.get("p");
+    if (state.ecPreset === "high" || state.ecPreset === "standard") {
+      state.targetEC = { ...EC_PRESETS[state.ecPreset] };
+    } else if (state.ecPreset === "custom") {
+      PHASES.forEach(ph => {
+        const v = parseFloat(p.get(`ec_${ph.toLowerCase()}`));
+        if (v > 0 && v <= 10) state.targetEC[ph] = v;
+      });
+    }
+  }
+  PHASES.forEach(ph => {
+    const rp = p.get(`rp_${ph.toLowerCase()}`);
+    if (rp && PHASES.includes(rp)) state.phaseRecipe[ph] = rp;
+  });
+  // Validate unit against application
+  const validUnits = state.application === "stock" ? STOCK_UNITS : DIRECT_UNITS;
+  if (!validUnits.includes(state.unit)) {
+    state.unit = validUnits[0];
+  }
+}
+
+function syncToggleButtons() {
+  document.querySelectorAll("#app-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.application);
+  });
+  document.querySelectorAll("#method-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.method);
+  });
+  document.querySelectorAll("#ec-preset-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.ecPreset);
+  });
+}
+
+function shareLink() {
+  const url = window.location.href;
+  copyToClipboard(url).then(() => {
+    const btn = document.getElementById("btn-share");
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Share Link`;
+    }, 2000);
+  });
+}
+
+function copySummary() {
+  const { method, unit, targetEC } = state;
+  const label = state.application === "stock" ? `${method} stock` : "direct";
+  let text = `Front Row Ag Feed Chart — ${label} (${unit})\n`;
+  text += "═".repeat(50) + "\n\n";
+
+  const comps = [
+    { key: "partA", label: "Part A" },
+    { key: "partB", label: "Part B" },
+    { key: "bloom", label: "Bloom" },
+    { key: "phoszyme", label: "PhosZyme" }
+  ];
+
+  text += "Phase".padEnd(12);
+  PHASES.forEach(p => text += p.padEnd(12));
+  text += "\nEC Target   ";
+  PHASES.forEach(p => text += `${targetEC[p]}`.padEnd(12));
+  text += "\n" + "─".repeat(72) + "\n";
+
+  comps.forEach(comp => {
+    text += comp.label.padEnd(12);
+    PHASES.forEach(phase => {
+      let result;
+      if (comp.key === "phoszyme") {
+        result = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
+      } else {
+        result = calcDosage(phase, comp.key, method, unit, targetEC[phase]);
+      }
+      text += `${result.display}`.padEnd(12);
+    });
+    text += "\n";
+  });
+
+  copyToClipboard(text).then(() => {
+    const btn = document.getElementById("btn-copy");
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Summary`;
+    }, 2000);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+setupToggle("app-group", null, handleApplicationChange);
+setupToggle("method-group", "method");
+setupToggle("ec-preset-group", null, handleECPreset);
+loadFromURL();
+syncToggleButtons();
+applyApplicationState();
+rebuildUnitGroup();
+render();
+</script>
+
+</body>
+</html>
