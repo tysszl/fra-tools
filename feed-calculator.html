@@ -12,8 +12,8 @@
     --accent: #3ee6b6;
     --accent-dim: rgba(62,230,182,0.15);
     --text: #e8e8e8;
-    --text-dim: #888;
-    --text-muted: #555;
+    --text-dim: #c0c0c0;
+    --text-muted: #a0a0a0;
     --input-bg: #1c1c1c;
     --input-border: #3a3a3a;
     --danger: #e63e3e;
@@ -683,7 +683,8 @@ function isMetric(unit) {
 }
 
 function getDecimals(unit) {
-  if (unit === "mL/gal" || unit === "mL/L") return 1;
+  if (unit === "mL/gal") return 0;
+  if (unit === "mL/L") return 1;
   if (unit === "g/gal" || unit === "g/L") return 1;
   return 2;
 }
@@ -830,6 +831,19 @@ function copyToClipboard(text) {
   return Promise.resolve();
 }
 
+function copyRichText(html, plain) {
+  if (navigator.clipboard && navigator.clipboard.write && window.isSecureContext) {
+    return navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([plain], { type: "text/plain" })
+      })
+    ]);
+  }
+  // Fallback: copy plain text
+  return copyToClipboard(plain);
+}
+
 function render() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
@@ -934,20 +948,6 @@ function render() {
     html += "</tr>";
   }
 
-  // Total EC row
-  html += `<tr style="border-top:1px solid var(--card-border)"><td style="color:var(--text-dim)">Total EC</td>`;
-  PHASES.forEach(phase => {
-    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-    let total = 0;
-    ["partA", "partB", "bloom"].forEach(comp => {
-      total += calcEcContribution(phase, comp, eEC);
-    });
-    if (usePhz) {
-      total += calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
-    }
-    html += `<td><span class="val val-total">${total.toFixed(2)}</span><span class="unit-sub">EC</span></td>`;
-  });
-  html += "</tr>";
 
   document.getElementById("feed-body").innerHTML = html;
 
@@ -1236,58 +1236,176 @@ function shareLink() {
 
 function copySummary() {
   const { method, unit, targetEC } = state;
+  const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
-  const label = state.application === "stock" ? `${method} ${is2Doser ? "2-doser " : ""}stock` : "direct";
-  let text = `Front Row Ag Feed Chart — ${label} (${unit})\n`;
-  text += "═".repeat(50) + "\n\n";
+  const usePhz = state.usePhoszyme;
+  const phaseLabels = ["Veg / Moms", "Wk 1–2", "Wk 3–4", "Wk 5–7", "Final Wks"];
 
-  text += "Phase".padEnd(12);
-  PHASES.forEach(p => text += p.padEnd(12));
-  text += "\nEC Target   ";
-  PHASES.forEach(p => text += `${targetEC[p]}`.padEnd(12));
-  text += "\n" + "─".repeat(72) + "\n";
+  const ts = 'style="border:1px solid #ccc;padding:6px 10px;text-align:center;"';
+  const th = 'style="border:1px solid #ccc;padding:6px 10px;text-align:center;background:#f5f5f5;font-weight:600;"';
+  const tl = 'style="border:1px solid #ccc;padding:6px 10px;text-align:left;font-weight:600;"';
+
+  // ── Config summary ──
+  let configParts = [];
+  if (isStock) {
+    configParts.push(`${method} stock concentrate`);
+    configParts.push(is2Doser ? "2-Doser" : "3-Doser");
+  } else {
+    configParts.push("Direct to reservoir");
+  }
+  if (usePhz) configParts.push("PhosZyme included");
+  configParts.push(unit);
+
+  let html = `<h2 style="margin:0 0 4px;">Front Row Ag Feed Chart</h2>`;
+  html += `<p style="color:#666;margin:0 0 12px;">${configParts.join(" · ")}</p>`;
+
+  // ── Feed Schedule Table ──
+  html += `<h3 style="margin:16px 0 6px;">Feed Schedule (${unit})</h3>`;
+  html += `<table style="border-collapse:collapse;font-size:14px;">`;
+
+  // Phase header row
+  html += `<tr><th ${th}>Phase</th>`;
+  phaseLabels.forEach(l => html += `<th ${th}>${l}</th>`);
+  html += `</tr>`;
+
+  // Recipe row
+  html += `<tr><td ${tl}>Recipe</td>`;
+  PHASES.forEach(p => {
+    const recipe = is2Doser ? "Stack" : state.phaseRecipe[p];
+    html += `<td ${ts}>${recipe}</td>`;
+  });
+  html += `</tr>`;
+
+  // Target EC row
+  html += `<tr><td ${tl}>Target EC</td>`;
+  PHASES.forEach(p => html += `<td ${ts}><b>${targetEC[p]}</b></td>`);
+  html += `</tr>`;
 
   // Part A row
-  text += "Part A".padEnd(12);
+  html += `<tr><td ${tl}>Part A</td>`;
   PHASES.forEach(phase => {
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
     const r = calcDosage(phase, "partA", method, unit, eEC);
-    text += `${r.display}`.padEnd(12);
+    html += `<td ${ts}>${r.display}</td>`;
   });
-  text += "\n";
+  html += `</tr>`;
 
   if (is2Doser) {
-    // Combined B + Bloom row (+ PhosZyme label if included)
-    const lbl = state.usePhoszyme ? "B+Blm+PhZ" : "B + Bloom";
-    text += lbl.padEnd(12);
+    // Combined B + Bloom row
+    const lbl = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
+    html += `<tr><td ${tl}>${lbl}</td>`;
     PHASES.forEach(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-      const r = calcDosage(phase, "partB", method, unit, eEC);
-      text += `${r.display}`.padEnd(12);
+      const resultB = calcDosage(phase, "partB", method, unit, eEC);
+      html += `<td ${ts}>${resultB.display}</td>`;
     });
-    text += "\n";
+    html += `</tr>`;
   } else {
-    // Part B row (+ PhosZyme label if included)
-    const bLbl = state.usePhoszyme ? "B + PhZ" : "Part B";
-    text += bLbl.padEnd(12);
+    // Part B row (or B + PhosZyme)
+    const bLbl = usePhz ? "B + PhosZyme" : "Part B";
+    html += `<tr><td ${tl}>${bLbl}</td>`;
     PHASES.forEach(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-      const r = calcDosage(phase, "partB", method, unit, eEC);
-      text += `${r.display}`.padEnd(12);
+      const resultB = calcDosage(phase, "partB", method, unit, eEC);
+      html += `<td ${ts}>${resultB.display}</td>`;
     });
-    text += "\n";
+    html += `</tr>`;
 
     // Bloom row
-    text += "Bloom".padEnd(12);
+    html += `<tr><td ${tl}>Bloom</td>`;
     PHASES.forEach(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       const r = calcDosage(phase, "bloom", method, unit, eEC);
-      text += `${r.display}`.padEnd(12);
+      html += `<td ${ts}>${r.display}</td>`;
     });
-    text += "\n";
+    html += `</tr>`;
   }
 
-  copyToClipboard(text).then(() => {
+  html += `</table>`;
+
+  // ── Stock Concentrate Table (stock mode only) ──
+  if (isStock) {
+    const stock = calcStockTanks(method, unit);
+    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    html += `<h3 style="margin:20px 0 6px;">${titlePrefix} Stock Concentrate Rates</h3>`;
+    html += `<table style="border-collapse:collapse;font-size:14px;">`;
+    html += `<tr><th ${th}>Tank</th><th ${th}>Part</th><th ${th}>${stock.volUnit}</th><th ${th}>${stock.wtUnit}</th><th ${th}>${stock.concUnit}</th>`;
+    html += `<th ${th}>${stock.sampleUnit}</th><th ${th}>${stock.ecUnit}</th><th ${th}>Valid. EC</th></tr>`;
+
+    const tank2Parts = usePhz ? ["B", "PhosZyme*", "Bloom"] : ["B", "Bloom"];
+    stock.rows.forEach(r => {
+      if (!usePhz && r.part === "PhosZyme*") return;
+      let tankLabel = r.tank;
+      const isSubItem = is2Doser && (r.part === "PhosZyme*" || r.part === "Bloom");
+      if (is2Doser && isSubItem) tankLabel = "";
+      const partLabel = isSubItem ? `+ ${r.part}` : r.part;
+      const bg = is2Doser && tank2Parts.includes(r.part) ? 'background:#f9f7fd;' : '';
+      html += `<tr style="${bg}"><td ${ts}>${tankLabel}</td><td ${tl}>${partLabel}</td>`;
+      html += `<td ${ts}>${r.vol}</td><td ${ts}>${r.wt}</td><td ${ts}>${r.conc}</td>`;
+      html += `<td ${ts}>${r.sample}</td><td ${ts}>${r.ecG}</td>`;
+      html += `<td ${ts}><b>${r.valEC}</b></td></tr>`;
+    });
+
+    // Tank 2 Total row for 2-doser
+    if (is2Doser) {
+      const tank2Rows = stock.rows.filter(r => tank2Parts.includes(r.part));
+      const combinedValEC = tank2Rows.reduce((sum, r) => sum + r.valEC, 0).toFixed(2);
+      html += `<tr style="background:#f9f7fd;"><td ${ts}></td><td ${tl}><b>Tank 2 Total</b></td>`;
+      html += `<td ${ts}></td><td ${ts}></td><td ${ts}></td><td ${ts}></td><td ${ts}></td>`;
+      html += `<td ${ts}><b>${combinedValEC}</b></td></tr>`;
+    }
+    html += `</table>`;
+
+    if (usePhz) {
+      const note = is2Doser
+        ? "PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2)."
+        : "PhosZyme is mixed into the Part B stock tank. It will increase the validation EC.";
+      html += `<p style="font-size:12px;color:#888;margin-top:6px;font-style:italic;">* ${note}</p>`;
+    }
+
+    // ── Mixing Instructions ──
+    let instrSet;
+    if (is2Doser) {
+      instrSet = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
+    } else {
+      instrSet = INSTRUCTIONS;
+    }
+    html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
+    html += `<ol style="font-size:14px;padding-left:20px;">`;
+    instrSet.forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
+    html += `</ol>`;
+  }
+
+  html += `<p style="font-size:11px;color:#aaa;margin-top:16px;">Generated by Front Row Ag Feed Calculator</p>`;
+
+  // ── Plain text fallback ──
+  let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
+  plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
+  plain += "Target EC".padEnd(20) + PHASES.map(p => `${targetEC[p]}`.padEnd(12)).join("") + "\n\n";
+  plain += "Part A".padEnd(20) + PHASES.map(phase => {
+    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+    return calcDosage(phase, "partA", method, unit, eEC).display.padEnd(12);
+  }).join("") + "\n";
+
+  if (is2Doser) {
+    const lbl = usePhz ? "B+Bloom+PhZ" : "B + Bloom";
+    plain += lbl.padEnd(20) + PHASES.map(phase => {
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
+    }).join("") + "\n";
+  } else {
+    const bLbl = usePhz ? "B + PhosZyme" : "Part B";
+    plain += bLbl.padEnd(20) + PHASES.map(phase => {
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
+    }).join("") + "\n";
+    plain += "Bloom".padEnd(20) + PHASES.map(phase => {
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
+    }).join("") + "\n";
+  }
+
+  copyRichText(html, plain).then(() => {
     const btn = document.getElementById("btn-copy");
     btn.classList.add("copied");
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
