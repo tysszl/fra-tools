@@ -21,6 +21,7 @@
     --part-b: #4488dd;
     --bloom: #d44040;
     --phoszyme: #d45e78;
+    --b-bloom: #8866cc;
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -186,6 +187,8 @@
   .dot-b { background: var(--part-b); }
   .dot-bloom { background: var(--bloom); }
   .dot-phz { background: var(--phoszyme); }
+  .val-bbloom { color: var(--b-bloom); }
+  .dot-bbloom { background: var(--b-bloom); }
 
   .dash { color: var(--text-muted); font-weight: 400; }
 
@@ -278,6 +281,10 @@
     background: var(--accent-dim);
     border-color: var(--accent);
     color: var(--accent);
+  }
+  .recipe-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   /* ── Stock Tank Table ─────────────────── */
@@ -423,7 +430,7 @@
     body { background: #fff; color: #000; padding: 0; }
     .card { border: 1px solid #ccc; break-inside: avoid; }
     .btn-row, .footer { display: none; }
-    .val-a, .val-b, .val-bloom, .val-phz { color: #000 !important; }
+    .val-a, .val-b, .val-bloom, .val-phz, .val-bbloom { color: #000 !important; }
   }
 </style>
 </head>
@@ -451,9 +458,17 @@
       <div class="config-spacer"></div>
       <div class="section-label">Mixing Method</div>
       <div class="toggle-group" id="method-group">
-        <button class="toggle-btn" data-val="4-3-3">4-3-3</button>
         <button class="toggle-btn active" data-val="3-2-2">3-2-2</button>
         <button class="toggle-btn" data-val="1-1-1">1-1-1</button>
+      </div>
+      <div class="config-spacer"></div>
+      <div class="section-label">Dosers</div>
+      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+        <div class="toggle-group" id="doser-group" style="margin-bottom:0;">
+          <button class="toggle-btn active" data-val="3">3-Doser</button>
+          <button class="toggle-btn" data-val="2">2-Doser</button>
+        </div>
+        <button class="toggle-btn active" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
       </div>
     </div>
 
@@ -542,7 +557,7 @@
       <tbody id="stock-body"></tbody>
     </table>
     </div>
-    <p style="font-size:0.75rem; color:var(--text-muted); margin-top:10px; font-style:italic;">
+    <p id="phz-footnote" style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
       * When mixed with Part B stock solution, PhosZyme will increase the validation EC.
     </p>
   </div>
@@ -624,6 +639,8 @@ const VALID_APPS    = ["stock", "direct"];
 const VALID_METHODS = Object.keys(STOCK_RATES);
 const VALID_UNITS   = Object.keys(UNIT_FACTORS);
 const VALID_PRESETS = ["high", "standard", "custom"];
+const VALID_DOSERS  = ["3", "2"];
+const VALID_PHZ     = ["yes", "no"];
 
 const INSTRUCTIONS = [
   "Start with clean stock tanks marked at target volume.",
@@ -633,6 +650,15 @@ const INSTRUCTIONS = [
   "Validate and adjust stock tank as necessary."
 ];
 
+const INSTRUCTIONS_2DOSER = [
+  "Start with two clean stock tanks marked at target volume.",
+  "Add RO water to 50% of target volume in each tank; begin agitating.",
+  "Tank 1: Add Part A over 5 minutes while agitating.",
+  "Tank 2: Add Part B, then Bloom, then PhosZyme over 5 minutes while agitating.",
+  "Add RO water to target volume in each tank; mix for 10 more minutes.",
+  "Validate and adjust each stock tank as necessary."
+];
+
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
@@ -640,6 +666,8 @@ const INSTRUCTIONS = [
 let state = {
   application: "stock",
   method: "3-2-2",
+  doserMode: "3",
+  usePhoszyme: true,
   unit: "mL/gal",
   ecPreset: "high",
   targetEC: { ...EC_PRESETS.high },
@@ -680,6 +708,15 @@ function getStockConcDisplay(method, component, unit) {
 
 function getRecipe(phase) {
   return RECIPES[state.phaseRecipe[phase]];
+}
+
+// When PhosZyme is included, scale down A/B/Bloom so total (incl. PhZ) = target EC.
+// PhosZyme adds overhead proportional to Part B's EC contribution.
+function getPhzScaleFactor(phase) {
+  if (!state.usePhoszyme) return 1;
+  const recipe = getRecipe(phase);
+  const phzOverhead = recipe.partB * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+  return 1 / (1 + phzOverhead);
 }
 
 function calcEcContribution(phase, component, targetEC) {
@@ -796,6 +833,7 @@ function copyToClipboard(text) {
 function render() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
   const components = [
     { key: "partA", label: "Part A", cls: "val-a", dotCls: "dot-a" },
     { key: "partB", label: "Part B", cls: "val-b", dotCls: "dot-b" },
@@ -813,45 +851,100 @@ function render() {
     el.classList.remove('editable');
   });
 
-  // Recipe selects
+  // Recipe selects — locked to Stack in 2-doser mode
   PHASES.forEach(p => {
     const sel = document.getElementById(`recipe-${p.toLowerCase()}`);
-    sel.value = state.phaseRecipe[p];
-    sel.classList.toggle('modified', state.phaseRecipe[p] !== p);
+    if (is2Doser) {
+      sel.value = "Stack";
+      sel.disabled = true;
+      sel.classList.remove('modified');
+    } else {
+      sel.disabled = false;
+      sel.value = state.phaseRecipe[p];
+      sel.classList.toggle('modified', state.phaseRecipe[p] !== p);
+    }
   });
 
   // Feed table body
   let html = "";
-  components.forEach(comp => {
-    html += `<tr><td><span class="component-dot ${comp.dotCls}"></span>${comp.label}</td>`;
+  const usePhz = state.usePhoszyme;
+
+  // Helper: render a single feed cell
+  function feedCell(display, dosage, ec, cls) {
+    if (dosage === 0 || display === "–") return `<td><span class="dash">–</span></td>`;
+    return `<td><div class="val ${cls}">${display}</div><div class="ec-sub">${ec.toFixed(2)} EC</div></td>`;
+  }
+
+  // Part A row (always present)
+  html += `<tr><td><span class="component-dot dot-a"></span>Part A</td>`;
+  PHASES.forEach(phase => {
+    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+    const r = calcDosage(phase, "partA", method, unit, eEC);
+    html += feedCell(r.display, r.dosage, r.ec, "val-a");
+  });
+  html += "</tr>";
+
+  if (is2Doser) {
+    // ── 2-Doser: combined B + Bloom row (+ PhosZyme if included) ──
+    const label = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
+    html += `<tr><td><span class="component-dot dot-bbloom"></span>${label}</td>`;
     PHASES.forEach(phase => {
-      let result;
-      if (comp.key === "phoszyme") {
-        result = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
-      } else {
-        result = calcDosage(phase, comp.key, method, unit, targetEC[phase]);
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const resultB = calcDosage(phase, "partB", method, unit, eEC);
+      const bloomEc = calcEcContribution(phase, "bloom", eEC);
+      let combinedEc = resultB.ec + bloomEc;
+      if (usePhz) {
+        combinedEc += calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
       }
-      if (result.dosage === 0 || result.display === "–") {
-        html += `<td><span class="dash">–</span></td>`;
-      } else {
-        html += `<td>
-          <div class="val ${comp.cls}">${result.display}</div>
-          <div class="ec-sub">${result.ec.toFixed(2)} EC</div>
-        </td>`;
-      }
+      html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-bbloom");
     });
     html += "</tr>";
-  });
+
+  } else {
+    // ── 3-Doser ──
+    if (usePhz) {
+      // B + PhosZyme combined row
+      html += `<tr><td><span class="component-dot dot-b"></span>B + PhosZyme</td>`;
+      PHASES.forEach(phase => {
+        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+        const resultB = calcDosage(phase, "partB", method, unit, eEC);
+        const phzEc = calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+        const combinedEc = resultB.ec + phzEc;
+        html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-b");
+      });
+      html += "</tr>";
+    } else {
+      // Standard Part B row (no PhosZyme)
+      html += `<tr><td><span class="component-dot dot-b"></span>Part B</td>`;
+      PHASES.forEach(phase => {
+        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+        const r = calcDosage(phase, "partB", method, unit, eEC);
+        html += feedCell(r.display, r.dosage, r.ec, "val-b");
+      });
+      html += "</tr>";
+    }
+
+    // Bloom row (always in 3-doser)
+    html += `<tr><td><span class="component-dot dot-bloom"></span>Bloom</td>`;
+    PHASES.forEach(phase => {
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const r = calcDosage(phase, "bloom", method, unit, eEC);
+      html += feedCell(r.display, r.dosage, r.ec, "val-bloom");
+    });
+    html += "</tr>";
+  }
 
   // Total EC row
   html += `<tr style="border-top:1px solid var(--card-border)"><td style="color:var(--text-dim)">Total EC</td>`;
   PHASES.forEach(phase => {
+    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
     let total = 0;
     ["partA", "partB", "bloom"].forEach(comp => {
-      total += calcEcContribution(phase, comp, targetEC[phase]);
+      total += calcEcContribution(phase, comp, eEC);
     });
-    const phzEc = calcEcContribution(phase, "partB", targetEC[phase]) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
-    total += phzEc;
+    if (usePhz) {
+      total += calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+    }
     html += `<td><span class="val val-total">${total.toFixed(2)}</span><span class="unit-sub">EC</span></td>`;
   });
   html += "</tr>";
@@ -861,7 +954,8 @@ function render() {
   // Stock tank table (only when stock concentrate)
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    document.getElementById("stock-title").textContent = `${method} Stock Concentrate Rates`;
+    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    document.getElementById("stock-title").textContent = `${titlePrefix} Stock Concentrate Rates`;
     document.getElementById("vol-header").textContent = stock.volUnit;
     document.getElementById("wt-header").textContent = stock.wtUnit;
     document.getElementById("conc-header").textContent = stock.concUnit;
@@ -869,10 +963,31 @@ function render() {
     document.getElementById("ec-gal-header").textContent = stock.ecUnit;
 
     let stockHtml = "";
-    stock.rows.forEach(r => {
-      stockHtml += `<tr>
-        <td>${r.tank}</td>
-        <td><span class="${r.cls}" style="font-weight:600">${r.part}</span></td>
+    const tank2Parts = usePhz ? ["B", "PhosZyme*", "Bloom"] : ["B", "Bloom"];
+    const t2Tint = 'background:rgba(136,102,204,0.06);';
+    const t2Border = 'border-left:3px solid var(--b-bloom);';
+
+    stock.rows.forEach((r, i) => {
+      // Skip PhosZyme row when PhosZyme is excluded
+      if (!usePhz && r.part === "PhosZyme*") return;
+
+      const isTank2 = tank2Parts.includes(r.part);
+      const isSubItem = is2Doser && (r.part === "PhosZyme*" || r.part === "Bloom");
+
+      // In 2-doser mode: Tank 2 rows get border + tint, sub-items get "+" prefix
+      let tankLabel = r.tank;
+      let partLabel = r.part;
+      const rowStyle = is2Doser && isTank2 ? t2Tint : '';
+      const tdStyle = is2Doser && isTank2 ? t2Border : '';
+
+      if (is2Doser && isSubItem) {
+        tankLabel = "";
+        partLabel = `+ ${r.part}`;
+      }
+
+      stockHtml += `<tr style="${rowStyle}">
+        <td style="${tdStyle}">${tankLabel}</td>
+        <td><span class="${r.cls}" style="font-weight:600">${partLabel}</span></td>
         <td>${r.vol}</td>
         <td>${r.wt}</td>
         <td>${r.conc}</td>
@@ -881,10 +996,43 @@ function render() {
         <td class="val-col"><span class="validation-ec">${r.valEC}</span></td>
       </tr>`;
     });
+
+    // In 2-doser mode: add combined Tank 2 validation row
+    if (is2Doser) {
+      const tank2Rows = stock.rows.filter(r => tank2Parts.includes(r.part));
+      const combinedValEC = tank2Rows.reduce((sum, r) => sum + r.valEC, 0).toFixed(2);
+      stockHtml += `<tr style="border-top:1px solid var(--card-border);${t2Tint}">
+        <td style="${t2Border}"></td>
+        <td><span class="val-bbloom" style="font-weight:600">Tank 2 Total</span></td>
+        <td></td><td></td><td></td>
+        <td class="val-col val-col-first"></td>
+        <td class="val-col"></td>
+        <td class="val-col"><span class="validation-ec" style="color:var(--b-bloom)">${combinedValEC}</span></td>
+      </tr>`;
+    }
+
     document.getElementById("stock-body").innerHTML = stockHtml;
 
+    // PhosZyme footnote — update text and visibility
+    const footnote = document.getElementById("phz-footnote");
+    if (!usePhz) {
+      footnote.style.display = "none";
+    } else {
+      footnote.style.display = "";
+      footnote.textContent = is2Doser
+        ? "* PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2). The Tank 2 Total reflects all three products."
+        : "* When mixed with Part B stock solution, PhosZyme will increase the validation EC.";
+    }
+
+    // Mixing instructions
     const instrList = document.getElementById("instructions-list");
-    instrList.innerHTML = INSTRUCTIONS.map(s => `<li>${s}</li>`).join("");
+    let instrSet;
+    if (is2Doser) {
+      instrSet = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
+    } else {
+      instrSet = INSTRUCTIONS;
+    }
+    instrList.innerHTML = instrSet.map(s => `<li>${s}</li>`).join("");
   }
 
   // URL state
@@ -934,6 +1082,8 @@ function applyApplicationState() {
   document.getElementById("method-section").style.display = isStock ? "" : "none";
   document.getElementById("stock-card").style.display = isStock ? "" : "none";
   document.getElementById("instructions-card").style.display = isStock ? "" : "none";
+  // Reset doser mode when switching to direct
+  if (!isStock) state.doserMode = "3";
 }
 
 function handleApplicationChange(val) {
@@ -972,6 +1122,21 @@ function handleRecipeChange(phase, recipeName) {
   render();
 }
 
+function handleDoserChange(val) {
+  state.doserMode = val;
+  if (val === "2") {
+    // Lock all phases to Stack recipe
+    PHASES.forEach(p => state.phaseRecipe[p] = "Stack");
+  }
+  render();
+}
+
+function togglePhz() {
+  state.usePhoszyme = !state.usePhoszyme;
+  document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
+  render();
+}
+
 function renderECInputs() {
   PHASES.forEach(p => {
     const el = document.getElementById(`ec-${p.toLowerCase()}`);
@@ -990,7 +1155,11 @@ function renderECInputs() {
 function updateURL() {
   const p = new URLSearchParams();
   p.set("a", state.application);
-  if (state.application === "stock") p.set("m", state.method);
+  if (state.application === "stock") {
+    p.set("m", state.method);
+    if (state.doserMode === "2") p.set("d", "2");
+  }
+  if (!state.usePhoszyme) p.set("phz", "no");
   p.set("u", state.unit);
   p.set("p", state.ecPreset);
   if (state.ecPreset === "custom") {
@@ -1006,6 +1175,13 @@ function loadFromURL() {
   const p = new URLSearchParams(window.location.search);
   if (p.has("a") && VALID_APPS.includes(p.get("a"))) state.application = p.get("a");
   if (p.has("m") && VALID_METHODS.includes(p.get("m"))) state.method = p.get("m");
+  if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
+    state.doserMode = p.get("d");
+    if (state.doserMode === "2") PHASES.forEach(ph => state.phaseRecipe[ph] = "Stack");
+  }
+  if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
+    state.usePhoszyme = (p.get("phz") !== "no");
+  }
   if (p.has("u") && VALID_UNITS.includes(p.get("u"))) state.unit = p.get("u");
   if (p.has("p") && VALID_PRESETS.includes(p.get("p"))) {
     state.ecPreset = p.get("p");
@@ -1036,6 +1212,10 @@ function syncToggleButtons() {
   document.querySelectorAll("#method-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.method);
   });
+  document.querySelectorAll("#doser-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.doserMode);
+  });
+  document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
   document.querySelectorAll("#ec-preset-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.ecPreset);
   });
@@ -1056,16 +1236,10 @@ function shareLink() {
 
 function copySummary() {
   const { method, unit, targetEC } = state;
-  const label = state.application === "stock" ? `${method} stock` : "direct";
+  const is2Doser = state.doserMode === "2";
+  const label = state.application === "stock" ? `${method} ${is2Doser ? "2-doser " : ""}stock` : "direct";
   let text = `Front Row Ag Feed Chart — ${label} (${unit})\n`;
   text += "═".repeat(50) + "\n\n";
-
-  const comps = [
-    { key: "partA", label: "Part A" },
-    { key: "partB", label: "Part B" },
-    { key: "bloom", label: "Bloom" },
-    { key: "phoszyme", label: "PhosZyme" }
-  ];
 
   text += "Phase".padEnd(12);
   PHASES.forEach(p => text += p.padEnd(12));
@@ -1073,19 +1247,45 @@ function copySummary() {
   PHASES.forEach(p => text += `${targetEC[p]}`.padEnd(12));
   text += "\n" + "─".repeat(72) + "\n";
 
-  comps.forEach(comp => {
-    text += comp.label.padEnd(12);
+  // Part A row
+  text += "Part A".padEnd(12);
+  PHASES.forEach(phase => {
+    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+    const r = calcDosage(phase, "partA", method, unit, eEC);
+    text += `${r.display}`.padEnd(12);
+  });
+  text += "\n";
+
+  if (is2Doser) {
+    // Combined B + Bloom row (+ PhosZyme label if included)
+    const lbl = state.usePhoszyme ? "B+Blm+PhZ" : "B + Bloom";
+    text += lbl.padEnd(12);
     PHASES.forEach(phase => {
-      let result;
-      if (comp.key === "phoszyme") {
-        result = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
-      } else {
-        result = calcDosage(phase, comp.key, method, unit, targetEC[phase]);
-      }
-      text += `${result.display}`.padEnd(12);
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const r = calcDosage(phase, "partB", method, unit, eEC);
+      text += `${r.display}`.padEnd(12);
     });
     text += "\n";
-  });
+  } else {
+    // Part B row (+ PhosZyme label if included)
+    const bLbl = state.usePhoszyme ? "B + PhZ" : "Part B";
+    text += bLbl.padEnd(12);
+    PHASES.forEach(phase => {
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const r = calcDosage(phase, "partB", method, unit, eEC);
+      text += `${r.display}`.padEnd(12);
+    });
+    text += "\n";
+
+    // Bloom row
+    text += "Bloom".padEnd(12);
+    PHASES.forEach(phase => {
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const r = calcDosage(phase, "bloom", method, unit, eEC);
+      text += `${r.display}`.padEnd(12);
+    });
+    text += "\n";
+  }
 
   copyToClipboard(text).then(() => {
     const btn = document.getElementById("btn-copy");
@@ -1104,6 +1304,7 @@ function copySummary() {
 
 setupToggle("app-group", null, handleApplicationChange);
 setupToggle("method-group", "method");
+setupToggle("doser-group", null, handleDoserChange);
 setupToggle("ec-preset-group", null, handleECPreset);
 loadFromURL();
 syncToggleButtons();
