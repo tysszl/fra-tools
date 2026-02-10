@@ -479,12 +479,18 @@
     .card h2 { font-size: 14px; color: #000; margin-bottom: 8px; }
 
     /* Feed table compact */
-    .feed-table { border-collapse: collapse; border: 2px solid #333 !important; }
+    .feed-table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      border: 2px solid #333 !important;
+    }
     .feed-table th, .feed-table td {
       padding: 6px 6px; font-size: 11px;
       border: 1px solid #888 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    .feed-table th { border-bottom: 2px solid #333 !important; color: #444; }
+    .feed-table th { color: #444; }
     .val { font-size: 13px; }
     .ec-sub { font-size: 9px; color: #888; }
     .unit-badge { font-size: 10px; border: none; color: #444; background: none; padding: 0; }
@@ -510,12 +516,18 @@
     .dot-bbloom { background: #6644aa !important; }
 
     /* Stock table compact */
-    .stock-table { border-collapse: collapse; border: 2px solid #333 !important; }
+    .stock-table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      border: 2px solid #333 !important;
+    }
     .stock-table th, .stock-table td {
       padding: 5px 8px; font-size: 11px;
       border: 1px solid #888 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
-    .stock-table th { border-bottom: 2px solid #333 !important; color: #444; }
+    .stock-table th { color: #444; }
     .validation-ec { font-size: 12px; color: #cc2020 !important; }
     .stock-table .val-col { background: #f9f9f9; }
     .validation-group-label {
