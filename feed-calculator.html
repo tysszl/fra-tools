@@ -134,7 +134,7 @@
   .feed-table td {
     padding: 14px 8px;
     text-align: center;
-    border-bottom: 1px solid #1e1e1e;
+    border-bottom: 1px solid #2a2a2a;
     font-size: 0.92rem;
   }
   .feed-table td:first-child {
@@ -302,15 +302,16 @@
     text-align: center;
     border-bottom: 1px solid var(--card-border);
   }
-  .stock-table th:first-child { text-align: left; }
+  .stock-table th:first-child, .stock-table th:nth-child(2):not(.validation-group-label) { text-align: left; }
   .stock-table td {
-    padding: 10px 10px;
+    padding: 12px 10px;
     text-align: center;
-    border-bottom: 1px solid #1e1e1e;
+    border-bottom: 1px solid #2a2a2a;
     font-size: 0.9rem;
     font-variant-numeric: tabular-nums;
   }
-  .stock-table td:first-child {
+  .stock-table td:first-child,
+  .stock-table td:nth-child(2) {
     text-align: left;
     font-weight: 600;
     font-size: 0.85rem;
@@ -321,8 +322,16 @@
   .stock-table .val-col {
     background: rgba(62,230,182,0.03);
   }
-  .stock-table .val-col-first {
-    border-left: 1px solid var(--card-border);
+  .stock-table td.val-col:last-child,
+  .stock-table th.val-col:last-child {
+    border-right: 1px solid rgba(62,230,182,0.25);
+  }
+  .stock-table td.val-col-first,
+  .stock-table th.val-col-first {
+    border-left: 1px solid rgba(62,230,182,0.25);
+  }
+  .stock-table tr:last-child .val-col {
+    border-bottom: 1px solid rgba(62,230,182,0.25);
   }
   .validation-group-label {
     text-align: center;
@@ -333,7 +342,10 @@
     text-transform: uppercase;
     padding: 8px 10px 2px;
     border-bottom: none !important;
-    border-left: 1px solid var(--card-border);
+    border-left: 1px solid rgba(62,230,182,0.25);
+    border-right: 1px solid rgba(62,230,182,0.25);
+    border-top: 1px solid rgba(62,230,182,0.25);
+    border-radius: 6px 6px 0 0;
     background: rgba(62,230,182,0.03);
   }
   .validation-group-spacer {
@@ -425,18 +437,132 @@
     .toggle-btn { padding: 7px 12px; font-size: 0.82rem; }
   }
 
+  /* ── Print Header (hidden on screen) ── */
+  .print-header { display: none; }
+
   /* ── Print ────────────────────────────── */
   @media print {
-    body { background: #fff; color: #000; padding: 0; }
-    .card { border: 1px solid #ccc; break-inside: avoid; }
-    .btn-row, .footer { display: none; }
-    .val-a, .val-b, .val-bloom, .val-phz, .val-bbloom { color: #000 !important; }
+    @page { margin: 0.5in; size: letter; }
+    body { background: #fff; color: #000; padding: 0; font-size: 12px; }
+    .container { max-width: 100%; padding: 0; }
+
+    /* Hide interactive elements */
+    .header, #config-card, .btn-row, .footer { display: none; }
+
+    /* Show print header */
+    .print-header {
+      display: block;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #222;
+    }
+    .print-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 0 0 4px;
+    }
+    .print-header p {
+      font-size: 11px;
+      color: #666;
+      margin: 0;
+    }
+
+    /* Cards: no dark bg, clean borders */
+    .card {
+      background: #fff;
+      border: none;
+      padding: 12px 0;
+      margin-bottom: 8px;
+      break-inside: avoid;
+    }
+    .card h2 { font-size: 14px; color: #000; margin-bottom: 8px; }
+
+    /* Feed table compact */
+    .feed-table th, .feed-table td { padding: 6px 6px; font-size: 11px; }
+    .feed-table { border-collapse: collapse; }
+    .feed-table th { border-bottom: 1px solid #ccc; color: #444; }
+    .feed-table td { border-bottom: 1px solid #eee; }
+    .val { font-size: 13px; }
+    .ec-sub { font-size: 9px; color: #888; }
+    .unit-badge { font-size: 10px; border: none; color: #444; background: none; padding: 0; }
+    .phase-ec { background: none; border: none; color: #000; font-size: 11px; padding: 0; font-weight: 600; }
+    .recipe-select {
+      font-size: 10px; color: #000; font-weight: 600;
+      -webkit-appearance: none; appearance: none;
+      background: none; border: none; padding: 0;
+      pointer-events: none;
+    }
+    .component-dot { width: 6px; height: 6px; }
+
+    /* Keep product colors in print */
+    .val-a { color: #4a8a00 !important; }
+    .val-b { color: #2266bb !important; }
+    .val-bloom { color: #bb2020 !important; }
+    .val-phz { color: #b03050 !important; }
+    .val-bbloom { color: #6644aa !important; }
+    .dot-a { background: #4a8a00 !important; }
+    .dot-b { background: #2266bb !important; }
+    .dot-bloom { background: #bb2020 !important; }
+    .dot-phz { background: #b03050 !important; }
+    .dot-bbloom { background: #6644aa !important; }
+
+    /* Stock table compact */
+    .stock-table th, .stock-table td { padding: 5px 8px; font-size: 11px; }
+    .stock-table th { border-bottom: 1px solid #ccc; color: #444; }
+    .stock-table td { border-bottom: 1px solid #eee; }
+    .validation-ec { font-size: 12px; color: #cc2020 !important; }
+    .stock-table .val-col { background: #f9f9f9; }
+    .validation-group-label {
+      background: #f9f9f9;
+      border-color: #ccc;
+      color: #444;
+    }
+    .stock-table td.val-col-first,
+    .stock-table th.val-col-first { border-left: 1px solid #ccc; }
+    .stock-table td.val-col:last-child,
+    .stock-table th.val-col:last-child { border-right: 1px solid #ccc; }
+    .stock-table tr:last-child .val-col { border-bottom: 1px solid #ccc; }
+
+    /* Validation label centering in print */
+    .validation-group-label { text-align: center !important; }
+
+    /* Mixing instructions: always open, compact, no emoji */
+    .instructions-body { display: block !important; max-height: none !important; }
+    .chevron { display: none; }
+    .instructions-toggle { cursor: default; }
+    #instructions-card h2 { font-size: 14px; }
+    .screen-only { display: none !important; }
+    #instructions-list { font-size: 11px; padding-left: 18px; }
+    #instructions-list li { margin-bottom: 2px; }
+
+    /* PhosZyme footnote */
+    #phz-footnote { font-size: 10px; color: #888; }
+
+    /* Print footer */
+    .print-footer {
+      display: block !important;
+      text-align: center;
+      font-size: 9px;
+      color: #aaa;
+      margin-top: 16px;
+      padding-top: 8px;
+      border-top: 1px solid #ddd;
+    }
+
+    /* 2-doser tint in print */
+    .stock-table tr[style*="rgba(136,102,204"] { background: #f5f3fa !important; }
   }
 </style>
 </head>
 <body>
 
 <div class="container">
+
+  <!-- Print Header (hidden on screen, shown in print) -->
+  <div class="print-header" id="print-header">
+    <h1>Front Row Ag · Feed Calculator</h1>
+    <p id="print-config-line"></p>
+  </div>
 
   <!-- Header -->
   <div class="header">
@@ -445,7 +571,7 @@
   </div>
 
   <!-- Configuration Card -->
-  <div class="card">
+  <div class="card" id="config-card">
     <h2>Configuration</h2>
 
     <div class="section-label">Application</div>
@@ -530,6 +656,10 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
         Share Link
       </button>
+      <button class="btn" onclick="printPage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save PDF
+      </button>
     </div>
   </div>
 
@@ -565,7 +695,7 @@
   <!-- Mixing Instructions Card (collapsible) -->
   <div class="card" id="instructions-card">
     <div class="instructions-toggle" onclick="toggleInstructions()">
-      <h2>📋 Mixing Instructions</h2>
+      <h2><span class="screen-only">📋 </span>Mixing Instructions</h2>
       <span class="chevron" id="chevron">▾</span>
     </div>
     <div class="instructions-body" id="instructions-body">
@@ -575,6 +705,11 @@
 
   <div class="footer">
     <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · Feed Calculator
+  </div>
+
+  <!-- Print Footer (hidden on screen, shown in print) -->
+  <div class="print-footer" style="display:none;">
+    frontrowag.com · Generated by Front Row Ag Feed Calculator
   </div>
 
 </div>
@@ -972,15 +1107,15 @@ function render() {
       if (!usePhz && r.part === "PhosZyme*") return;
 
       const isTank2 = tank2Parts.includes(r.part);
-      const isSubItem = is2Doser && (r.part === "PhosZyme*" || r.part === "Bloom");
+      // PhosZyme is always a sub-item of Tank 2 (both modes); Bloom only in 2-doser
+      const isSubItem = r.part === "PhosZyme*" || (is2Doser && r.part === "Bloom");
 
-      // In 2-doser mode: Tank 2 rows get border + tint, sub-items get "+" prefix
       let tankLabel = r.tank;
       let partLabel = r.part;
       const rowStyle = is2Doser && isTank2 ? t2Tint : '';
       const tdStyle = is2Doser && isTank2 ? t2Border : '';
 
-      if (is2Doser && isSubItem) {
+      if (isSubItem) {
         tankLabel = "";
         partLabel = `+ ${r.part}`;
       }
@@ -1034,6 +1169,18 @@ function render() {
     }
     instrList.innerHTML = instrSet.map(s => `<li>${s}</li>`).join("");
   }
+
+  // Print config line
+  const printParts = [];
+  if (isStock) {
+    printParts.push(`${method} Stock Concentrate`);
+    printParts.push(is2Doser ? "2-Doser" : "3-Doser");
+  } else {
+    printParts.push("Direct to Reservoir");
+  }
+  if (usePhz) printParts.push("PhosZyme Included");
+  printParts.push(unit);
+  document.getElementById("print-config-line").textContent = printParts.join(" · ");
 
   // URL state
   updateURL();
@@ -1232,6 +1379,10 @@ function shareLink() {
       btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Share Link`;
     }, 2000);
   });
+}
+
+function printPage() {
+  window.print();
 }
 
 function copySummary() {
