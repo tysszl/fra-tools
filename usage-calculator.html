@@ -650,14 +650,14 @@ const BASE_CONFIG = {
       MKP:   { unitSize: 50, unitType: 'lbs' }
     },
     priceTiers: {
-      single: { label: 'Single',    CaNO3: 45.00,  'C+': 218.75, MKP: 140.00 },
       mixed:  { label: 'Mixed',     CaNO3: 38.50,  'C+': 110.00, MKP: 115.00 },
       mixed2: { label: 'Mixed+',    CaNO3: 34.30,  'C+': 99.00,  MKP: 107.00 },
       pallet: { label: 'Pallet',    CaNO3: 30.75,  'C+': 89.00,  MKP: 99.50 },
       truck:  { label: 'Truckload', CaNO3: 27.00,  'C+': 71.00,  MKP: 85.00 }
     },
-    tierOrder: ['single', 'mixed', 'mixed2', 'pallet', 'truck'],
+    tierOrder: ['mixed', 'mixed2', 'pallet', 'truck'],
     defaultTier: 'mixed',
+    flowerRecipe: 'Swell',
     refProducts: [
       { name: 'C+',    unit: '25 lb' },
       { name: 'CaNO3', unit: '50 lb' },
@@ -689,6 +689,7 @@ const BASE_CONFIG = {
     },
     tierOrder: ['msrp', 'commercial', 'wholesale'],
     defaultTier: 'commercial',
+    flowerRecipe: 'Stack',
     refProducts: [
       { name: 'Part A', unit: '25 lb' },
       { name: 'Part B', unit: '25 lb' },
@@ -731,11 +732,11 @@ const FLAT_RATES = {
 // ═══════════════════════════════════════════════
 
 let state = {
-  base: 'cplus',
+  base: 'fra',
   veg:    { feedEC: 3.0, weeks: 2, galPerWeek: 1000 },
   flower: { feedEC: 3.0, weeks: 9, galPerWeek: 10000 },
   cyclesPerYear: 5,
-  priceTier: 'mixed',
+  priceTier: 'commercial',
   additiveTier: 'commercial',
   metric: false,
   products: []
@@ -798,7 +799,7 @@ function calcPhaseVolume(phase) {
 function calcProductAmount(productName, phaseName, phaseVolume, feedEC) {
   const config = getConfig();
   if (config.ecPerGram[productName] !== undefined) {
-    const recipe = phaseName === 'veg' ? config.recipes.Veg : config.recipes.Swell;
+    const recipe = phaseName === 'veg' ? config.recipes.Veg : config.recipes[config.flowerRecipe];
     const pct = recipe[productName] || 0;
     if (pct === 0) return 0;
     return phaseVolume * feedEC * (pct / config.ecPerGram[productName]) / LBS_PER_GAL_DIVISOR;
@@ -880,7 +881,7 @@ function fmtDollar3(n) { return '$' + n.toFixed(3); }
 function renderBaseToggle() {
   const group = document.getElementById('base-toggle');
   let html = '';
-  for (const key of Object.keys(BASE_CONFIG)) {
+  for (const key of ['fra', 'cplus']) {
     const active = state.base === key ? ' active' : '';
     html += `<button class="toggle-btn${active}" onclick="setBase('${key}')">${BASE_CONFIG[key].label}</button>`;
   }
