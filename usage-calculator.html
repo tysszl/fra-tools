@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Front Row Ag · C+ Usage Estimator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --card-border: #2a2a2a;
+    --accent: #3ee6b6;
+    --accent-dim: rgba(62,230,182,0.15);
+    --text: #e8e8e8;
+    --text-dim: #c0c0c0;
+    --text-muted: #a0a0a0;
+    --input-bg: #1c1c1c;
+    --input-border: #3a3a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .container { max-width: 960px; margin: 0 auto; }
+
+  /* ── Header ───────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-top: 8px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header h1 .brand { color: var(--accent); }
+
+  /* ── Layout ────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 20px;
+  }
+
+  /* ── Toggle Buttons ───────────────────── */
+  .toggle-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .toggle-btn {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .toggle-btn:hover { border-color: var(--accent); }
+  .toggle-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .section-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  /* ── Shared input resets ───────────────── */
+  input::-webkit-inner-spin-button,
+  input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  /* ── Phase Table ──────────────────────── */
+  .phase-table { width: 100%; border-collapse: collapse; }
+  .phase-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    padding: 5px 6px 8px;
+    text-align: right;
+  }
+  .phase-table th:first-child { text-align: left; }
+  .phase-table td {
+    padding: 5px 6px;
+    font-size: 0.88rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .phase-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .phase-table input {
+    width: 80px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 5px 8px;
+    text-align: right;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+  }
+  .phase-table input:focus { border-color: var(--accent); }
+  .phase-table .separator td {
+    border-top: 1px solid var(--card-border);
+    padding-top: 10px;
+  }
+  .phase-table .output-row td { font-weight: 500; font-size: 0.85rem; }
+  .total-cell { color: var(--accent); font-weight: 700 !important; }
+  .unit-toggle {
+    background: none;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .unit-toggle:hover { border-color: var(--accent); }
+  .unit-toggle.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── Cycles Row ────────────────────────── */
+  .cycles-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--card-border);
+    flex-wrap: wrap;
+  }
+  .cycles-row label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  .cycles-row input {
+    width: 48px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 4px 6px;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    text-align: center;
+  }
+  .cycles-row input:focus { border-color: var(--accent); }
+  .annual-stats {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .annual-stats strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ── Product Table ─────────────────────── */
+  .product-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .product-table th {
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 4px 6px 7px;
+    text-align: center;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .product-table th:first-child { text-align: left; }
+  .product-table th:last-child { text-align: right; }
+  .product-table td {
+    padding: 7px 6px;
+    font-size: 0.84rem;
+    text-align: center;
+    border-bottom: 1px solid #222;
+    font-variant-numeric: tabular-nums;
+    vertical-align: middle;
+  }
+  .product-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.82rem;
+  }
+  .product-table tr:last-child td { border-bottom: none; }
+  .product-table input {
+    width: 68px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 4px 6px;
+    text-align: center;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+  }
+  .product-table input:focus { border-color: var(--accent); }
+  .product-table .size-input { width: 44px; }
+  .product-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .unit-type {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+  .order-cell {
+    text-align: right !important;
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 0.82rem;
+    white-space: nowrap;
+  }
+  .additive-check {
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent);
+    margin-right: 4px;
+    vertical-align: middle;
+    cursor: pointer;
+  }
+  .product-table tr.dimmed { opacity: 0.35; }
+  .product-table tr.dimmed input:not(.additive-check) { pointer-events: none; }
+
+  /* ── Reference ─────────────────────────── */
+  .ref-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--card-border);
+  }
+  .ref-toggle .section-label { margin-bottom: 0; }
+  .chevron {
+    transition: transform 0.2s;
+    color: var(--text-dim);
+    font-size: 1rem;
+  }
+  .chevron.open { transform: rotate(180deg); }
+  .ref-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .ref-body.open { max-height: 300px; }
+  .ref-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  .ref-table th {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 6px;
+    text-align: center;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .ref-table th:first-child, .ref-table th:nth-child(2) { text-align: left; }
+  .ref-table td {
+    font-size: 0.78rem;
+    padding: 5px 6px;
+    text-align: center;
+    border-bottom: 1px solid #222;
+    font-variant-numeric: tabular-nums;
+  }
+  .ref-table td:first-child { text-align: left; font-weight: 600; }
+  .ref-table td:nth-child(2) { text-align: left; }
+  .ref-table tr:last-child td { border-bottom: none; }
+  .ref-table .tier-active {
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-weight: 600;
+    border-radius: 3px;
+  }
+
+  /* ── Cost Bar ──────────────────────────── */
+  .cost-bar-container { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--card-border); }
+  .cost-bar-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+  }
+  .cost-bar {
+    display: flex;
+    height: 24px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--input-bg);
+  }
+  .cost-bar-segment {
+    transition: width 0.3s ease;
+    position: relative;
+    min-width: 0;
+  }
+  .cost-bar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.74rem;
+    color: var(--text-dim);
+  }
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .legend-pct {
+    font-weight: 600;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ── Buttons ───────────────────────────── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .btn {
+    flex: 1;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 15px; height: 15px; }
+  .copied { border-color: var(--accent) !important; color: var(--accent) !important; }
+
+  /* ── Footer ────────────────────────────── */
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    margin-top: 20px;
+    padding-bottom: 12px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ── Responsive ────────────────────────── */
+  @media (max-width: 700px) {
+    body { padding: 12px 8px 30px; }
+    .layout { grid-template-columns: 1fr; }
+    .panel { padding: 16px 14px; }
+    .phase-table input { width: 68px; font-size: 0.84rem; }
+    .product-table input { width: 58px; font-size: 0.8rem; }
+    .product-table .size-input { width: 38px; }
+    .btn { padding: 10px 12px; font-size: 0.82rem; }
+  }
+
+  /* ── Print ─────────────────────────────── */
+  .print-header { display: none; }
+  .print-footer { display: none; }
+
+  @media print {
+    @page { margin: 0.5in; size: letter landscape; }
+    body { background: #fff; color: #000; padding: 0; font-size: 11px; }
+    .container { max-width: 100%; padding: 0; }
+    .header, .btn-row, .footer, .screen-only, .toggle-group, .ref-toggle, .ref-body { display: none !important; }
+
+    .print-header {
+      display: block;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #222;
+    }
+    .print-header h1 { font-size: 16px; font-weight: 700; margin: 0 0 4px; }
+    .print-header p { font-size: 10px; color: #666; margin: 0; }
+
+    .layout { grid-template-columns: 1fr 1fr; gap: 24px; }
+    .panel { background: #fff; border: 1px solid #ccc; padding: 12px; }
+
+    .phase-table input { background: #fff; border: 1px solid #ccc; color: #000; }
+    .phase-table .separator td { border-top-color: #ccc; }
+    .total-cell { color: #000; }
+
+    .section-label { color: #444; }
+    .product-table th { color: #444; }
+    .product-table td { border-bottom-color: #ddd; }
+    .product-table input { background: #fff; border: 1px solid #ccc; color: #000; }
+    .order-cell { color: #000; }
+
+    .cycles-row { border-top-color: #ddd; }
+    .cycles-row label { color: #444; }
+    .cycles-row input { background: #fff; border: 1px solid #ccc; color: #000; }
+    .annual-stats { color: #666; }
+    .annual-stats strong { color: #000; }
+
+    .cost-bar-container { border-top-color: #ddd; }
+    .cost-bar { height: 18px; }
+    .legend-item { font-size: 9px; }
+    .legend-pct { color: #000; }
+
+    .print-footer {
+      display: block;
+      text-align: center;
+      font-size: 9px;
+      color: #aaa;
+      margin-top: 12px;
+      padding-top: 6px;
+      border-top: 1px solid #ddd;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Print Header -->
+  <div class="print-header">
+    <h1 id="print-title">Front Row Ag · C+ Usage Estimator</h1>
+    <p id="print-config-line"></p>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <h1><span class="brand">Front Row Ag</span> · <span id="title-base">C+</span> Usage Estimator</h1>
+    <div class="toggle-group" id="base-toggle" style="margin-top: 10px; justify-content: center;"></div>
+  </div>
+
+  <!-- Unit Toggle -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+    <span><button class="unit-toggle active" id="btn-gal" onclick="setMetric(false)">gal</button> <button class="unit-toggle" id="btn-L" onclick="setMetric(true)">L</button></span>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="layout">
+
+    <!-- Left Panel: Phase Table -->
+    <div class="panel">
+      <table class="phase-table">
+        <thead>
+          <tr><th></th><th>Veg</th><th>Flower</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Feed EC</td>
+            <td><input type="number" id="veg-ec" step="0.1" min="0" max="10" value="3.0" oninput="onInput()"></td>
+            <td><input type="number" id="flower-ec" step="0.1" min="0" max="10" value="3.0" oninput="onInput()"></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Weeks</td>
+            <td><input type="number" id="veg-weeks" step="1" min="0" max="52" value="2" oninput="onInput()"></td>
+            <td><input type="number" id="flower-weeks" step="1" min="0" max="52" value="9" oninput="onInput()"></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Gal / wk</td>
+            <td><input type="text" id="veg-gpw" value="1,000" oninput="onInput()" onfocus="clearCommas(this)" onblur="addCommas(this)"></td>
+            <td><input type="text" id="flower-gpw" value="10,000" oninput="onInput()" onfocus="clearCommas(this)" onblur="addCommas(this)"></td>
+            <td></td>
+          </tr>
+          <tr class="output-row separator">
+            <td>Cost</td>
+            <td id="out-veg-cost">$0.00</td>
+            <td id="out-flower-cost">$0.00</td>
+            <td id="out-total-cost" class="total-cell">$0.00</td>
+          </tr>
+          <tr class="output-row">
+            <td id="label-vol">Gallons</td>
+            <td id="out-veg-vol">0</td>
+            <td id="out-flower-vol">0</td>
+            <td id="out-total-vol">0</td>
+          </tr>
+          <tr class="output-row">
+            <td id="label-unit">Cost / gal</td>
+            <td id="out-veg-unit">$0.000</td>
+            <td id="out-flower-unit">$0.000</td>
+            <td id="out-total-unit" class="total-cell">$0.000</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="cycles-row">
+        <label>Cycles / yr</label>
+        <input type="number" id="cycles-year" step="1" min="1" max="52" value="5" oninput="onInput()">
+        <span class="annual-stats">Annual: <strong id="annual-cost">$0.00</strong> · <span id="annual-vol">0 gal</span></span>
+      </div>
+
+      <div class="cost-bar-container" id="cost-bar-container">
+        <div class="cost-bar-label">Cost Breakdown</div>
+        <div class="cost-bar" id="cost-bar"></div>
+        <div class="cost-bar-legend" id="cost-bar-legend"></div>
+      </div>
+    </div>
+
+    <!-- Right Panel: Products -->
+    <div class="panel" id="product-panel">
+      <div class="section-label">Base Products</div>
+      <div class="toggle-group" id="tier-group"></div>
+      <table class="product-table">
+        <thead><tr><th>Product</th><th>Price ($)</th><th>Size</th><th>Order</th></tr></thead>
+        <tbody id="base-body"></tbody>
+      </table>
+
+      <div class="section-label" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--card-border);">Additives</div>
+      <div class="toggle-group" id="additive-tier-group"></div>
+      <table class="product-table">
+        <thead><tr><th>Product</th><th>Price ($)</th><th>Size</th><th>Order</th></tr></thead>
+        <tbody id="additive-body"></tbody>
+      </table>
+
+      <div class="ref-toggle" onclick="toggleRef()">
+        <span class="section-label">Pricing Reference</span>
+        <span class="chevron" id="ref-chevron">▾</span>
+      </div>
+      <div class="ref-body" id="ref-body">
+        <table class="ref-table" id="ref-table"></table>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row screen-only">
+    <button class="btn" id="btn-share" onclick="shareLink()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Share Link
+    </button>
+    <button class="btn" onclick="window.print()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      Print / Save PDF
+    </button>
+  </div>
+
+  <div class="footer">
+    <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · <span id="footer-base">C+</span> Usage Estimator
+  </div>
+
+  <div class="print-footer" id="print-footer">
+    frontrowag.com · Generated by Front Row Ag C+ Usage Estimator
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+
+const LBS_PER_GAL_DIVISOR = 454;
+const ML_PER_GAL = 3785;
+const L_PER_GAL = 3.785;
+
+const BASE_CONFIG = {
+  cplus: {
+    label: 'Component Plus',
+    shortLabel: 'C+',
+    ecPerGram: { CaNO3: 0.317, 'C+': 0.283, MKP: 0.195 },
+    recipes: {
+      Veg:   { CaNO3: 0.6000, 'C+': 0.4000, MKP: 0.0000 },
+      Stack: { CaNO3: 0.4960, 'C+': 0.3200, MKP: 0.1840 },
+      Swell: { CaNO3: 0.3684, 'C+': 0.3294, MKP: 0.3022 },
+      Ripen: { CaNO3: 0.3150, 'C+': 0.3000, MKP: 0.3850 }
+    },
+    recipeProducts: ['CaNO3', 'C+', 'MKP'],
+    productColors: { CaNO3: '#4488dd', 'C+': '#3ee6b6', MKP: '#e6883e' },
+    productDefaults: {
+      CaNO3: { unitSize: 50, unitType: 'lbs' },
+      'C+':  { unitSize: 25, unitType: 'lbs' },
+      MKP:   { unitSize: 50, unitType: 'lbs' }
+    },
+    priceTiers: {
+      single: { label: 'Single',    CaNO3: 45.00,  'C+': 218.75, MKP: 140.00 },
+      mixed:  { label: 'Mixed',     CaNO3: 38.50,  'C+': 110.00, MKP: 115.00 },
+      mixed2: { label: 'Mixed+',    CaNO3: 34.30,  'C+': 99.00,  MKP: 107.00 },
+      pallet: { label: 'Pallet',    CaNO3: 30.75,  'C+': 89.00,  MKP: 99.50 },
+      truck:  { label: 'Truckload', CaNO3: 27.00,  'C+': 71.00,  MKP: 85.00 }
+    },
+    tierOrder: ['single', 'mixed', 'mixed2', 'pallet', 'truck'],
+    defaultTier: 'mixed',
+    refProducts: [
+      { name: 'C+',    unit: '25 lb' },
+      { name: 'CaNO3', unit: '50 lb' },
+      { name: 'MKP',   unit: '50 lb' }
+    ]
+  },
+  fra: {
+    label: 'FRA',
+    shortLabel: 'FRA',
+    ecPerGram: { 'Part A': 0.322, 'Part B': 0.255, Bloom: 0.200 },
+    recipes: {
+      Veg:     { 'Part A': 0.654471544715447, 'Part B': 0.345528455284553, Bloom: 0 },
+      Stretch: { 'Part A': 0.55, 'Part B': 0.29, Bloom: 0.16 },
+      Stack:   { 'Part A': 0.51499, 'Part B': 0.2719123506099, Bloom: 0.2130976493901 },
+      Swell:   { 'Part A': 0.441, 'Part B': 0.234, Bloom: 0.325 },
+      Ripen:   { 'Part A': 0.35, 'Part B': 0.30, Bloom: 0.35 }
+    },
+    recipeProducts: ['Part A', 'Part B', 'Bloom'],
+    productColors: { 'Part A': '#8bb83a', 'Part B': '#4488dd', Bloom: '#d44040' },
+    productDefaults: {
+      'Part A': { unitSize: 25, unitType: 'lbs' },
+      'Part B': { unitSize: 25, unitType: 'lbs' },
+      Bloom:    { unitSize: 25, unitType: 'lbs' }
+    },
+    priceTiers: {
+      msrp:       { label: 'MSRP',       'Part A': 218.75, 'Part B': 218.75, Bloom: 218.75 },
+      commercial: { label: 'Commercial',  'Part A': 114.75, 'Part B': 114.75, Bloom: 118.25 },
+      wholesale:  { label: 'Wholesale',   'Part A': 96.25,  'Part B': 96.25,  Bloom: 99.75 }
+    },
+    tierOrder: ['msrp', 'commercial', 'wholesale'],
+    defaultTier: 'commercial',
+    refProducts: [
+      { name: 'Part A', unit: '25 lb' },
+      { name: 'Part B', unit: '25 lb' },
+      { name: 'Bloom',  unit: '25 lb' }
+    ]
+  }
+};
+
+const ADDITIVE_COLORS = {
+  PhosZyme: '#d45e78',
+  'Clean Up': '#8bb83a',
+  Si: '#8866cc',
+  Triologic: '#d4c040'
+};
+
+const ADDITIVE_DEFAULTS = [
+  { name: 'PhosZyme', unitSize: 25, unitType: 'lbs' },
+  { name: 'Clean Up', unitSize: 25, unitType: 'lbs' },
+  { name: 'Si',       unitSize: 1,  unitType: 'gal' },
+  { name: 'Triologic',unitSize: 1,  unitType: 'gal' }
+];
+
+const ADDITIVE_TIERS = {
+  msrp:       { label: 'MSRP',       PhosZyme: 439,   Si: 310,    Triologic: 539 },
+  commercial: { label: 'Commercial',  PhosZyme: 229,   Si: 164.50, Triologic: 405.65 },
+  wholesale:  { label: 'Wholesale',   PhosZyme: 183,   Si: 132,    Triologic: 324.50 }
+};
+
+const ADDITIVE_TIER_ORDER = ['msrp', 'commercial', 'wholesale'];
+
+const FLAT_RATES = {
+  PhosZyme:  { rate: 0.40, divBy: LBS_PER_GAL_DIVISOR },
+  'Clean Up':{ rate: 0.20, divBy: LBS_PER_GAL_DIVISOR },
+  Si:        { rate: 0,    divBy: ML_PER_GAL, dynamic: true },
+  Triologic: { rate: 0.20, divBy: ML_PER_GAL }
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  base: 'cplus',
+  veg:    { feedEC: 3.0, weeks: 2, galPerWeek: 1000 },
+  flower: { feedEC: 3.0, weeks: 9, galPerWeek: 10000 },
+  cyclesPerYear: 5,
+  priceTier: 'mixed',
+  additiveTier: 'commercial',
+  metric: false,
+  products: []
+};
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+
+function getConfig() { return BASE_CONFIG[state.base]; }
+
+function buildProductList() {
+  const config = getConfig();
+  const tierPrices = config.priceTiers[state.priceTier] || {};
+  const addTierPrices = ADDITIVE_TIERS[state.additiveTier] || {};
+
+  const base = config.recipeProducts.map(name => ({
+    name,
+    price: tierPrices[name] || 0,
+    unitSize: config.productDefaults[name].unitSize,
+    unitType: config.productDefaults[name].unitType,
+    isBase: true
+  }));
+
+  const adds = ADDITIVE_DEFAULTS.map(a => ({
+    name: a.name,
+    price: addTierPrices[a.name] || 0,
+    unitSize: a.unitSize,
+    unitType: a.unitType,
+    isBase: false,
+    included: false
+  }));
+
+  return [...base, ...adds];
+}
+
+function getProductColor(name) {
+  const config = getConfig();
+  return config.productColors[name] || ADDITIVE_COLORS[name] || '#888';
+}
+
+state.products = buildProductList();
+
+// ═══════════════════════════════════════════════
+// CALCULATION ENGINE
+// ═══════════════════════════════════════════════
+
+function getSiRate(feedEC) {
+  if (feedEC > 3.5) return 0;
+  if (feedEC >= 3.1) return 0.125;
+  if (feedEC >= 2.7) return 0.25;
+  if (feedEC >= 2.3) return 0.375;
+  return 0.5;
+}
+
+function calcPhaseVolume(phase) {
+  return phase.weeks * phase.galPerWeek;
+}
+
+function calcProductAmount(productName, phaseName, phaseVolume, feedEC) {
+  const config = getConfig();
+  if (config.ecPerGram[productName] !== undefined) {
+    const recipe = phaseName === 'veg' ? config.recipes.Veg : config.recipes.Swell;
+    const pct = recipe[productName] || 0;
+    if (pct === 0) return 0;
+    return phaseVolume * feedEC * (pct / config.ecPerGram[productName]) / LBS_PER_GAL_DIVISOR;
+  }
+  const flat = FLAT_RATES[productName];
+  if (!flat) return 0;
+  const rate = flat.dynamic ? getSiRate(feedEC) : flat.rate;
+  return phaseVolume * rate / flat.divBy;
+}
+
+function roundUp(v, d) {
+  const f = Math.pow(10, d);
+  return Math.ceil(v * f) / f;
+}
+
+function calcBagsNeeded(totalAmount, unitSize) {
+  if (unitSize <= 0) return 0;
+  return roundUp(totalAmount / unitSize, 1);
+}
+
+function calcProductCost(totalAmount, price, unitSize) {
+  if (unitSize <= 0 || price <= 0) return 0;
+  return totalAmount * (price / unitSize);
+}
+
+function calcAll() {
+  const vegVol = calcPhaseVolume(state.veg);
+  const flowerVol = calcPhaseVolume(state.flower);
+  const totalVol = vegVol + flowerVol;
+
+  const results = {
+    vegVol, flowerVol, totalVol,
+    totalVolL: totalVol * L_PER_GAL,
+    products: [],
+    totalCost: 0
+  };
+
+  for (const product of state.products) {
+    if (!product.isBase && !product.included) {
+      results.products.push({
+        name: product.name, unitType: product.unitType, isBase: product.isBase,
+        vegAmount: 0, flowerAmount: 0, totalAmount: 0, bags: 0,
+        vegCost: 0, flowerCost: 0, totalCost: 0, costPerGal: 0
+      });
+      continue;
+    }
+    const vegAmount = calcProductAmount(product.name, 'veg', vegVol, state.veg.feedEC);
+    const flowerAmount = calcProductAmount(product.name, 'flower', flowerVol, state.flower.feedEC);
+    const totalAmount = vegAmount + flowerAmount;
+    const bags = calcBagsNeeded(totalAmount, product.unitSize);
+    const vegCost = calcProductCost(vegAmount, product.price, product.unitSize);
+    const flowerCost = calcProductCost(flowerAmount, product.price, product.unitSize);
+    const totalCost = vegCost + flowerCost;
+
+    results.products.push({
+      name: product.name, unitType: product.unitType, isBase: product.isBase,
+      vegAmount, flowerAmount, totalAmount, bags,
+      vegCost, flowerCost, totalCost,
+      costPerGal: totalVol > 0 ? totalCost / totalVol : 0
+    });
+
+    results.totalCost += totalCost;
+  }
+
+  results.costPerGal = totalVol > 0 ? results.totalCost / totalVol : 0;
+  results.costPerL = totalVol > 0 ? results.totalCost / (totalVol * L_PER_GAL) : 0;
+  return results;
+}
+
+// ═══════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════
+
+function fmt(n) { return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function fmtInt(n) { return Math.round(n).toLocaleString('en-US'); }
+function fmtDollar(n) { return '$' + fmt(n); }
+function fmtDollar3(n) { return '$' + n.toFixed(3); }
+
+function renderBaseToggle() {
+  const group = document.getElementById('base-toggle');
+  let html = '';
+  for (const key of Object.keys(BASE_CONFIG)) {
+    const active = state.base === key ? ' active' : '';
+    html += `<button class="toggle-btn${active}" onclick="setBase('${key}')">${BASE_CONFIG[key].label}</button>`;
+  }
+  group.innerHTML = html;
+}
+
+function renderTierButtons() {
+  const config = getConfig();
+  const group = document.getElementById('tier-group');
+  let html = '';
+  config.tierOrder.forEach(key => {
+    const active = state.priceTier === key ? ' active' : '';
+    html += `<button class="toggle-btn${active}" onclick="setTier('${key}')">${config.priceTiers[key].label}</button>`;
+  });
+  const ca = state.priceTier === 'custom' ? ' active' : '';
+  html += `<button class="toggle-btn${ca}" onclick="setTier('custom')">Custom</button>`;
+  group.innerHTML = html;
+}
+
+function renderAdditiveTierButtons() {
+  const group = document.getElementById('additive-tier-group');
+  let html = '';
+  ADDITIVE_TIER_ORDER.forEach(key => {
+    const active = state.additiveTier === key ? ' active' : '';
+    html += `<button class="toggle-btn${active}" onclick="setAdditiveTier('${key}')">${ADDITIVE_TIERS[key].label}</button>`;
+  });
+  const ca = state.additiveTier === 'custom' ? ' active' : '';
+  html += `<button class="toggle-btn${ca}" onclick="setAdditiveTier('custom')">Custom</button>`;
+  group.innerHTML = html;
+}
+
+function renderProductRows(tbodyId, isBase) {
+  const tbody = document.getElementById(tbodyId);
+  let html = '';
+  state.products.forEach((p, i) => {
+    if (p.isBase !== isBase) return;
+    const color = getProductColor(p.name);
+    const rowClass = (!p.isBase && !p.included) ? ' class="dimmed"' : '';
+    const checkbox = !p.isBase ? `<input type="checkbox" class="additive-check" ${p.included ? 'checked' : ''} onchange="toggleAdditiveIncluded(${i})">` : '';
+    html += `<tr${rowClass}>
+      <td>${checkbox}<span class="product-dot" style="background:${color}"></span>${p.name}</td>
+      <td><input type="number" step="0.01" min="0" value="${p.price}" oninput="updateProduct(${i},'price',this.value)"></td>
+      <td><input type="number" class="size-input" step="1" min="0" value="${p.unitSize}" oninput="updateProduct(${i},'unitSize',this.value)"> <span class="unit-type">${p.unitType}</span></td>
+      <td class="order-cell" id="order-${i}">\u2014</td>
+    </tr>`;
+  });
+  tbody.innerHTML = html;
+}
+
+function renderRefTable() {
+  const config = getConfig();
+  const table = document.getElementById('ref-table');
+  let html = '<thead><tr><th>Product</th><th>Unit</th>';
+  config.tierOrder.forEach(key => {
+    html += `<th>${config.priceTiers[key].label}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  config.refProducts.forEach(rp => {
+    html += `<tr><td>${rp.name}</td><td>${rp.unit}</td>`;
+    config.tierOrder.forEach(key => {
+      const active = state.priceTier === key ? ' tier-active' : '';
+      html += `<td class="${active}">$${config.priceTiers[key][rp.name].toFixed(2)}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function render() {
+  const r = calcAll();
+
+  // Phase table outputs
+  const flowerCost = r.products.reduce((s, p) => s + p.flowerCost, 0);
+  const vegCost = r.products.reduce((s, p) => s + p.vegCost, 0);
+
+  document.getElementById('out-veg-cost').textContent = fmtDollar(vegCost);
+  document.getElementById('out-flower-cost').textContent = fmtDollar(flowerCost);
+  document.getElementById('out-total-cost').textContent = fmtDollar(r.totalCost);
+
+  if (state.metric) {
+    const vegL = r.vegVol * L_PER_GAL;
+    const flowerL = r.flowerVol * L_PER_GAL;
+    document.getElementById('label-vol').textContent = 'Liters';
+    document.getElementById('label-unit').textContent = 'Cost / L';
+    document.getElementById('out-veg-vol').textContent = fmtInt(vegL);
+    document.getElementById('out-flower-vol').textContent = fmtInt(flowerL);
+    document.getElementById('out-total-vol').textContent = fmtInt(r.totalVolL);
+    document.getElementById('out-veg-unit').textContent = fmtDollar3(vegL > 0 ? vegCost / vegL : 0);
+    document.getElementById('out-flower-unit').textContent = fmtDollar3(flowerL > 0 ? flowerCost / flowerL : 0);
+    document.getElementById('out-total-unit').textContent = fmtDollar3(r.costPerL);
+  } else {
+    document.getElementById('label-vol').textContent = 'Gallons';
+    document.getElementById('label-unit').textContent = 'Cost / gal';
+    document.getElementById('out-veg-vol').textContent = fmtInt(r.vegVol);
+    document.getElementById('out-flower-vol').textContent = fmtInt(r.flowerVol);
+    document.getElementById('out-total-vol').textContent = fmtInt(r.totalVol);
+    document.getElementById('out-veg-unit').textContent = fmtDollar3(r.vegVol > 0 ? vegCost / r.vegVol : 0);
+    document.getElementById('out-flower-unit').textContent = fmtDollar3(r.flowerVol > 0 ? flowerCost / r.flowerVol : 0);
+    document.getElementById('out-total-unit').textContent = fmtDollar3(r.costPerGal);
+  }
+
+  // Order column
+  r.products.forEach((p, i) => {
+    const el = document.getElementById(`order-${i}`);
+    if (!el) return;
+    const unitLabel = p.unitType === 'gal' ? 'gal' : 'bags';
+    el.textContent = p.bags >= 0.05 ? fmt(p.bags) + ' ' + unitLabel : '\u2014';
+  });
+
+  // Annual
+  const cy = state.cyclesPerYear;
+  document.getElementById('annual-cost').textContent = fmtDollar(r.totalCost * cy);
+  if (state.metric) {
+    document.getElementById('annual-vol').textContent = fmtInt(r.totalVolL * cy) + ' L';
+  } else {
+    document.getElementById('annual-vol').textContent = fmtInt(r.totalVol * cy) + ' gal';
+  }
+
+  // Cost bar
+  const costProducts = r.products.filter(p => p.totalCost > 0);
+  renderCostBar(costProducts, r.totalCost);
+
+  updateURL();
+
+  // Print config
+  document.getElementById('print-config-line').textContent =
+    `Veg ${state.veg.feedEC} EC \u00d7 ${state.veg.weeks}wk \u00d7 ${fmtInt(state.veg.galPerWeek)} gal/wk  |  Flower ${state.flower.feedEC} EC \u00d7 ${state.flower.weeks}wk \u00d7 ${fmtInt(state.flower.galPerWeek)} gal/wk  |  ${cy} cycles/yr`;
+}
+
+function renderCostBar(costProducts, totalCost) {
+  const bar = document.getElementById('cost-bar');
+  const legend = document.getElementById('cost-bar-legend');
+  const container = document.getElementById('cost-bar-container');
+
+  if (totalCost <= 0) { container.style.display = 'none'; return; }
+  container.style.display = '';
+
+  let barHtml = '';
+  let legendHtml = '';
+  costProducts.forEach(p => {
+    const pct = p.totalCost / totalCost * 100;
+    const color = getProductColor(p.name);
+    barHtml += `<div class="cost-bar-segment" style="width:${pct}%;background:${color};" title="${p.name}: ${fmtDollar(p.totalCost)} (${pct.toFixed(1)}%)"></div>`;
+    legendHtml += `<div class="legend-item"><span class="legend-dot" style="background:${color}"></span>${p.name} <span class="legend-pct">${pct.toFixed(1)}%</span></div>`;
+  });
+  bar.innerHTML = barHtml;
+  legend.innerHTML = legendHtml;
+}
+
+// ═══════════════════════════════════════════════
+// INPUT HANDLING
+// ═══════════════════════════════════════════════
+
+function parseNum(el) { return parseFloat(el.value.replace(/,/g, '')) || 0; }
+function clearCommas(el) { el.value = el.value.replace(/,/g, ''); }
+function addCommas(el) { el.value = (parseFloat(el.value.replace(/,/g, '')) || 0).toLocaleString('en-US'); }
+
+function onInput() {
+  state.veg.feedEC = parseFloat(document.getElementById('veg-ec').value) || 0;
+  state.veg.weeks = parseInt(document.getElementById('veg-weeks').value) || 0;
+  state.veg.galPerWeek = parseNum(document.getElementById('veg-gpw'));
+  state.flower.feedEC = parseFloat(document.getElementById('flower-ec').value) || 0;
+  state.flower.weeks = parseInt(document.getElementById('flower-weeks').value) || 0;
+  state.flower.galPerWeek = parseNum(document.getElementById('flower-gpw'));
+  state.cyclesPerYear = parseInt(document.getElementById('cycles-year').value) || 1;
+  render();
+}
+
+function updateProduct(index, field, value) {
+  state.products[index][field] = parseFloat(value) || 0;
+  if (field === 'price') {
+    const product = state.products[index];
+    if (product.isBase && state.priceTier !== 'custom') {
+      state.priceTier = 'custom';
+      renderTierButtons();
+      renderRefTable();
+    } else if (!product.isBase && state.additiveTier !== 'custom') {
+      if (ADDITIVE_TIERS.commercial && ADDITIVE_TIERS.commercial[product.name] !== undefined) {
+        state.additiveTier = 'custom';
+        renderAdditiveTierButtons();
+      }
+    }
+  }
+  render();
+}
+
+function toggleAdditiveIncluded(index) {
+  state.products[index].included = !state.products[index].included;
+  renderProductRows('additive-body', false);
+  render();
+}
+
+function setTier(tier) {
+  state.priceTier = tier;
+  if (tier !== 'custom') {
+    const prices = getConfig().priceTiers[tier];
+    state.products.forEach(p => {
+      if (p.isBase && prices[p.name] !== undefined) p.price = prices[p.name];
+    });
+  }
+  renderTierButtons();
+  renderProductRows('base-body', true);
+  renderRefTable();
+  render();
+}
+
+function setAdditiveTier(tier) {
+  state.additiveTier = tier;
+  if (tier !== 'custom') {
+    const prices = ADDITIVE_TIERS[tier];
+    state.products.forEach(p => {
+      if (!p.isBase && prices && prices[p.name] !== undefined) p.price = prices[p.name];
+    });
+  }
+  renderAdditiveTierButtons();
+  renderProductRows('additive-body', false);
+  render();
+}
+
+function setBase(base) {
+  if (state.base === base) return;
+  const savedAdditives = state.products.filter(p => !p.isBase).map(p => ({...p}));
+
+  state.base = base;
+  const config = getConfig();
+  state.priceTier = config.defaultTier;
+
+  const tierPrices = config.priceTiers[state.priceTier];
+  const baseProducts = config.recipeProducts.map(name => ({
+    name,
+    price: tierPrices[name],
+    unitSize: config.productDefaults[name].unitSize,
+    unitType: config.productDefaults[name].unitType,
+    isBase: true
+  }));
+  state.products = [...baseProducts, ...savedAdditives];
+
+  updateTitle();
+  renderBaseToggle();
+  renderTierButtons();
+  renderProductRows('base-body', true);
+  renderAdditiveTierButtons();
+  renderProductRows('additive-body', false);
+  renderRefTable();
+  render();
+}
+
+function updateTitle() {
+  const name = getConfig().shortLabel;
+  document.getElementById('title-base').textContent = name;
+  document.title = 'Front Row Ag \u00b7 ' + name + ' Usage Estimator';
+  document.getElementById('print-title').textContent = 'Front Row Ag \u00b7 ' + name + ' Usage Estimator';
+  document.getElementById('footer-base').textContent = name;
+  document.getElementById('print-footer').textContent = 'frontrowag.com \u00b7 Generated by Front Row Ag ' + name + ' Usage Estimator';
+}
+
+function setMetric(metric) {
+  state.metric = metric;
+  document.getElementById('btn-gal').className = 'unit-toggle' + (metric ? '' : ' active');
+  document.getElementById('btn-L').className = 'unit-toggle' + (metric ? ' active' : '');
+  render();
+}
+
+function toggleRef() {
+  document.getElementById('ref-body').classList.toggle('open');
+  document.getElementById('ref-chevron').classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════════
+// URL STATE
+// ═══════════════════════════════════════════════
+
+function updateURL() {
+  const p = new URLSearchParams();
+  p.set('b', state.base);
+  p.set('ve', state.veg.feedEC);
+  p.set('vw', state.veg.weeks);
+  p.set('vg', state.veg.galPerWeek);
+  p.set('fe', state.flower.feedEC);
+  p.set('fw', state.flower.weeks);
+  p.set('fg', state.flower.galPerWeek);
+  p.set('cy', state.cyclesPerYear);
+  p.set('t', state.priceTier);
+  p.set('at', state.additiveTier);
+  if (state.metric) p.set('m', '1');
+  const inclStr = state.products.filter(p2 => !p2.isBase).map(p2 => p2.included ? '1' : '0').join('');
+  if (inclStr.includes('0')) p.set('ai', inclStr);
+  state.products.forEach((prod, i) => {
+    p.set(`p${i}p`, prod.price);
+    p.set(`p${i}s`, prod.unitSize);
+  });
+  history.replaceState(null, '', '?' + p.toString());
+}
+
+function loadFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  if (!p.has('ve')) return;
+
+  const f = (key, fb) => { const v = parseFloat(p.get(key)); return isNaN(v) ? fb : v; };
+
+  const base = p.get('b');
+  if (base && BASE_CONFIG[base]) state.base = base;
+
+  const config = getConfig();
+
+  state.veg.feedEC = f('ve', 3.0);
+  state.veg.weeks = f('vw', 3);
+  state.veg.galPerWeek = f('vg', 1000);
+  state.flower.feedEC = f('fe', 3.5);
+  state.flower.weeks = f('fw', 1);
+  state.flower.galPerWeek = f('fg', 10000);
+  state.cyclesPerYear = f('cy', 5);
+
+  const tier = p.get('t');
+  state.priceTier = (tier && (config.tierOrder.includes(tier) || tier === 'custom')) ? tier : config.defaultTier;
+
+  const at = p.get('at');
+  if (at && (ADDITIVE_TIER_ORDER.includes(at) || at === 'custom')) state.additiveTier = at;
+
+  if (p.get('m') === '1') state.metric = true;
+
+  state.products = buildProductList();
+  const ai = p.get('ai');
+  if (ai) {
+    let addIdx = 0;
+    state.products.forEach(prod => {
+      if (!prod.isBase) {
+        prod.included = ai[addIdx] !== '0';
+        addIdx++;
+      }
+    });
+  }
+  state.products.forEach((prod, i) => {
+    prod.price = f(`p${i}p`, prod.price);
+    prod.unitSize = f(`p${i}s`, prod.unitSize);
+  });
+
+  document.getElementById('veg-ec').value = state.veg.feedEC;
+  document.getElementById('veg-weeks').value = state.veg.weeks;
+  document.getElementById('veg-gpw').value = state.veg.galPerWeek.toLocaleString('en-US');
+  document.getElementById('flower-ec').value = state.flower.feedEC;
+  document.getElementById('flower-weeks').value = state.flower.weeks;
+  document.getElementById('flower-gpw').value = state.flower.galPerWeek.toLocaleString('en-US');
+  document.getElementById('cycles-year').value = state.cyclesPerYear;
+
+  // Sync metric toggle
+  if (state.metric) {
+    document.getElementById('btn-gal').className = 'unit-toggle';
+    document.getElementById('btn-L').className = 'unit-toggle active';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SHARE LINK
+// ═══════════════════════════════════════════════
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function shareLink() {
+  copyToClipboard(window.location.href).then(() => {
+    const btn = document.getElementById('btn-share');
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Share Link';
+    }, 2000);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+loadFromURL();
+updateTitle();
+renderBaseToggle();
+renderTierButtons();
+renderProductRows('base-body', true);
+renderAdditiveTierButtons();
+renderProductRows('additive-body', false);
+renderRefTable();
+render();
+</script>
+
+</body>
+</html>
