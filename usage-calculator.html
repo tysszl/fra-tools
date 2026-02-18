@@ -577,6 +577,10 @@
     <div class="panel" id="product-panel">
       <div class="section-label">Base Products</div>
       <div class="toggle-group" id="tier-group"></div>
+      <div id="volume-discount-section" style="margin-top:8px;">
+        <div class="section-label" style="margin-bottom:4px; font-size:0.68rem;">Volume Discount</div>
+        <div class="toggle-group" id="volume-discount-group"></div>
+      </div>
       <table class="product-table">
         <thead><tr><th>Product</th><th>Price ($)</th><th>Size</th><th>Order</th></tr></thead>
         <tbody id="base-body"></tbody>
@@ -690,6 +694,12 @@ const BASE_CONFIG = {
     tierOrder: ['msrp', 'commercial', 'wholesale'],
     defaultTier: 'commercial',
     flowerRecipe: 'Stack',
+    volumeDiscounts: {
+      none:      { label: 'None',      discounts: { msrp: 0, commercial: 0,    wholesale: 0    } },
+      pallet:    { label: 'Pallet',    discounts: { msrp: 0, commercial: 0.10, wholesale: 0.05 } },
+      truckload: { label: 'Truckload', discounts: { msrp: 0, commercial: 0.20, wholesale: 0.10 } }
+    },
+    volumeDiscountOrder: ['none', 'pallet', 'truckload'],
     refProducts: [
       { name: 'Part A', unit: '25 lb' },
       { name: 'Part B', unit: '25 lb' },
@@ -738,6 +748,7 @@ let state = {
   cyclesPerYear: 5,
   priceTier: 'commercial',
   additiveTier: 'commercial',
+  volumeDiscount: 'none',
   metric: false,
   products: []
 };
@@ -1057,7 +1068,9 @@ function updateProduct(index, field, value) {
     const product = state.products[index];
     if (product.isBase && state.priceTier !== 'custom') {
       state.priceTier = 'custom';
+      state.volumeDiscount = 'none';
       renderTierButtons();
+      renderVolumeDiscountButtons();
       renderRefTable();
     } else if (!product.isBase && state.additiveTier !== 'custom') {
       if (ADDITIVE_TIERS.commercial && ADDITIVE_TIERS.commercial[product.name] !== undefined) {
@@ -1075,15 +1088,59 @@ function toggleAdditiveIncluded(index) {
   render();
 }
 
+function getVolumeDiscountRate() {
+  const config = getConfig();
+  if (!config.volumeDiscounts) return 0;
+  const vd = config.volumeDiscounts[state.volumeDiscount];
+  if (!vd) return 0;
+  return vd.discounts[state.priceTier] || 0;
+}
+
+function applyBasePricing() {
+  if (state.priceTier === 'custom') return;
+  const config = getConfig();
+  const prices = config.priceTiers[state.priceTier];
+  const discount = getVolumeDiscountRate();
+  state.products.forEach(p => {
+    if (p.isBase && prices[p.name] !== undefined) {
+      p.price = Math.round(prices[p.name] * (1 - discount) * 100) / 100;
+    }
+  });
+}
+
+function renderVolumeDiscountButtons() {
+  const config = getConfig();
+  const section = document.getElementById('volume-discount-section');
+  if (!config.volumeDiscounts) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  const group = document.getElementById('volume-discount-group');
+  let html = '';
+  config.volumeDiscountOrder.forEach(key => {
+    const active = state.volumeDiscount === key ? ' active' : '';
+    const vd = config.volumeDiscounts[key];
+    const rate = vd.discounts[state.priceTier] || 0;
+    const pctLabel = rate > 0 ? ` (${Math.round(rate * 100)}% off)` : '';
+    html += `<button class="toggle-btn${active}" onclick="setVolumeDiscount('${key}')">${vd.label}${pctLabel}</button>`;
+  });
+  group.innerHTML = html;
+}
+
+function setVolumeDiscount(level) {
+  state.volumeDiscount = level;
+  applyBasePricing();
+  renderVolumeDiscountButtons();
+  renderProductRows('base-body', true);
+  render();
+}
+
 function setTier(tier) {
   state.priceTier = tier;
-  if (tier !== 'custom') {
-    const prices = getConfig().priceTiers[tier];
-    state.products.forEach(p => {
-      if (p.isBase && prices[p.name] !== undefined) p.price = prices[p.name];
-    });
-  }
+  if (tier !== 'custom') applyBasePricing();
   renderTierButtons();
+  renderVolumeDiscountButtons();
   renderProductRows('base-body', true);
   renderRefTable();
   render();
@@ -1109,6 +1166,7 @@ function setBase(base) {
   state.base = base;
   const config = getConfig();
   state.priceTier = config.defaultTier;
+  state.volumeDiscount = 'none';
 
   const tierPrices = config.priceTiers[state.priceTier];
   const baseProducts = config.recipeProducts.map(name => ({
@@ -1123,6 +1181,7 @@ function setBase(base) {
   updateTitle();
   renderBaseToggle();
   renderTierButtons();
+  renderVolumeDiscountButtons();
   renderProductRows('base-body', true);
   renderAdditiveTierButtons();
   renderProductRows('additive-body', false);
@@ -1168,6 +1227,7 @@ function updateURL() {
   p.set('t', state.priceTier);
   p.set('at', state.additiveTier);
   if (state.metric) p.set('m', '1');
+  if (state.volumeDiscount !== 'none') p.set('vd', state.volumeDiscount);
   const inclStr = state.products.filter(p2 => !p2.isBase).map(p2 => p2.included ? '1' : '0').join('');
   if (inclStr.includes('0')) p.set('ai', inclStr);
   state.products.forEach((prod, i) => {
@@ -1203,6 +1263,8 @@ function loadFromURL() {
   if (at && (ADDITIVE_TIER_ORDER.includes(at) || at === 'custom')) state.additiveTier = at;
 
   if (p.get('m') === '1') state.metric = true;
+  const vd = p.get('vd');
+  if (vd && getConfig().volumeDiscounts && getConfig().volumeDiscounts[vd]) state.volumeDiscount = vd;
 
   state.products = buildProductList();
   const ai = p.get('ai');
@@ -1272,6 +1334,7 @@ loadFromURL();
 updateTitle();
 renderBaseToggle();
 renderTierButtons();
+renderVolumeDiscountButtons();
 renderProductRows('base-body', true);
 renderAdditiveTierButtons();
 renderProductRows('additive-body', false);
