@@ -24,6 +24,8 @@
     --b-bloom: #8866cc;
     --si: #b8a030;
     --phup: #8855bb;
+    --bioflo: #4caf7c;
+    --triologic: #d4c040;
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -151,32 +153,13 @@
   .val-b { color: var(--part-b); }
   .val-bloom { color: var(--bloom); }
   .val-phz { color: var(--phoszyme); }
-  .val-si { color: var(--si); }
-  .val-phup { color: var(--phup); }
   .val-total { color: var(--text); }
 
-  .supplement-sep td {
-    padding: 4px 10px !important;
-    font-size: 0.65rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    border-bottom: 1px solid var(--card-border);
-    border-top: 1px solid var(--card-border);
-  }
   .unit-hint {
     font-size: 0.65rem;
     font-weight: 400;
     color: var(--text-muted);
   }
-  .supplement-note {
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    margin-top: 10px;
-    font-style: italic;
-    line-height: 1.5;
-  }
-
   .ec-sub {
     font-size: 0.68rem;
     color: var(--text-muted);
@@ -213,8 +196,6 @@
   .dot-b { background: var(--part-b); }
   .dot-bloom { background: var(--bloom); }
   .dot-phz { background: var(--phoszyme); }
-  .dot-si { background: var(--si); }
-  .dot-phup { background: var(--phup); }
   .val-bbloom { color: var(--b-bloom); }
   .dot-bbloom { background: var(--b-bloom); }
 
@@ -411,6 +392,24 @@
     line-height: 1.5;
   }
 
+  /* ── Supplemental Products Reference ────── */
+  .supp-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .supp-body.open { max-height: 400px; }
+  .supp-list { padding: 14px 0 4px; }
+  .supp-item { margin-bottom: 12px; }
+  .supp-item:last-child { margin-bottom: 0; }
+  .supp-name { font-weight: 600; font-size: 0.88rem; }
+  .supp-detail {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-top: 2px;
+  }
+
   /* ── Bottom Buttons ───────────────────── */
   .btn-row {
     display: flex;
@@ -603,15 +602,11 @@
     .val-b { color: #2266bb !important; }
     .val-bloom { color: #bb2020 !important; }
     .val-phz { color: #b03050 !important; }
-    .val-si { color: #8a7520 !important; }
-    .val-phup { color: #6644aa !important; }
     .val-bbloom { color: #6644aa !important; }
     .dot-a { background: #4a8a00 !important; }
     .dot-b { background: #2266bb !important; }
     .dot-bloom { background: #bb2020 !important; }
     .dot-phz { background: #b03050 !important; }
-    .dot-si { background: #8a7520 !important; }
-    .dot-phup { background: #6644aa !important; }
     .dot-bbloom { background: #6644aa !important; }
 
     /* Stock table compact */
@@ -652,12 +647,14 @@
     #instructions-list { font-size: 11px; padding-left: 18px; }
     #instructions-list li { margin-bottom: 2px; }
 
+    /* Supplemental products: always open in print */
+    .supp-body { display: block !important; max-height: none !important; }
+    #supp-card h2 { font-size: 14px; }
+    .supp-name { font-size: 12px; }
+    .supp-detail { font-size: 11px; color: #555; }
+
     /* PhosZyme footnote */
     #phz-footnote { font-size: 10px; color: #888; }
-
-    /* Supplement notes */
-    .supplement-note { font-size: 10px; color: #888; }
-    .supplement-sep td { font-size: 9px; color: #888; }
 
     /* Print footer */
     .print-footer {
@@ -764,12 +761,16 @@
       <button class="toggle-btn active" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
       <button class="toggle-btn" id="si-btn" onclick="toggleSi()">+ Si</button>
       <button class="toggle-btn" id="phup-btn" onclick="togglePhUp()">+ pH Up</button>
+      <button class="toggle-btn active" id="bioflo-btn" onclick="toggleBioFlo()">+ BioFlo</button>
+      <button class="toggle-btn active" id="triologic-btn" onclick="toggleTriologic()">+ Triologic</button>
     </div>
     <div class="info-drawer" id="supplements-drawer">
       <div class="info-drawer-content">
         <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode). It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
-        <p><strong>Si</strong> is a silica supplement primarily used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower. It can also be added directly to a reservoir in proportion with feed EC, but the solution must be used within 48 hours. Do not add to stock tanks.</p>
+        <p><strong>Si</strong> is a silica supplement primarily used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower. It can also be added directly to a reservoir in proportion with feed EC, but the solution must be used within 48 hours.</p>
         <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
+        <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
+        <p><strong>Triologic</strong> is a PGPR (Plant Growth Promoting Rhizobacteria) inoculant containing Mycorrhization Helper Bacteria. It amplifies mycorrhizal colonization when applied as a weekly hand-water drench alongside a separate mycorrhizal inoculant.</p>
       </div>
     </div>
 
@@ -809,8 +810,6 @@
       <tbody id="feed-body"></tbody>
     </table>
     </div>
-    <div id="supplement-notes"></div>
-
     <div class="btn-row">
       <button class="btn" id="btn-copy" onclick="copySummary()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -826,6 +825,17 @@
       </button>
     </div>
     <p class="screen-only" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px; text-align:center;">Tip: Choose "Save as PDF" in the print dialog to download a clean one-page PDF.</p>
+  </div>
+
+  <!-- Supplemental Products Reference (collapsible) -->
+  <div class="card" id="supp-card">
+    <div class="instructions-toggle" onclick="toggleSupplements()">
+      <h2>Supplemental Products</h2>
+      <span class="chevron" id="supp-chevron">▾</span>
+    </div>
+    <div class="supp-body" id="supp-body">
+      <div class="supp-list" id="supp-list"></div>
+    </div>
   </div>
 
   <!-- Stock Tank Card -->
@@ -940,7 +950,6 @@ const SI_RATE_TABLE = [
   { below: 3.1, rate: 0.25 },
   { below: 3.5, rate: 0.125 }
 ];
-const SI_PHASE_LIMIT = 2; // Show SI through PHASES[2] (Stack / Wk 3-4)
 
 // pH Up (Potassium Carbonate): as-needed, small increments
 const PHUP_INCREMENT_G_GAL = 0.05;
@@ -983,6 +992,8 @@ let state = {
   usePhoszyme: true,
   showSi: false,
   showPhUp: false,
+  showBioFlo: true,
+  showTriologic: true,
   unit: "mL/gal",
   ecPreset: "high",
   targetEC: { ...EC_PRESETS.high },
@@ -1272,51 +1283,10 @@ function render() {
     html += "</tr>";
   }
 
-  // ── Supplement rows (SI and pH Up) ──
-  if (state.showSi || state.showPhUp) {
-    html += `<tr class="supplement-sep"><td colspan="${PHASES.length + 1}">Supplements</td></tr>`;
-  }
-
-  if (state.showSi) {
-    const met = isMetric(unit);
-    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
-    html += `<tr><td><span class="component-dot dot-si"></span>Si <span style="font-size:0.72rem;font-weight:600;color:var(--si);background:rgba(184,160,48,0.12);border-radius:4px;padding:1px 6px;margin-left:4px;vertical-align:middle;">FOLIAR</span></td>`;
-    PHASES.forEach((phase, i) => {
-      if (i > SI_PHASE_LIMIT) {
-        html += `<td><span class="dash">–</span></td>`;
-      } else {
-        html += `<td><div class="val val-si" style="font-size:0.85em;">${foliarRate}</div><div class="ec-sub">1× weekly</div></td>`;
-      }
-    });
-    html += "</tr>";
-  }
-
-  if (state.showPhUp) {
-    const met = isMetric(unit);
-    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
-    const phupUnit = met ? "g/L" : "g/gal";
-    html += `<tr><td><span class="component-dot dot-phup"></span>pH Up</td>`;
-    PHASES.forEach(() => {
-      html += `<td><div class="val val-phup" style="font-size:0.8em;">as needed</div><div class="ec-sub">${maxRate} ${phupUnit} max total</div></td>`;
-    });
-    html += "</tr>";
-  }
-
   document.getElementById("feed-body").innerHTML = html;
 
-  // ── Supplement notes ──
-  let notesHtml = "";
-  if (state.showSi) {
-    const met = isMetric(unit);
-    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
-    notesHtml += `<p class="supplement-note">Si: Recommended as a foliar spray at ${foliarRate}, 1× weekly, from veg through week 3 of flower.${state.application === "direct" ? " Can also be added directly to the reservoir in proportion with feed EC — solution must be used within 48 hours." : ""}</p>`;
-  }
-  if (state.showPhUp) {
-    const met = isMetric(unit);
-    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) + " g/L" : "0.2 g/gal";
-    notesHtml += `<p class="supplement-note">pH Up: Target pH 5.5–6.0. Always add last, after all nutrients. Maximum ${maxRate} total in the mix. Allow 5–15 min reaction time before re-measuring.</p>`;
-  }
-  document.getElementById("supplement-notes").innerHTML = notesHtml;
+  // ── Supplemental products reference card ──
+  renderSupplements();
 
   // Stock tank table (only when stock concentrate)
   if (isStock) {
@@ -1413,6 +1383,8 @@ function render() {
   if (usePhz) printParts.push("PhosZyme Included");
   if (state.showSi) printParts.push("Si");
   if (state.showPhUp) printParts.push("pH Up");
+  if (state.showBioFlo) printParts.push("BioFlo");
+  if (state.showTriologic) printParts.push("Triologic");
   printParts.push(unit);
   document.getElementById("print-config-line").textContent = printParts.join(" · ");
 
@@ -1490,6 +1462,57 @@ function toggleInstructions() {
   document.getElementById("chevron").classList.toggle("open");
 }
 
+function toggleSupplements() {
+  document.getElementById("supp-body").classList.toggle("open");
+  document.getElementById("supp-chevron").classList.toggle("open");
+}
+
+function renderSupplements() {
+  const met = isMetric(state.unit);
+  let html = "";
+
+  // Si — shown when toggled on
+  if (state.showSi) {
+    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--si)">Si</div>
+      <div class="supp-detail">Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.</div>
+    </div>`;
+  }
+
+  // pH Up — shown when toggled on
+  if (state.showPhUp) {
+    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
+    const phupUnit = met ? "g/L" : "g/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--phup)">pH Up</div>
+      <div class="supp-detail">Target pH 5.5–6.0. As needed, ${maxRate} ${phupUnit} max total. Always add last.</div>
+    </div>`;
+  }
+
+  // BioFlo — shown when toggled on
+  if (state.showBioFlo) {
+    const heavyRate = met ? "8 mL/L" : "30 mL/gal";
+    const maintRate = met ? "4 mL/L" : "15 mL/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--bioflo)">BioFlo</div>
+      <div class="supp-detail">Line cleaner for biofilm removal. Heavy clean: ${heavyRate}, soak 8–24 hrs. Maintenance: ${maintRate} every 1–2 weeks.</div>
+    </div>`;
+  }
+
+  // Triologic — shown when toggled on
+  if (state.showTriologic) {
+    const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
+    const txRate = met ? "0.5 mL/L" : "2 mL/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--triologic)">Triologic</div>
+      <div class="supp-detail">PGPR inoculant — amplifies mycorrhizal colonization. ${stdRate} weekly hand drench. Transplant: ${txRate}.</div>
+    </div>`;
+  }
+
+  document.getElementById("supp-list").innerHTML = html;
+}
+
 function toggleDrawer(drawerId, btn) {
   const drawer = document.getElementById(drawerId);
   drawer.classList.toggle("open");
@@ -1536,6 +1559,18 @@ function togglePhUp() {
   render();
 }
 
+function toggleBioFlo() {
+  state.showBioFlo = !state.showBioFlo;
+  document.getElementById("bioflo-btn").classList.toggle("active", state.showBioFlo);
+  render();
+}
+
+function toggleTriologic() {
+  state.showTriologic = !state.showTriologic;
+  document.getElementById("triologic-btn").classList.toggle("active", state.showTriologic);
+  render();
+}
+
 function renderECInputs() {
   PHASES.forEach(p => {
     const el = document.getElementById(`ec-${p.toLowerCase()}`);
@@ -1561,6 +1596,8 @@ function updateURL() {
   if (!state.usePhoszyme) p.set("phz", "no");
   if (state.showSi) p.set("si", "yes");
   if (state.showPhUp) p.set("phup", "yes");
+  if (!state.showBioFlo) p.set("bf", "no");
+  if (!state.showTriologic) p.set("tri", "no");
   p.set("u", state.unit);
   p.set("p", state.ecPreset);
   if (state.ecPreset === "custom") {
@@ -1585,6 +1622,8 @@ function loadFromURL() {
   }
   if (p.get("si") === "yes") state.showSi = true;
   if (p.get("phup") === "yes") state.showPhUp = true;
+  if (p.get("bf") === "no") state.showBioFlo = false;
+  if (p.get("tri") === "no") state.showTriologic = false;
   if (p.has("u") && VALID_UNITS.includes(p.get("u"))) state.unit = p.get("u");
   if (p.has("p") && VALID_PRESETS.includes(p.get("p"))) {
     state.ecPreset = p.get("p");
@@ -1621,6 +1660,8 @@ function syncToggleButtons() {
   document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
   document.getElementById("si-btn").classList.toggle("active", state.showSi);
   document.getElementById("phup-btn").classList.toggle("active", state.showPhUp);
+  document.getElementById("bioflo-btn").classList.toggle("active", state.showBioFlo);
+  document.getElementById("triologic-btn").classList.toggle("active", state.showTriologic);
   document.querySelectorAll("#ec-preset-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.ecPreset);
   });
@@ -1665,6 +1706,8 @@ function copySummary() {
   if (usePhz) configParts.push("PhosZyme included");
   if (state.showSi) configParts.push("Si");
   if (state.showPhUp) configParts.push("pH Up");
+  if (state.showBioFlo) configParts.push("BioFlo");
+  if (state.showTriologic) configParts.push("Triologic");
   configParts.push(unit);
 
   let html = `<h2 style="margin:0 0 4px;">Front Row Ag Feed Chart</h2>`;
@@ -1732,34 +1775,32 @@ function copySummary() {
     html += `</tr>`;
   }
 
-  // SI row (copy summary)
-  if (state.showSi) {
-    const met = isMetric(unit);
-    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
-    html += `<tr><td ${tl}>Si (foliar)</td>`;
-    PHASES.forEach((phase, i) => {
-      if (i > SI_PHASE_LIMIT) {
-        html += `<td ${ts}>–</td>`;
-      } else {
-        html += `<td ${ts}>${foliarRate}, 1×/wk</td>`;
-      }
-    });
-    html += `</tr>`;
-  }
-
-  // pH Up row (copy summary)
-  if (state.showPhUp) {
-    const met = isMetric(unit);
-    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
-    const phupUnit = met ? "g/L" : "g/gal";
-    html += `<tr><td ${tl}>pH Up</td>`;
-    PHASES.forEach(() => {
-      html += `<td ${ts}>as needed (${maxRate} ${phupUnit} max total)</td>`;
-    });
-    html += `</tr>`;
-  }
-
   html += `</table>`;
+
+  // Supplements section (copy summary)
+  const anySupp = state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic;
+  if (anySupp) {
+    const met = isMetric(unit);
+    html += `<p style="margin:12px 0 4px;font-size:13px;font-weight:600;">Supplements</p>`;
+    if (state.showSi) {
+      const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">Si — Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.</p>`;
+    }
+    if (state.showPhUp) {
+      const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
+      const phupUnit = met ? "g/L" : "g/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">pH Up — As needed, ${maxRate} ${phupUnit} max total. Always add last.</p>`;
+    }
+    if (state.showBioFlo) {
+      const heavyRate = met ? "8 mL/L" : "30 mL/gal";
+      const maintRate = met ? "4 mL/L" : "15 mL/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">BioFlo — Heavy clean: ${heavyRate}. Maintenance: ${maintRate} every 1–2 weeks.</p>`;
+    }
+    if (state.showTriologic) {
+      const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">Triologic — ${stdRate} weekly hand drench.</p>`;
+    }
+  }
 
   // ── Stock Concentrate Table (stock mode only) ──
   if (isStock) {
@@ -1843,19 +1884,26 @@ function copySummary() {
     }).join("") + "\n";
   }
 
-  if (state.showSi) {
+  if (state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic) {
     const met = isMetric(unit);
-    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
-    plain += "Si (foliar)".padEnd(20) + PHASES.map((phase, i) => {
-      if (i > SI_PHASE_LIMIT) return "–".padEnd(12);
-      return `${foliarRate}`.padEnd(12);
-    }).join("") + "\n";
-  }
-
-  if (state.showPhUp) {
-    const met = isMetric(unit);
-    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) + " g/L" : "0.2 g/gal";
-    plain += "pH Up".padEnd(20) + PHASES.map(() => `as needed`.padEnd(12)).join("") + "\n";
+    plain += "\nSupplements\n";
+    if (state.showSi) {
+      const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+      plain += `Si — Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.\n`;
+    }
+    if (state.showPhUp) {
+      const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) + " g/L" : "0.2 g/gal";
+      plain += `pH Up — As needed, ${maxRate} max total. Always add last.\n`;
+    }
+    if (state.showBioFlo) {
+      const heavyRate = met ? "8 mL/L" : "30 mL/gal";
+      const maintRate = met ? "4 mL/L" : "15 mL/gal";
+      plain += `BioFlo — Heavy clean: ${heavyRate}. Maintenance: ${maintRate} every 1–2 weeks.\n`;
+    }
+    if (state.showTriologic) {
+      const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
+      plain += `Triologic — ${stdRate} weekly hand drench.\n`;
+    }
   }
 
   copyRichText(html, plain).then(() => {
