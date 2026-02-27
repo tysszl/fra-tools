@@ -687,17 +687,16 @@ const BASE_CONFIG = {
       Bloom:    { unitSize: 25, unitType: 'lbs' }
     },
     priceTiers: {
-      msrp:       { label: 'MSRP',       'Part A': 218.75, 'Part B': 218.75, Bloom: 218.75 },
       commercial: { label: 'Commercial',  'Part A': 114.75, 'Part B': 114.75, Bloom: 118.25 },
       wholesale:  { label: 'Wholesale',   'Part A': 96.25,  'Part B': 96.25,  Bloom: 99.75 }
     },
-    tierOrder: ['msrp', 'commercial', 'wholesale'],
+    tierOrder: ['commercial', 'wholesale'],
     defaultTier: 'commercial',
     flowerRecipe: 'Stack',
     volumeDiscounts: {
-      none:      { label: 'None',      discounts: { msrp: 0, commercial: 0,    wholesale: 0    } },
-      pallet:    { label: 'Pallet',    discounts: { msrp: 0, commercial: 0.10, wholesale: 0.05 } },
-      truckload: { label: 'Truckload', discounts: { msrp: 0, commercial: 0.20, wholesale: 0.10 } }
+      none:      { label: 'None',      discounts: { commercial: 0,    wholesale: 0    } },
+      pallet:    { label: 'Pallet',    discounts: { commercial: 0.10, wholesale: 0.05 } },
+      truckload: { label: 'Truckload', discounts: { commercial: 0.20, wholesale: 0.10 } }
     },
     volumeDiscountOrder: ['none', 'pallet', 'truckload'],
     refProducts: [
@@ -723,12 +722,11 @@ const ADDITIVE_DEFAULTS = [
 ];
 
 const ADDITIVE_TIERS = {
-  msrp:       { label: 'MSRP',       PhosZyme: 439,   Si: 310,    Triologic: 539 },
   commercial: { label: 'Commercial',  PhosZyme: 229,   Si: 164.50, Triologic: 405.65 },
   wholesale:  { label: 'Wholesale',   PhosZyme: 183,   Si: 132,    Triologic: 324.50 }
 };
 
-const ADDITIVE_TIER_ORDER = ['msrp', 'commercial', 'wholesale'];
+const ADDITIVE_TIER_ORDER = ['commercial', 'wholesale'];
 
 const FLAT_RATES = {
   PhosZyme:  { rate: 0.40, divBy: LBS_PER_GAL_DIVISOR },
