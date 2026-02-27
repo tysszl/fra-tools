@@ -22,6 +22,8 @@
     --bloom: #d44040;
     --phoszyme: #d45e78;
     --b-bloom: #8866cc;
+    --si: #b8a030;
+    --phup: #8855bb;
   }
 
   * { margin:0; padding:0; box-sizing:border-box; }
@@ -149,7 +151,31 @@
   .val-b { color: var(--part-b); }
   .val-bloom { color: var(--bloom); }
   .val-phz { color: var(--phoszyme); }
+  .val-si { color: var(--si); }
+  .val-phup { color: var(--phup); }
   .val-total { color: var(--text); }
+
+  .supplement-sep td {
+    padding: 4px 10px !important;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--card-border);
+    border-top: 1px solid var(--card-border);
+  }
+  .unit-hint {
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .supplement-note {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 10px;
+    font-style: italic;
+    line-height: 1.5;
+  }
 
   .ec-sub {
     font-size: 0.68rem;
@@ -187,6 +213,8 @@
   .dot-b { background: var(--part-b); }
   .dot-bloom { background: var(--bloom); }
   .dot-phz { background: var(--phoszyme); }
+  .dot-si { background: var(--si); }
+  .dot-phup { background: var(--phup); }
   .val-bbloom { color: var(--b-bloom); }
   .dot-bbloom { background: var(--b-bloom); }
 
@@ -425,6 +453,73 @@
   .footer a { color: var(--accent); text-decoration: none; }
   .footer a:hover { text-decoration: underline; }
 
+  /* ── Info Drawers ────────────────────── */
+  .section-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+  .section-label-row .section-label {
+    margin: 0;
+  }
+  .info-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    font-family: inherit;
+    padding: 0;
+    line-height: 1;
+  }
+  .info-btn:hover,
+  .info-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .info-drawer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, margin 0.3s ease;
+    margin-bottom: 0;
+  }
+  .info-drawer.open {
+    max-height: 500px;
+    margin-bottom: 12px;
+  }
+  .info-drawer-content {
+    background: rgba(62,230,182,0.04);
+    border: 1px solid rgba(62,230,182,0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 8px;
+  }
+  .info-drawer-content p {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .info-drawer-content p + p {
+    margin-top: 10px;
+  }
+  .info-drawer-content strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
   /* ── Responsive ───────────────────────── */
   @media (max-width: 600px) {
     body { padding: 12px 8px 30px; }
@@ -445,7 +540,7 @@
     .container { max-width: 100%; padding: 0; }
 
     /* Hide interactive elements */
-    .header, #config-card, .btn-row, .footer, .screen-only { display: none !important; }
+    .header, #config-card, .btn-row, .footer, .screen-only, .info-drawer { display: none !important; }
     .table-scroll { overflow: visible !important; margin: 0 !important; padding: 0 !important; }
 
     /* Show print header */
@@ -508,11 +603,15 @@
     .val-b { color: #2266bb !important; }
     .val-bloom { color: #bb2020 !important; }
     .val-phz { color: #b03050 !important; }
+    .val-si { color: #8a7520 !important; }
+    .val-phup { color: #6644aa !important; }
     .val-bbloom { color: #6644aa !important; }
     .dot-a { background: #4a8a00 !important; }
     .dot-b { background: #2266bb !important; }
     .dot-bloom { background: #bb2020 !important; }
     .dot-phz { background: #b03050 !important; }
+    .dot-si { background: #8a7520 !important; }
+    .dot-phup { background: #6644aa !important; }
     .dot-bbloom { background: #6644aa !important; }
 
     /* Stock table compact */
@@ -556,6 +655,10 @@
     /* PhosZyme footnote */
     #phz-footnote { font-size: 10px; color: #888; }
 
+    /* Supplement notes */
+    .supplement-note { font-size: 10px; color: #888; }
+    .supplement-sep td { font-size: 9px; color: #888; }
+
     /* Print footer */
     .print-footer {
       display: block !important;
@@ -592,27 +695,51 @@
   <div class="card" id="config-card">
     <h2>Configuration</h2>
 
-    <div class="section-label">Application</div>
+    <div class="section-label-row">
+      <div class="section-label">Application</div>
+      <button class="info-btn" onclick="toggleDrawer('app-drawer', this)" aria-label="What's the difference between stock concentrate and direct to reservoir?">?</button>
+    </div>
     <div class="toggle-group" id="app-group">
       <button class="toggle-btn active" data-val="stock">Stock Concentrate</button>
       <button class="toggle-btn" data-val="direct">Direct to Reservoir</button>
     </div>
+    <div class="info-drawer" id="app-drawer">
+      <div class="info-drawer-content">
+        <p><strong>Stock Concentrate</strong> is the standard commercial setup. Fertilizer is pre-mixed into concentrated stock tanks, then injected into the irrigation line by dosing equipment (injectors). The calculator shows how much product to add to each stock tank and the injection rates for your dosers.</p>
+        <p><strong>Direct to Reservoir</strong> is for facilities that mix nutrients directly into a reservoir or batch tank at working strength — no stock tanks or injectors involved. The calculator shows how much product to add per gallon (or per liter) of final solution.</p>
+      </div>
+    </div>
 
     <div id="method-section">
       <div class="config-spacer"></div>
-      <div class="section-label">Mixing Method</div>
+      <div class="section-label-row">
+        <div class="section-label">Mixing Method</div>
+        <button class="info-btn" onclick="toggleDrawer('method-drawer', this)" aria-label="What do these mixing methods mean?">?</button>
+      </div>
       <div class="toggle-group" id="method-group">
         <button class="toggle-btn active" data-val="3-2-2">3-2-2</button>
         <button class="toggle-btn" data-val="1-1-1">1-1-1</button>
       </div>
-      <div class="config-spacer"></div>
-      <div class="section-label">Dosers</div>
-      <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-        <div class="toggle-group" id="doser-group" style="margin-bottom:0;">
-          <button class="toggle-btn active" data-val="3">3-Doser</button>
-          <button class="toggle-btn" data-val="2">2-Doser</button>
+      <div class="info-drawer" id="method-drawer">
+        <div class="info-drawer-content">
+          <p><strong>3:2:2</strong> is the standard mixing method. Three 25-pound bags of Part A go into a 50-gallon stock tank (75 lbs total at 1.5 lbs/gal). Part B and Bloom each get two 25-pound bags into 50 gallons (50 lbs each at 1 lb/gal). Because Part A is more concentrated, the injection rates come out equal across all three parts — which simplifies day-to-day dosing.</p>
+          <p><strong>1:1:1</strong> means everything is mixed at 1 pound per gallon — 50 pounds of each part into 50-gallon stock tanks. This is a lower concentration than 3:2:2 and is used by facilities that prefer a uniform weight ratio. Injection rates will differ between parts since each contributes a different share of the total EC.</p>
         </div>
-        <button class="toggle-btn active" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
+      </div>
+      <div class="config-spacer"></div>
+      <div class="section-label-row">
+        <div class="section-label">Dosers</div>
+        <button class="info-btn" onclick="toggleDrawer('doser-drawer', this)" aria-label="What's the difference between 3-doser and 2-doser?">?</button>
+      </div>
+      <div class="toggle-group" id="doser-group">
+        <button class="toggle-btn active" data-val="3">3-Doser</button>
+        <button class="toggle-btn" data-val="2">2-Doser</button>
+      </div>
+      <div class="info-drawer" id="doser-drawer">
+        <div class="info-drawer-content">
+          <p><strong>3-Doser:</strong> Three separate stock tanks — Part A, Part B, and Bloom each get their own injector. This is the standard setup and allows full flexibility with per-phase recipe adjustments.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Stack recipe since the B-to-Bloom ratio is fixed in a single tank.</p>
+        </div>
       </div>
     </div>
 
@@ -626,6 +753,24 @@
       <button class="toggle-btn active" data-val="high">High Strength</button>
       <button class="toggle-btn" data-val="standard">Standard</button>
       <button class="toggle-btn" data-val="custom">Custom</button>
+    </div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label-row">
+      <div class="section-label">Supplements</div>
+      <button class="info-btn" onclick="toggleDrawer('supplements-drawer', this)" aria-label="What are these supplements?">?</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="toggle-btn active" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
+      <button class="toggle-btn" id="si-btn" onclick="toggleSi()">+ Si</button>
+      <button class="toggle-btn" id="phup-btn" onclick="togglePhUp()">+ pH Up</button>
+    </div>
+    <div class="info-drawer" id="supplements-drawer">
+      <div class="info-drawer-content">
+        <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode). It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
+        <p><strong>Si</strong> is a silica supplement primarily used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower. It can also be added directly to a reservoir in proportion with feed EC, but the solution must be used within 48 hours. Do not add to stock tanks.</p>
+        <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
+      </div>
     </div>
 
   </div>
@@ -664,6 +809,7 @@
       <tbody id="feed-body"></tbody>
     </table>
     </div>
+    <div id="supplement-notes"></div>
 
     <div class="btn-row">
       <button class="btn" id="btn-copy" onclick="copySummary()">
@@ -786,6 +932,19 @@ const UNIT_FACTORS = {
 
 const PHOSZYME_FIXED_G_GAL = 0.4;
 
+// Front Row SI: rate (mL/gal) varies inversely with feed EC
+// Applied through day 21 of flower (phases: Veg, Stretch, Stack)
+const SI_RATE_TABLE = [
+  { below: 2.3, rate: 0.5 },
+  { below: 2.7, rate: 0.375 },
+  { below: 3.1, rate: 0.25 },
+  { below: 3.5, rate: 0.125 }
+];
+const SI_PHASE_LIMIT = 2; // Show SI through PHASES[2] (Stack / Wk 3-4)
+
+// pH Up (Potassium Carbonate): as-needed, small increments
+const PHUP_INCREMENT_G_GAL = 0.05;
+
 const STOCK_UNITS  = ["mL/gal", "injection %", "ratio", "mL/L"];
 const DIRECT_UNITS = ["g/gal", "g/L"];
 
@@ -822,6 +981,8 @@ let state = {
   method: "3-2-2",
   doserMode: "3",
   usePhoszyme: true,
+  showSi: false,
+  showPhUp: false,
   unit: "mL/gal",
   ecPreset: "high",
   targetEC: { ...EC_PRESETS.high },
@@ -912,6 +1073,15 @@ function calcPhoszymeDosage(phase, method, unit, targetEC) {
   }
 
   return { dosage: partBResult.dosage, ec: phzEc, display: partBResult.display };
+}
+
+// Front Row SI: rate in mL/gal based on feed EC (varies inversely)
+function calcSiRate(ec) {
+  for (const { below, rate } of SI_RATE_TABLE) {
+    if (ec < below) return rate;
+  }
+  if (ec < 3.5) return 0.125;
+  return 0;
 }
 
 function calcStockTanks(method, unit) {
@@ -1102,8 +1272,51 @@ function render() {
     html += "</tr>";
   }
 
+  // ── Supplement rows (SI and pH Up) ──
+  if (state.showSi || state.showPhUp) {
+    html += `<tr class="supplement-sep"><td colspan="${PHASES.length + 1}">Supplements</td></tr>`;
+  }
+
+  if (state.showSi) {
+    const met = isMetric(unit);
+    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+    html += `<tr><td><span class="component-dot dot-si"></span>Si <span style="font-size:0.72rem;font-weight:600;color:var(--si);background:rgba(184,160,48,0.12);border-radius:4px;padding:1px 6px;margin-left:4px;vertical-align:middle;">FOLIAR</span></td>`;
+    PHASES.forEach((phase, i) => {
+      if (i > SI_PHASE_LIMIT) {
+        html += `<td><span class="dash">–</span></td>`;
+      } else {
+        html += `<td><div class="val val-si" style="font-size:0.85em;">${foliarRate}</div><div class="ec-sub">1× weekly</div></td>`;
+      }
+    });
+    html += "</tr>";
+  }
+
+  if (state.showPhUp) {
+    const met = isMetric(unit);
+    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
+    const phupUnit = met ? "g/L" : "g/gal";
+    html += `<tr><td><span class="component-dot dot-phup"></span>pH Up</td>`;
+    PHASES.forEach(() => {
+      html += `<td><div class="val val-phup" style="font-size:0.8em;">as needed</div><div class="ec-sub">${maxRate} ${phupUnit} max total</div></td>`;
+    });
+    html += "</tr>";
+  }
 
   document.getElementById("feed-body").innerHTML = html;
+
+  // ── Supplement notes ──
+  let notesHtml = "";
+  if (state.showSi) {
+    const met = isMetric(unit);
+    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+    notesHtml += `<p class="supplement-note">Si: Recommended as a foliar spray at ${foliarRate}, 1× weekly, from veg through week 3 of flower.${state.application === "direct" ? " Can also be added directly to the reservoir in proportion with feed EC — solution must be used within 48 hours." : ""}</p>`;
+  }
+  if (state.showPhUp) {
+    const met = isMetric(unit);
+    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) + " g/L" : "0.2 g/gal";
+    notesHtml += `<p class="supplement-note">pH Up: Target pH 5.5–6.0. Always add last, after all nutrients. Maximum ${maxRate} total in the mix. Allow 5–15 min reaction time before re-measuring.</p>`;
+  }
+  document.getElementById("supplement-notes").innerHTML = notesHtml;
 
   // Stock tank table (only when stock concentrate)
   if (isStock) {
@@ -1198,6 +1411,8 @@ function render() {
     printParts.push("Direct to Reservoir");
   }
   if (usePhz) printParts.push("PhosZyme Included");
+  if (state.showSi) printParts.push("Si");
+  if (state.showPhUp) printParts.push("pH Up");
   printParts.push(unit);
   document.getElementById("print-config-line").textContent = printParts.join(" · ");
 
@@ -1275,6 +1490,12 @@ function toggleInstructions() {
   document.getElementById("chevron").classList.toggle("open");
 }
 
+function toggleDrawer(drawerId, btn) {
+  const drawer = document.getElementById(drawerId);
+  drawer.classList.toggle("open");
+  btn.classList.toggle("active");
+}
+
 function handleECPreset(val) {
   state.ecPreset = val;
   if (val === "high" || val === "standard") {
@@ -1303,6 +1524,18 @@ function togglePhz() {
   render();
 }
 
+function toggleSi() {
+  state.showSi = !state.showSi;
+  document.getElementById("si-btn").classList.toggle("active", state.showSi);
+  render();
+}
+
+function togglePhUp() {
+  state.showPhUp = !state.showPhUp;
+  document.getElementById("phup-btn").classList.toggle("active", state.showPhUp);
+  render();
+}
+
 function renderECInputs() {
   PHASES.forEach(p => {
     const el = document.getElementById(`ec-${p.toLowerCase()}`);
@@ -1326,6 +1559,8 @@ function updateURL() {
     if (state.doserMode === "2") p.set("d", "2");
   }
   if (!state.usePhoszyme) p.set("phz", "no");
+  if (state.showSi) p.set("si", "yes");
+  if (state.showPhUp) p.set("phup", "yes");
   p.set("u", state.unit);
   p.set("p", state.ecPreset);
   if (state.ecPreset === "custom") {
@@ -1348,6 +1583,8 @@ function loadFromURL() {
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") !== "no");
   }
+  if (p.get("si") === "yes") state.showSi = true;
+  if (p.get("phup") === "yes") state.showPhUp = true;
   if (p.has("u") && VALID_UNITS.includes(p.get("u"))) state.unit = p.get("u");
   if (p.has("p") && VALID_PRESETS.includes(p.get("p"))) {
     state.ecPreset = p.get("p");
@@ -1382,6 +1619,8 @@ function syncToggleButtons() {
     b.classList.toggle("active", b.dataset.val === state.doserMode);
   });
   document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
+  document.getElementById("si-btn").classList.toggle("active", state.showSi);
+  document.getElementById("phup-btn").classList.toggle("active", state.showPhUp);
   document.querySelectorAll("#ec-preset-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.ecPreset);
   });
@@ -1424,6 +1663,8 @@ function copySummary() {
     configParts.push("Direct to reservoir");
   }
   if (usePhz) configParts.push("PhosZyme included");
+  if (state.showSi) configParts.push("Si");
+  if (state.showPhUp) configParts.push("pH Up");
   configParts.push(unit);
 
   let html = `<h2 style="margin:0 0 4px;">Front Row Ag Feed Chart</h2>`;
@@ -1487,6 +1728,33 @@ function copySummary() {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       const r = calcDosage(phase, "bloom", method, unit, eEC);
       html += `<td ${ts}>${r.display}</td>`;
+    });
+    html += `</tr>`;
+  }
+
+  // SI row (copy summary)
+  if (state.showSi) {
+    const met = isMetric(unit);
+    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+    html += `<tr><td ${tl}>Si (foliar)</td>`;
+    PHASES.forEach((phase, i) => {
+      if (i > SI_PHASE_LIMIT) {
+        html += `<td ${ts}>–</td>`;
+      } else {
+        html += `<td ${ts}>${foliarRate}, 1×/wk</td>`;
+      }
+    });
+    html += `</tr>`;
+  }
+
+  // pH Up row (copy summary)
+  if (state.showPhUp) {
+    const met = isMetric(unit);
+    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
+    const phupUnit = met ? "g/L" : "g/gal";
+    html += `<tr><td ${tl}>pH Up</td>`;
+    PHASES.forEach(() => {
+      html += `<td ${ts}>as needed (${maxRate} ${phupUnit} max total)</td>`;
     });
     html += `</tr>`;
   }
@@ -1573,6 +1841,21 @@ function copySummary() {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
+  }
+
+  if (state.showSi) {
+    const met = isMetric(unit);
+    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+    plain += "Si (foliar)".padEnd(20) + PHASES.map((phase, i) => {
+      if (i > SI_PHASE_LIMIT) return "–".padEnd(12);
+      return `${foliarRate}`.padEnd(12);
+    }).join("") + "\n";
+  }
+
+  if (state.showPhUp) {
+    const met = isMetric(unit);
+    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) + " g/L" : "0.2 g/gal";
+    plain += "pH Up".padEnd(20) + PHASES.map(() => `as needed`.padEnd(12)).join("") + "\n";
   }
 
   copyRichText(html, plain).then(() => {
