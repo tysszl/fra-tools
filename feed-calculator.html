@@ -1168,13 +1168,17 @@ const INSTRUCTIONS = [
 
 // AIDEV-NOTE: Reservoir instructions are dynamic — Part B step changes
 // based on PhosZyme toggle, and pH Up step only appears when toggled on.
+// AIDEV-NOTE: pH adjustment order matters — pH Down goes BEFORE fertilizers
+// (acidic, aids dissolution), pH Up goes AFTER fertilizers (alkaline, add last).
 function getReservoirInstructions(usePhz, usePhUp, met) {
+  const bStep = usePhz ? "Add Part B and PhosZyme; agitate 3–5 minutes." : "Add Part B; agitate 3–5 minutes.";
   const steps = [
     "Fill reservoir to target volume; begin agitation.",
+    "If using pH down: add pH down to target range before adding fertilizer.",
     "Add Part A; agitate 3–5 minutes.",
-    usePhz ? "Add Part B and PhosZyme; agitate 3–5 minutes." : "Add Part B; agitate 3–5 minutes.",
+    bStep,
     "Add Bloom; agitate 3–5 minutes.",
-    "Adjust pH to target range (5.5–6.0). RO or low-EC water typically requires pH up; higher-EC starting water may require pH down.",
+    "If using pH up: add pH up to target range after all fertilizers are mixed.",
     "Validate pH/EC and adjust as necessary."
   ];
   return steps;
