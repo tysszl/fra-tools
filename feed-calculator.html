@@ -1174,12 +1174,9 @@ function getReservoirInstructions(usePhz, usePhUp, met) {
     "Add Part A; agitate 3–5 minutes.",
     usePhz ? "Add Part B and PhosZyme; agitate 3–5 minutes." : "Add Part B; agitate 3–5 minutes.",
     "Add Bloom; agitate 3–5 minutes.",
+    "Adjust pH to target range (5.5–6.0). RO or low-EC water typically requires pH up; higher-EC starting water may require pH down.",
+    "Validate pH/EC and adjust as necessary."
   ];
-  if (usePhUp) {
-    const phUpDose = met ? "0.01 g/L" : "0.05 g/gal";
-    steps.push(`Add Front Row pH Up in ${phUpDose} steps until target pH is achieved.`);
-  }
-  steps.push("Validate pH/EC and adjust as necessary.");
   return steps;
 }
 
