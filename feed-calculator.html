@@ -1166,6 +1166,16 @@ const INSTRUCTIONS = [
   "Validate and adjust stock tank as necessary."
 ];
 
+const INSTRUCTIONS_RESERVOIR = [
+  "Start with a clean reservoir filled with RO or filtered water.",
+  "Turn on circulation pump or agitation.",
+  "Add Part A; mix for 2–3 minutes before adding anything else.",
+  "Add Part B (and PhosZyme if included); mix for 2–3 minutes.",
+  "Add Bloom; mix for 2–3 minutes.",
+  "Check EC and adjust if necessary.",
+  "Check pH and adjust to target range (5.5–6.0)."
+];
+
 const INSTRUCTIONS_2DOSER = [
   "Start with two clean stock tanks marked at target volume.",
   "Add RO water to 50% of target volume in each tank; begin agitating.",
@@ -1645,9 +1655,13 @@ function applyApplicationState() {
   const isStock = state.application === "stock";
   document.getElementById("method-section").style.display = isStock ? "" : "none";
   document.getElementById("stock-card").style.display = isStock ? "" : "none";
-  document.getElementById("instructions-card").style.display = isStock ? "" : "none";
   // Reset doser mode when switching to direct
   if (!isStock) state.doserMode = "3";
+  // Show mixing instructions in both modes — populate reservoir instructions when not stock
+  if (!isStock) {
+    document.getElementById("instructions-list").innerHTML =
+      INSTRUCTIONS_RESERVOIR.map(s => `<li>${s}</li>`).join("");
+  }
 }
 
 function handleApplicationChange(val) {
@@ -2091,6 +2105,12 @@ function copySummary() {
     html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
     html += `<ol style="font-size:14px;padding-left:20px;">`;
     instrSet.forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
+    html += `</ol>`;
+  } else {
+    // Direct to Reservoir mixing instructions
+    html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
+    html += `<ol style="font-size:14px;padding-left:20px;">`;
+    INSTRUCTIONS_RESERVOIR.forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
     html += `</ol>`;
   }
 
