@@ -36,8 +36,8 @@
     --accent: #1a7a5a;
     --accent-dim: rgba(26,122,90,0.12);
     --text: #1a1d23;
-    --text-dim: #5a6069;
-    --text-muted: #8b919a;
+    --text-dim: #474c53;
+    --text-muted: #5a6069;
     --input-bg: #ffffff;
     --input-border: #d0d4da;
     --danger: #c53030;
@@ -68,6 +68,7 @@
     background: rgba(26,122,90,0.05);
     border-color: rgba(26,122,90,0.15);
   }
+  body.light .unit-badge { color: #fff; }
   body.light .toggle-btn.active {
     background: var(--accent);
     color: #fff;
@@ -208,7 +209,7 @@
     text-align: center;
     border-bottom: none;
   }
-  .feed-table th:first-child { text-align: left; }
+  .feed-table th:first-child { text-align: right; }
   .feed-table .header-row-last th {
     padding-bottom: 10px;
     border-bottom: 1px solid var(--card-border);
@@ -306,7 +307,7 @@
   .unit-badge {
     font-size: 0.92rem;
     font-weight: 700;
-    color: #fff;
+    color: #0d2920;
     background: var(--accent);
     border-radius: 6px;
     padding: 4px 12px;
@@ -706,7 +707,7 @@
     .print-facility:empty { display: none; }
     .print-config {
       font-size: 10px;
-      color: #666;
+      color: #444;
       margin-top: 1px;
     }
 
@@ -747,11 +748,11 @@
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .feed-table th { color: #444; }
+    .feed-table th { color: #333; }
     .feed-table .header-row-last th { padding-bottom: 4px; }
     .val { font-size: 13px; }
-    .ec-sub { font-size: 9px; color: #888; }
-    .unit-badge { font-size: 11px; border: none; color: #fff; background: #333; border-radius: 4px; padding: 2px 8px; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .ec-sub { font-size: 9px; color: #555; }
+    .unit-badge { font-size: 11px; border: none; color: #fff; background: #222; border-radius: 4px; padding: 2px 8px; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .phase-ec, .phase-ec.editable { background: none; border: none; color: #000; font-size: 11px; padding: 0; font-weight: 600; }
     .phase-ec.editable .ec-input { color: #000; background: none; border: none; font-size: 11px; }
     .phase-ec.editable .ec-label { color: #000; font-size: 11px; }
@@ -788,7 +789,7 @@
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
-    .stock-table th { color: #444; }
+    .stock-table th { color: #333; }
     .stock-table td[rowspan] { vertical-align: middle; }
     .stock-table tr.phz-sub td:nth-child(2) { text-align: center; font-weight: normal; font-size: 10px; }
     .validation-ec { font-size: 12px; color: #cc2020 !important; }
@@ -811,9 +812,9 @@
     .instructions-body { display: block !important; max-height: none !important; }
     .chevron { display: none; }
     .instructions-toggle { cursor: default; }
-    #instructions-card h2 { font-size: 13px; }
+    #instructions-card h2 { font-size: 13px; color: #000; }
     .screen-only { display: none !important; }
-    #instructions-list { font-size: 10px; padding-left: 18px; }
+    #instructions-list { font-size: 10px; padding-left: 18px; color: #333; }
     #instructions-list li { margin-bottom: 1px; }
 
     /* Supplemental products: always open, compact 2-col grid in print */
@@ -827,27 +828,32 @@
     }
     .supp-item { margin-bottom: 2px !important; }
     .supp-name { font-size: 11px; }
-    .supp-detail { font-size: 9px; color: #555; line-height: 1.4; }
+    .supp-detail { font-size: 9px; color: #444; line-height: 1.4; }
 
     /* PhosZyme footnote */
-    #phz-footnote { font-size: 9px; color: #888; margin-top: 4px !important; }
+    #phz-footnote { font-size: 9px; color: #555; margin-top: 4px !important; }
 
     /* Print footer */
     .print-footer {
       display: block !important;
       text-align: center;
       font-size: 8px;
-      color: #aaa;
+      color: #555;
       margin-top: 8px;
       padding-top: 4px;
       border-top: 1px solid #ddd;
     }
 
-    /* BioFlo: darken for B&W print readability */
-    :root { --bioflo: #1a6a42; }
+    /* Override CSS variables for print (prevent dark-mode light grays on white paper) */
+    :root {
+      --text: #000;
+      --text-dim: #333;
+      --text-muted: #555;
+      --bioflo: #1a6a42;
+    }
 
-    /* Recipe titles: ensure centered in print */
-    .feed-table thead tr:nth-child(2) th { text-align: center !important; }
+    /* Recipe titles: ensure centered in print (skip first-column label) */
+    .feed-table thead tr:nth-child(2) th:not(:first-child) { text-align: center !important; }
 
     /* 2-doser tint in print */
     .stock-table tr[style*="rgba(136,102,204"] { background: #f5f3fa !important; }
@@ -2108,7 +2114,7 @@ function copySummary() {
       const note = is2Doser
         ? "PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2)."
         : "PhosZyme is mixed into the Part B stock tank. It will increase the validation EC.";
-      html += `<p style="font-size:12px;color:#888;margin-top:6px;font-style:italic;">* ${note}</p>`;
+      html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">* ${note}</p>`;
     }
 
     // ── Mixing Instructions ──
@@ -2130,7 +2136,7 @@ function copySummary() {
     html += `</ol>`;
   }
 
-  html += `<p style="font-size:11px;color:#aaa;margin-top:16px;">Generated by Front Row Ag Feed Calculator</p>`;
+  html += `<p style="font-size:11px;color:#555;margin-top:16px;">Generated by Front Row Ag Feed Calculator</p>`;
 
   // ── Plain text fallback ──
   let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
