@@ -1217,8 +1217,8 @@ let state = {
   usePhoszyme: true,
   showSi: false,
   showPhUp: false,
-  showBioFlo: true,
-  showTriologic: true,
+  showBioFlo: false,
+  showTriologic: false,
   unit: "mL/gal",
   ecPreset: "high",
   targetEC: { ...EC_PRESETS.high },
@@ -1844,25 +1844,27 @@ function updateURL() {
   if (document.body.classList.contains('light')) p.set("t", "light");
   const fac = document.getElementById("facility-input").value.trim();
   if (fac) p.set("fac", fac);
-  p.set("a", state.application);
+  // Only write params that differ from defaults
+  if (state.application !== "stock") p.set("a", state.application);
   if (state.application === "stock") {
-    p.set("m", state.method);
+    if (state.method !== "3-2-2") p.set("m", state.method);
     if (state.doserMode === "2") p.set("d", "2");
   }
   if (!state.usePhoszyme) p.set("phz", "no");
   if (state.showSi) p.set("si", "yes");
   if (state.showPhUp) p.set("phup", "yes");
-  if (!state.showBioFlo) p.set("bf", "no");
-  if (!state.showTriologic) p.set("tri", "no");
-  p.set("u", state.unit);
-  p.set("p", state.ecPreset);
+  if (state.showBioFlo) p.set("bf", "yes");
+  if (state.showTriologic) p.set("tri", "yes");
+  if (state.unit !== "mL/gal") p.set("u", state.unit);
+  if (state.ecPreset !== "high") p.set("p", state.ecPreset);
   if (state.ecPreset === "custom") {
     PHASES.forEach(ph => p.set(`ec_${ph.toLowerCase()}`, state.targetEC[ph]));
   }
   PHASES.forEach(ph => {
     if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
   });
-  history.replaceState(null, "", "?" + p.toString());
+  const qs = p.toString();
+  history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
 }
 
 function loadFromURL() {
@@ -1882,8 +1884,8 @@ function loadFromURL() {
   }
   if (p.get("si") === "yes") state.showSi = true;
   if (p.get("phup") === "yes") state.showPhUp = true;
-  if (p.get("bf") === "no") state.showBioFlo = false;
-  if (p.get("tri") === "no") state.showTriologic = false;
+  if (p.get("bf") === "yes") state.showBioFlo = true;
+  if (p.get("tri") === "yes") state.showTriologic = true;
   if (p.has("u") && VALID_UNITS.includes(p.get("u"))) state.unit = p.get("u");
   if (p.has("p") && VALID_PRESETS.includes(p.get("p"))) {
     state.ecPreset = p.get("p");
