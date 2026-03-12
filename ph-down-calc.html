@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Front Row Ag · pH Down Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --card-border: #2a2a2a;
+    --accent: #3ee6b6;
+    --accent-dim: rgba(62,230,182,0.15);
+    --text: #e8e8e8;
+    --text-dim: #c0c0c0;
+    --text-muted: #a0a0a0;
+    --input-bg: #1c1c1c;
+    --input-border: #3a3a3a;
+    --danger: #e63e3e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  input::-webkit-inner-spin-button,
+  input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+  }
+
+  .container { max-width: 520px; margin: 0 auto; }
+
+  /* ── Header ───────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+    padding-top: 8px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header h1 .brand { color: var(--accent); }
+  .header p {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-top: 4px;
+  }
+
+  /* ── Cards ─────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+  .card-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+  }
+
+  /* ── Input Rows ────────────────────────── */
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .input-row:last-child { margin-bottom: 0; }
+  .input-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-dim);
+    min-width: 150px;
+    flex-shrink: 0;
+  }
+  .input-row input {
+    width: 100px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 8px 10px;
+    text-align: right;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .input-row input:focus { border-color: var(--accent); }
+  .input-unit {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    min-width: 40px;
+  }
+
+  /* ── Result ────────────────────────────── */
+  .result-card {
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: 0 0 20px rgba(62,230,182,0.06);
+  }
+  .result-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .result-row:last-child { margin-bottom: 0; }
+  .result-label {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+  .result-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .result-value.secondary {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .result-detail {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--card-border);
+    line-height: 1.6;
+  }
+
+  /* ── Reference Table ───────────────────── */
+  .ref-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .ref-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    padding: 6px 8px 8px;
+    text-align: right;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .ref-table th:first-child { text-align: left; }
+  .ref-table td {
+    padding: 7px 8px;
+    font-size: 0.85rem;
+    text-align: right;
+    color: var(--text-dim);
+    border-bottom: 1px solid rgba(42,42,42,0.5);
+  }
+  .ref-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-dim);
+  }
+  .ref-table tr.active td {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ── Note ───────────────────────────────── */
+  .note {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+    padding: 14px 16px;
+    background: rgba(62,230,182,0.04);
+    border: 1px solid rgba(62,230,182,0.1);
+    border-radius: 10px;
+  }
+  .note strong { color: var(--text-dim); font-weight: 600; }
+
+  /* ── Mobile ────────────────────────────── */
+  @media (max-width: 480px) {
+    .input-label { min-width: 120px; font-size: 0.78rem; }
+    .input-row input { width: 80px; }
+    .result-value { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1><span class="brand">Front Row</span> pH Down Calculator</h1>
+    <p>70% Phosphoric Acid &middot; Alkalinity Neutralization</p>
+  </div>
+
+  <!-- Inputs -->
+  <div class="card">
+    <div class="card-label">Water Parameters</div>
+    <div class="input-row">
+      <span class="input-label">Starting Alkalinity</span>
+      <input type="number" id="startAlk" value="140" min="0" max="999" step="1">
+      <span class="input-unit">ppm</span>
+    </div>
+    <div class="input-row">
+      <span class="input-label">Target Alkalinity</span>
+      <input type="number" id="targetAlk" value="40" min="0" max="999" step="1">
+      <span class="input-unit">ppm</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">Batch Size</div>
+    <div class="input-row">
+      <span class="input-label">Volume of Water</span>
+      <input type="number" id="volume" value="1" min="0.1" max="99999" step="1">
+      <span class="input-unit">gal</span>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card">
+    <div class="card-label">pH Down Dosing</div>
+    <div class="result-row">
+      <span class="result-label">Rate</span>
+      <span class="result-value" id="rateResult">0.69 mL/gal</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Total for batch</span>
+      <span class="result-value secondary" id="totalResult">0.69 mL</span>
+    </div>
+    <div class="result-detail" id="resultDetail">
+      Neutralizing 100 ppm alkalinity (140 → 40 ppm)
+    </div>
+  </div>
+
+  <!-- Quick Reference -->
+  <div class="card">
+    <div class="card-label">Quick Reference</div>
+    <table class="ref-table" id="refTable">
+      <thead>
+        <tr>
+          <th>Neutralize</th>
+          <th>mL / gal</th>
+          <th>mL / L</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Notes -->
+  <div class="note">
+    <strong>How it works:</strong> Each ppm of alkalinity (as CaCO3) requires ~0.00694 mL/gal of 70% phosphoric acid to neutralize.
+    FRA recipes land in the 5.5–6.0 pH sweet spot with ~40 ppm residual alkalinity.
+    Always verify with a pH meter — dissolved minerals and CO2 can shift actual results.
+  </div>
+</div>
+
+<script>
+  // AIDEV-NOTE: Core constant — 0.006946 mL/gal per ppm alkalinity for 70% H3PO4
+  // Derived from: (ppm/50) × 98 / 1068.2 × 3.785 = 0.006946 × ppm
+  // Where 50 = eq wt CaCO3, 98 = MW H3PO4, 1068.2 = mg H3PO4 per mL of 70% solution (density 1.526), 3.785 = L/gal
+  const ML_PER_GAL_PER_PPM = 0.006946;
+
+  const refPpms = [20, 40, 60, 80, 100, 120, 150, 200, 250, 300];
+
+  const startAlkEl = document.getElementById('startAlk');
+  const targetAlkEl = document.getElementById('targetAlk');
+  const volumeEl = document.getElementById('volume');
+  const rateResultEl = document.getElementById('rateResult');
+  const totalResultEl = document.getElementById('totalResult');
+  const resultDetailEl = document.getElementById('resultDetail');
+  const refTableBody = document.querySelector('#refTable tbody');
+
+  function calculate() {
+    const startAlk = parseFloat(startAlkEl.value) || 0;
+    const targetAlk = parseFloat(targetAlkEl.value) || 0;
+    const volume = parseFloat(volumeEl.value) || 0;
+
+    const neutralize = Math.max(0, startAlk - targetAlk);
+    const rate = neutralize * ML_PER_GAL_PER_PPM;
+    const total = rate * volume;
+
+    rateResultEl.textContent = rate.toFixed(2) + ' mL/gal';
+    totalResultEl.textContent = formatTotal(total);
+    resultDetailEl.textContent = neutralize > 0
+      ? `Neutralizing ${neutralize} ppm alkalinity (${startAlk} → ${targetAlk} ppm)`
+      : 'No alkalinity to neutralize';
+
+    buildRefTable(neutralize);
+  }
+
+  function formatTotal(ml) {
+    if (ml >= 1000) return (ml / 1000).toFixed(2) + ' L';
+    return ml.toFixed(2) + ' mL';
+  }
+
+  function buildRefTable(activeNeutralize) {
+    // Round to nearest ref value for highlighting
+    const closestRef = refPpms.reduce((prev, curr) =>
+      Math.abs(curr - activeNeutralize) < Math.abs(prev - activeNeutralize) ? curr : prev
+    );
+    const highlight = activeNeutralize > 0 && Math.abs(closestRef - activeNeutralize) <= 10;
+
+    let html = '';
+    for (const ppm of refPpms) {
+      const mlGal = (ppm * ML_PER_GAL_PER_PPM).toFixed(2);
+      const mlL = (ppm * ML_PER_GAL_PER_PPM / 3.785).toFixed(3);
+      const isActive = highlight && ppm === closestRef;
+      html += `<tr${isActive ? ' class="active"' : ''}>
+        <td>${ppm} ppm</td>
+        <td>${mlGal}</td>
+        <td>${mlL}</td>
+      </tr>`;
+    }
+    refTableBody.innerHTML = html;
+  }
+
+  // Recalculate on any input change
+  startAlkEl.addEventListener('input', calculate);
+  targetAlkEl.addEventListener('input', calculate);
+  volumeEl.addEventListener('input', calculate);
+
+  // Initialize
+  calculate();
+</script>
+
+</body>
+</html>

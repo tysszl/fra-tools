@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Front Row Ag · Nutrient Cost Comparison</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --border: #e2e5ea;
+    --border-strong: #cdd1d8;
+    --accent: #1a7a5a;
+    --accent-light: #e8f5ef;
+    --text: #1a1d23;
+    --text-secondary: #5a6069;
+    --text-muted: #8b919a;
+    --input-bg: #ffffff;
+    --input-border: #d0d4da;
+    --danger: #c53030;
+    --danger-light: #fef2f2;
+    --orange: #b45309;
+    --orange-light: #fef3e2;
+    --best-bg: #f0faf4;
+    --row-alt: #f9fafb;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 24px 16px 40px;
+  }
+
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ───────────────────────────── */
+  .header {
+    margin-bottom: 24px;
+    padding-top: 4px;
+  }
+  .header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .header h1 span { color: var(--accent); }
+  .header p {
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-top: 2px;
+  }
+
+  /* ── Cards ────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 22px 18px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card h2 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+  }
+
+  /* ── Inputs Grid ────────────────────────── */
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 28px;
+  }
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+  }
+  .input-row .input-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 110px;
+  }
+  .input-row .input-unit {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .config-input {
+    width: 72px;
+    flex-shrink: 0;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    color: var(--text);
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 5px 8px;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    -moz-appearance: textfield;
+  }
+  .config-input::-webkit-inner-spin-button,
+  .config-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .config-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(26,122,90,0.12);
+  }
+
+  /* ── Toggle Buttons ───────────────────── */
+  .toggle-group {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    overflow: hidden;
+    display: inline-flex;
+  }
+  .toggle-btn {
+    background: var(--input-bg);
+    color: var(--text-secondary);
+    border: none;
+    border-right: 1px solid var(--input-border);
+    padding: 7px 16px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .toggle-btn:last-child { border-right: none; }
+  .toggle-btn:hover { background: var(--bg); }
+  .toggle-btn.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  /* ── Filter + Add Bar ──────────────────── */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.84rem;
+    padding: 8px 12px 8px 34px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow-sm);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238b919a' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 11px center;
+  }
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(26,122,90,0.12);
+  }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  .btn {
+    background: var(--surface);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    padding: 8px 16px;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn:hover {
+    border-color: var(--border-strong);
+    background: var(--bg);
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 14px; height: 14px; }
+  .btn-accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn-accent:hover {
+    background: #156b4e;
+    border-color: #156b4e;
+    color: #fff;
+  }
+
+  /* ── Comparison Table ──────────────────── */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .comp-table colgroup .col-name { width: auto; }
+  .comp-table colgroup .col-ec { width: 72px; }
+  .comp-table colgroup .col-raw { width: 92px; }
+  .comp-table colgroup .col-norm { width: 105px; }
+  .comp-table colgroup .col-cpp { width: 100px; }
+  .comp-table colgroup .col-toggle { width: 40px; }
+
+  .comp-table th {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 9px 10px;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: color 0.15s;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .comp-table th:hover { color: var(--accent); }
+  .comp-table th.sorted { color: var(--accent); }
+  .sort-arrow {
+    font-size: 0.6rem;
+    margin-left: 3px;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .comp-table th.sorted .sort-arrow { opacity: 1; }
+  .comp-table th:not(.sorted) .sort-arrow { opacity: 0.3; }
+  .comp-table th:last-child { text-align: center; cursor: default; }
+  .comp-table th:last-child:hover { color: var(--text-muted); }
+
+  /* Number columns right-aligned */
+  .comp-table th:nth-child(n+2):not(:last-child) { text-align: right; }
+  .comp-table td:nth-child(n+2):not(:last-child) { text-align: right; }
+
+  .comp-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    vertical-align: middle;
+  }
+  .comp-table td:first-child {
+    font-weight: 600;
+    font-size: 0.83rem;
+  }
+
+  /* Alternating rows */
+  .comp-table tbody tr:nth-child(even):not(.detail-row):not(.fra-separator) {
+    background: var(--row-alt);
+  }
+
+  /* FRA pinned row styling */
+  .row-fra {
+    border-left: 3px solid var(--accent);
+  }
+  .row-fra td:first-child {
+    padding-left: 7px;
+  }
+
+  /* Best value highlight */
+  .row-best {
+    background: var(--best-bg) !important;
+  }
+
+  /* Local recipe badge */
+  .badge-local {
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: var(--orange);
+    background: var(--orange-light);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+  }
+  .badge-fra {
+    font-size: 0.64rem;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-light);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 6px;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+  }
+
+  /* Expand/collapse chevron */
+  .row-toggle {
+    cursor: pointer;
+    text-align: center !important;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    transition: color 0.15s;
+  }
+  .row-toggle:hover { color: var(--accent); }
+  .row-toggle .chevron-icon {
+    display: inline-block;
+    transition: transform 0.2s;
+  }
+  .row-toggle .chevron-icon.open { transform: rotate(180deg); }
+
+  /* Expanded detail row */
+  .detail-row td {
+    padding: 0 !important;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .detail-inner {
+    padding: 12px 14px;
+  }
+  .detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    table-layout: fixed;
+  }
+  .detail-table col.dt-name { width: 35%; }
+  .detail-table col.dt-price { width: 16%; }
+  .detail-table col.dt-pkg { width: 16%; }
+  .detail-table col.dt-usage { width: 16%; }
+  .detail-table col.dt-cost { width: 17%; }
+  .detail-table th {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 4px 8px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-table th:nth-child(n+2) { text-align: right; }
+  .detail-table td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #eef0f3;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+  }
+  .detail-table td:nth-child(n+2) { text-align: right; }
+  .detail-table tr:last-child td { border-bottom: none; }
+  .detail-table .total-row td {
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    font-weight: 700;
+    padding-top: 7px;
+    color: var(--text);
+  }
+
+  /* Delete button for local recipes */
+  .btn-delete {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.76rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-delete:hover {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: var(--danger-light);
+  }
+
+  /* FRA separator row */
+  .fra-separator td {
+    padding: 0;
+    border-bottom: 2px solid var(--border-strong);
+    height: 0;
+  }
+
+  /* Hidden rows */
+  .hidden { display: none; }
+
+  /* ── Modal ─────────────────────────────── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 24px 22px;
+    width: 100%;
+    max-width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .modal h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 18px;
+    color: var(--text);
+  }
+  .modal-close {
+    float: right;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+  .form-group label {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.84rem;
+    padding: 7px 10px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .form-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(26,122,90,0.12);
+  }
+  .form-select {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.84rem;
+    padding: 7px 10px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+  }
+  .form-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(26,122,90,0.12);
+  }
+
+  .product-entry {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+  .product-entry .product-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .product-entry .product-header span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .product-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .product-grid .form-group { margin-bottom: 0; }
+
+  .btn-add-product {
+    background: none;
+    border: 1px dashed var(--border-strong);
+    border-radius: 5px;
+    color: var(--text-muted);
+    padding: 8px;
+    width: 100%;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.78rem;
+    transition: all 0.15s;
+  }
+  .btn-add-product:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .btn-remove-product {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0 4px;
+  }
+  .btn-remove-product:hover { color: var(--danger); }
+
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .modal-actions .btn { flex: 1; justify-content: center; }
+  .btn-save {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+    font-weight: 600;
+  }
+  .btn-save:hover { background: #156b4e; border-color: #156b4e; color: #fff; }
+
+  /* ── Footer ───────────────────────────── */
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.74rem;
+    margin-top: 20px;
+    padding-bottom: 12px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 600px) {
+    body { padding: 12px 8px 30px; }
+    .card { padding: 14px 12px; }
+    .inputs-grid { grid-template-columns: 1fr; gap: 6px 0; }
+    .toolbar { flex-wrap: wrap; }
+    .search-input { min-width: 0; }
+    .comp-table th, .comp-table td { padding: 7px 6px; font-size: 0.78rem; }
+    .comp-table { table-layout: auto; }
+    .modal { padding: 18px 16px; }
+    .product-grid { grid-template-columns: 1fr; }
+    .toggle-btn { padding: 5px 9px; font-size: 0.76rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1><span>Front Row Ag</span> · Nutrient Cost Comparison</h1>
+    <p>Compare cost-per-pound across nutrient lines</p>
+  </div>
+
+  <!-- Inputs Card -->
+  <div class="card">
+    <div class="inputs-grid">
+      <div class="input-row">
+        <span class="input-label">Normalization EC</span>
+        <input type="number" class="config-input" id="cfg-normEC" value="3.0" step="0.1" min="0.1" max="10" oninput="onConfigChange()">
+        <span class="input-unit">EC</span>
+      </div>
+      <div class="input-row">
+        <span class="input-label">Plant Spacing</span>
+        <input type="number" class="config-input" id="cfg-sqftPlant" value="2" step="0.1" min="0.1" max="50" oninput="onConfigChange()">
+        <span class="input-unit">ft&sup2; / plant</span>
+      </div>
+      <div class="input-row">
+        <span class="input-label">Irrigation Rate</span>
+        <input type="number" class="config-input" id="cfg-irrigRate" value="0.5" step="0.01" min="0.01" max="20" oninput="onConfigChange()">
+        <span class="input-unit">gal / plant / day</span>
+      </div>
+      <div class="input-row">
+        <span class="input-label">Yield</span>
+        <input type="number" class="config-input" id="cfg-yield" value="65" step="1" min="1" max="500" oninput="onConfigChange()">
+        <span class="input-unit">g / ft&sup2;</span>
+      </div>
+      <div class="input-row">
+        <span class="input-label">Cycle Length</span>
+        <input type="number" class="config-input" id="cfg-cycleDays" value="63" step="1" min="1" max="365" oninput="onConfigChange()">
+        <span class="input-unit">days</span>
+      </div>
+      <div class="input-row">
+        <span class="input-label">FRA Pricing</span>
+        <div class="toggle-group" id="pricing-group">
+          <button class="toggle-btn active" data-val="wholesale" onclick="setPricingTier('wholesale')">Whl</button>
+          <button class="toggle-btn" data-val="commercial" onclick="setPricingTier('commercial')">Comm</button>
+          <button class="toggle-btn" data-val="msrp" onclick="setPricingTier('msrp')">MSRP</button>
+          <button class="toggle-btn" data-val="custom" onclick="setPricingTier('custom')">Custom</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter + Add Bar -->
+  <div class="toolbar">
+    <input type="text" class="search-input" id="search" placeholder="Search recipes..." oninput="onSearch()">
+    <button class="btn btn-accent" onclick="openModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add Recipe
+    </button>
+  </div>
+
+  <!-- Comparison Table -->
+  <div class="card" style="padding:0; overflow:hidden;">
+    <div class="table-scroll">
+      <table class="comp-table" id="comp-table">
+        <colgroup>
+          <col class="col-name">
+          <col class="col-ec">
+          <col class="col-raw">
+          <col class="col-norm">
+          <col class="col-cpp">
+          <col class="col-toggle">
+        </colgroup>
+        <thead>
+          <tr>
+            <th onclick="sortBy('name')">Recipe <span class="sort-arrow">&#9650;</span></th>
+            <th onclick="sortBy('mixEC')">Mix EC <span class="sort-arrow">&#9650;</span></th>
+            <th onclick="sortBy('rawCost')">$/gal <span class="sort-arrow">&#9650;</span></th>
+            <th onclick="sortBy('normCost')">$/gal (norm) <span class="sort-arrow">&#9650;</span></th>
+            <th onclick="sortBy('cpp')">CPP ($/lb) <span class="sort-arrow">&#9650;</span></th>
+            <th>&nbsp;</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Bottom Buttons -->
+  <div style="display:flex; gap:10px; margin-top:4px;">
+    <button class="btn" style="flex:1; justify-content:center;" onclick="shareLink()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+      Share Link
+    </button>
+  </div>
+
+  <div class="footer">
+    <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · Nutrient Cost Comparison
+  </div>
+
+</div>
+
+<!-- Add Recipe Modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2>Add Custom Recipe</h2>
+
+    <div class="form-group">
+      <label>Recipe Name</label>
+      <input type="text" class="form-input" id="modal-name" placeholder="e.g. Brand X Bloom Phase">
+    </div>
+    <div class="form-group">
+      <label>Mix EC</label>
+      <input type="number" class="form-input" id="modal-ec" placeholder="e.g. 2.8" step="0.1" min="0.1" max="10">
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.78rem; font-weight:600; color:var(--text-dim);">Products</label>
+    </div>
+    <div id="modal-products"></div>
+    <button class="btn-add-product" id="btn-add-product" onclick="addProductEntry()">+ Add Product</button>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-save" onclick="saveRecipe()">Save Recipe</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// CONSTANTS
+// ═══════════════════════════════════════════════
+
+const G_PER_LB = 453.592;
+const ML_PER_GAL = 3785.41;
+const LBS_PER_G = 1 / 453.592;
+
+// ═══════════════════════════════════════════════
+// FRA PRICING DATA (25 lb bags)
+// ═══════════════════════════════════════════════
+
+const FRA_PRICING = {
+  "Part A": { wholesale: 96.25, commercial: 114.75, msrp: 218.75 },
+  "Part B": { wholesale: 96.25, commercial: 114.75, msrp: 218.75 },
+  "Bloom":  { wholesale: 99.75, commercial: 118.25, msrp: 218.75 }
+};
+
+// ═══════════════════════════════════════════════
+// MASTER RECIPE DATA
+// ═══════════════════════════════════════════════
+
+const MASTER_RECIPES = [
+  // ── FRA — single entry, pricing controlled by tier selector ──
+  {
+    name: "Front Row Ag",
+    isFRA: true,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", qty: 25, unit: "lbs", usage: 4.8, usageUnit: "g" },
+      { name: "Part B", qty: 25, unit: "lbs", usage: 3.2, usageUnit: "g" },
+      { name: "Bloom", qty: 25, unit: "lbs", usage: 3.2, usageUnit: "g" }
+    ]
+  },
+  // ── Competitors (all at EC 3.0 for apples-to-apples) ──
+  {
+    name: "C+ SWELL (Pallet)",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Calcium", price: 31, qty: 50, unit: "lbs", usage: 3.49, usageUnit: "g" },
+      { name: "C+", price: 89, qty: 25, unit: "lbs", usage: 3.49, usageUnit: "g" },
+      { name: "MKP", price: 100, qty: 50, unit: "lbs", usage: 4.65, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "Athena: Core+Bloom+Balance+Cleanse",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Core", price: 75, qty: 25, unit: "lbs", usage: 4.6, usageUnit: "g" },
+      { name: "Bloom", price: 75, qty: 25, unit: "lbs", usage: 7.7, usageUnit: "g" },
+      { name: "Balance", price: 75, qty: 25, unit: "lbs", usage: 0.12, usageUnit: "g" },
+      { name: "Cleanse", price: 1960, qty: 55, unit: "gal", usage: 2, usageUnit: "mL" }
+    ]
+  },
+  {
+    name: "Athena: Bloom+Balance+Cleanse+Fade",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Bloom", price: 75, qty: 25, unit: "lbs", usage: 7.2, usageUnit: "g" },
+      { name: "Balance", price: 75, qty: 25, unit: "lbs", usage: 0.12, usageUnit: "g" },
+      { name: "Cleanse", price: 1960, qty: 55, unit: "gal", usage: 2, usageUnit: "mL" },
+      { name: "Fade", price: 140, qty: 5, unit: "gal", usage: 19, usageUnit: "mL" }
+    ]
+  },
+  {
+    name: "Jacks 321",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "5-12-26", price: 62, qty: 25, unit: "lbs", usage: 4.75, usageUnit: "g" },
+      { name: "Calcium Nitrate", price: 25, qty: 25, unit: "lbs", usage: 3.15, usageUnit: "g" },
+      { name: "Epsom Salt", price: 30, qty: 25, unit: "lbs", usage: 1.24, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "FloraFlex Veg",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "V1", price: 50, qty: 25, unit: "lbs", usage: 5, usageUnit: "g" },
+      { name: "V2", price: 61, qty: 25, unit: "lbs", usage: 5, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "FloraFlex Flower w/ FT",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "B1", price: 53, qty: 25, unit: "lbs", usage: 3, usageUnit: "g" },
+      { name: "B2", price: 61, qty: 25, unit: "lbs", usage: 3, usageUnit: "g" },
+      { name: "Full Tilt", price: 71, qty: 25, unit: "lbs", usage: 6, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "FloraPro Veg",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Grow A", price: 55, qty: 25, unit: "lbs", usage: 3.9, usageUnit: "g" },
+      { name: "Grow B", price: 55, qty: 25, unit: "lbs", usage: 5.4, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "FloraPro Flower",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Bloom A", price: 55, qty: 25, unit: "lbs", usage: 4.5, usageUnit: "g" },
+      { name: "Bloom B", price: 55, qty: 25, unit: "lbs", usage: 6, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "CES Louder Powder Veg",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 146, qty: 25, unit: "lbs", usage: 5.5, usageUnit: "g" },
+      { name: "Part B", price: 146, qty: 25, unit: "lbs", usage: 5.5, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "CES Louder Powder Flr",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 146, qty: 25, unit: "lbs", usage: 6, usageUnit: "g" },
+      { name: "Part B", price: 146, qty: 25, unit: "lbs", usage: 6, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "Advanced Sensi Grow",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 60, qty: 25, unit: "lbs", usage: 2, usageUnit: "g" },
+      { name: "Part B", price: 60, qty: 25, unit: "lbs", usage: 2, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "Advanced Sensi Bloom",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 60, qty: 25, unit: "lbs", usage: 3.1, usageUnit: "g" },
+      { name: "Part B", price: 60, qty: 25, unit: "lbs", usage: 3.1, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "NPKali Bloom",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 56, qty: 25, unit: "lbs", usage: 3.75, usageUnit: "g" },
+      { name: "Part B", price: 113, qty: 25, unit: "lbs", usage: 8.15, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "NPKali Veg",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 56, qty: 25, unit: "lbs", usage: 3.75, usageUnit: "g" },
+      { name: "Part B", price: 113, qty: 25, unit: "lbs", usage: 7.5, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "Kalix Bloom",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "Part A", price: 40, qty: 25, unit: "lbs", usage: 4.2, usageUnit: "g" },
+      { name: "Part B", price: 58, qty: 25, unit: "lbs", usage: 7, usageUnit: "g" },
+      { name: "Part C", price: 70, qty: 25, unit: "lbs", usage: 1, usageUnit: "g" }
+    ]
+  },
+  {
+    name: "VegBloom",
+    isFRA: false,
+    mixEC: 3.0,
+    products: [
+      { name: "VegBloom", price: 213, qty: 25, unit: "lbs", usage: 10, usageUnit: "g" }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let config = {
+  normEC: 3.0,
+  irrigPerPlant: 0.5,   // gal/plant/day
+  sqftPerPlant: 2,       // ft²/plant
+  cycleDays: 63,
+  yieldG: 65             // g/ft²
+};
+
+let fraPricingTier = "wholesale";
+let fraCustomPrices = null; // null = use tier; object = custom overrides
+
+let localRecipes = [];
+let sortCol = "cpp";
+let sortAsc = true;
+let searchTerm = "";
+let expandedRows = new Set();
+
+// ═══════════════════════════════════════════════
+// FRA PRICING HELPERS
+// ═══════════════════════════════════════════════
+
+function getFRAPrice(productName) {
+  if (fraPricingTier === "custom" && fraCustomPrices && fraCustomPrices[productName] !== undefined) {
+    return fraCustomPrices[productName];
+  }
+  const pricing = FRA_PRICING[productName];
+  if (!pricing) return 96.25; // fallback
+  if (fraPricingTier === "custom") {
+    // Custom but no override yet — use wholesale as base
+    return fraCustomPrices?.[productName] ?? pricing.wholesale;
+  }
+  return pricing[fraPricingTier];
+}
+
+function setPricingTier(tier) {
+  fraPricingTier = tier;
+  if (tier !== "custom") {
+    fraCustomPrices = null;
+  } else if (!fraCustomPrices) {
+    // Initialize custom from current tier's values
+    fraCustomPrices = {};
+    Object.keys(FRA_PRICING).forEach(p => {
+      fraCustomPrices[p] = FRA_PRICING[p].wholesale;
+    });
+  }
+  document.querySelectorAll("#pricing-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === tier);
+  });
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════════
+
+function getProductPrice(product, isFRA) {
+  if (isFRA) return getFRAPrice(product.name);
+  return product.price;
+}
+
+function calcProductCostPerGal(product, isFRA) {
+  const price = getProductPrice(product, isFRA);
+  if (product.usageUnit === "g") {
+    return (product.usage / G_PER_LB) * (price / product.qty);
+  } else {
+    return (product.usage / ML_PER_GAL) * (price / product.qty);
+  }
+}
+
+function calcRecipe(recipe) {
+  const productCosts = recipe.products.map(p => ({
+    ...p,
+    price: getProductPrice(p, recipe.isFRA),
+    costPerGal: calcProductCostPerGal(p, recipe.isFRA)
+  }));
+
+  const rawCost = productCosts.reduce((s, p) => s + p.costPerGal, 0);
+  const normCost = rawCost * (config.normEC / recipe.mixEC);
+
+  // Effective irrigation rate: gal/plant/day ÷ ft²/plant = gal/ft²/day
+  const irrigPerSqft = config.irrigPerPlant / config.sqftPerPlant;
+
+  // CPP: normalized $/gal × gal/ft²/day × days ÷ g/ft² × 454 g/lb = $/lb
+  const cpp = normCost * irrigPerSqft * config.cycleDays / config.yieldG * 454;
+
+  return {
+    ...recipe,
+    productCosts,
+    rawCost,
+    normCost,
+    cpp
+  };
+}
+
+// ═══════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════
+
+function getAllRecipes() {
+  return [...MASTER_RECIPES, ...localRecipes.map(r => ({ ...r, isLocal: true }))];
+}
+
+function fmtMoney(n) {
+  if (n < 0.01) return "$" + n.toFixed(4);
+  if (n < 1) return "$" + n.toFixed(3);
+  return "$" + n.toFixed(2);
+}
+
+function render() {
+  const allRecipes = getAllRecipes();
+  let calculated = allRecipes.map(calcRecipe);
+
+  // Find lowest CPP across all recipes
+  let lowestCpp = Infinity;
+  calculated.forEach(r => { if (r.cpp < lowestCpp) lowestCpp = r.cpp; });
+
+  // Filter by search
+  const term = searchTerm.toLowerCase();
+  let filtered = calculated.filter(r => {
+    if (r.isFRA) return true;
+    if (!term) return true;
+    return r.name.toLowerCase().includes(term);
+  });
+
+  // Separate FRA and non-FRA
+  let fraRecipes = filtered.filter(r => r.isFRA);
+  let otherRecipes = filtered.filter(r => !r.isFRA);
+
+  // Sort helper
+  const sortFn = (a, b) => {
+    let va, vb;
+    switch (sortCol) {
+      case "name": va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+      case "mixEC": va = a.mixEC; vb = b.mixEC; break;
+      case "rawCost": va = a.rawCost; vb = b.rawCost; break;
+      case "normCost": va = a.normCost; vb = b.normCost; break;
+      case "cpp": va = a.cpp; vb = b.cpp; break;
+      default: va = a.cpp; vb = b.cpp;
+    }
+    if (typeof va === "string") {
+      return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    }
+    return sortAsc ? va - vb : vb - va;
+  };
+  fraRecipes.sort(sortFn);
+  otherRecipes.sort(sortFn);
+
+  // Build table rows
+  let html = "";
+  const totalCols = 6;
+
+  fraRecipes.forEach(r => {
+    html += renderMainRow(r, lowestCpp);
+    if (expandedRows.has(r.name)) html += renderDetailRow(r, totalCols);
+  });
+
+  if (fraRecipes.length > 0 && otherRecipes.length > 0) {
+    html += `<tr class="fra-separator"><td colspan="${totalCols}"></td></tr>`;
+  }
+
+  otherRecipes.forEach(r => {
+    html += renderMainRow(r, lowestCpp);
+    if (expandedRows.has(r.name)) html += renderDetailRow(r, totalCols);
+  });
+
+  document.getElementById("table-body").innerHTML = html;
+
+  // Update sort headers
+  document.querySelectorAll(".comp-table thead th").forEach(th => {
+    th.classList.remove("sorted");
+  });
+  const colIndex = { name: 0, mixEC: 1, rawCost: 2, normCost: 3, cpp: 4 };
+  const idx = colIndex[sortCol];
+  if (idx !== undefined) {
+    const ths = document.querySelectorAll(".comp-table thead th");
+    if (ths[idx]) {
+      ths[idx].classList.add("sorted");
+      const arrow = ths[idx].querySelector(".sort-arrow");
+      if (arrow) arrow.innerHTML = sortAsc ? "&#9650;" : "&#9660;";
+    }
+  }
+
+  updateURL();
+}
+
+function renderMainRow(r, lowestCpp) {
+  const isBest = Math.abs(r.cpp - lowestCpp) < 0.001;
+  const isExpanded = expandedRows.has(r.name);
+
+  let classes = [];
+  if (r.isFRA) classes.push("row-fra");
+  if (isBest) classes.push("row-best");
+
+  let badge = "";
+  if (r.isFRA) badge = `<span class="badge-fra">FRA</span>`;
+  if (r.isLocal) badge = `<span class="badge-local">Local</span>`;
+
+  return `<tr class="${classes.join(' ')}">
+    <td>${esc(r.name)}${badge}</td>
+    <td>${r.mixEC.toFixed(1)}</td>
+    <td>${fmtMoney(r.rawCost)}</td>
+    <td>${fmtMoney(r.normCost)}</td>
+    <td style="font-weight:700;">${fmtMoney(r.cpp)}</td>
+    <td class="row-toggle" onclick="toggleRow('${esc(r.name)}')"><span class="chevron-icon ${isExpanded ? 'open' : ''}">&#9662;</span></td>
+  </tr>`;
+}
+
+function renderDetailRow(r, totalCols) {
+  let html = `<table class="detail-table">
+    <colgroup>
+      <col class="dt-name"><col class="dt-price"><col class="dt-pkg"><col class="dt-usage"><col class="dt-cost">
+    </colgroup>
+    <thead><tr>
+      <th>Product</th>
+      <th>Price</th>
+      <th>Package</th>
+      <th>Usage / gal</th>
+      <th>$/gal</th>
+    </tr></thead><tbody>`;
+
+  r.productCosts.forEach(p => {
+    const pkgLabel = p.unit === "lbs" ? `${p.qty} lbs` : `${p.qty} gal`;
+    const usageLabel = p.usageUnit === "g" ? `${p.usage} g` : `${p.usage} mL`;
+    html += `<tr>
+      <td style="font-weight:600;">${esc(p.name)}</td>
+      <td>${fmtMoney(p.price)}</td>
+      <td>${pkgLabel}</td>
+      <td>${usageLabel}</td>
+      <td style="font-weight:600;">${fmtMoney(p.costPerGal)}</td>
+    </tr>`;
+  });
+
+  // Totals row
+  html += `<tr class="total-row">
+    <td>Total</td>
+    <td></td>
+    <td></td>
+    <td></td>
+    <td style="font-weight:700;">${fmtMoney(r.rawCost)}</td>
+  </tr>`;
+
+  html += `</tbody></table>`;
+
+  // Delete button for local recipes
+  let deleteBtn = "";
+  if (r.isLocal) {
+    deleteBtn = `<div style="text-align:right; margin-top:8px;">
+      <button class="btn-delete" onclick="deleteRecipe('${esc(r.name)}')">Delete Recipe</button>
+    </div>`;
+  }
+
+  return `<tr class="detail-row"><td colspan="${totalCols}">
+    <div class="detail-inner">${html}${deleteBtn}</div>
+  </td></tr>`;
+}
+
+function esc(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// ═══════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════
+
+function onConfigChange() {
+  config.normEC = parseFloat(document.getElementById("cfg-normEC").value) || 3.0;
+  config.irrigPerPlant = parseFloat(document.getElementById("cfg-irrigRate").value) || 0.5;
+  config.sqftPerPlant = parseFloat(document.getElementById("cfg-sqftPlant").value) || 2;
+  config.cycleDays = parseInt(document.getElementById("cfg-cycleDays").value) || 63;
+  config.yieldG = parseFloat(document.getElementById("cfg-yield").value) || 65;
+  render();
+}
+
+function onSearch() {
+  searchTerm = document.getElementById("search").value;
+  render();
+}
+
+function sortBy(col) {
+  if (sortCol === col) {
+    sortAsc = !sortAsc;
+  } else {
+    sortCol = col;
+    sortAsc = true;
+  }
+  render();
+}
+
+function toggleRow(name) {
+  if (expandedRows.has(name)) {
+    expandedRows.delete(name);
+  } else {
+    expandedRows.add(name);
+  }
+  render();
+}
+
+function deleteRecipe(name) {
+  localRecipes = localRecipes.filter(r => r.name !== name);
+  expandedRows.delete(name);
+  saveLocalRecipes();
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// MODAL — ADD RECIPE
+// ═══════════════════════════════════════════════
+
+let modalProductCount = 0;
+
+function openModal() {
+  document.getElementById("modal-overlay").classList.add("open");
+  document.getElementById("modal-name").value = "";
+  document.getElementById("modal-ec").value = "";
+  document.getElementById("modal-products").innerHTML = "";
+  modalProductCount = 0;
+  addProductEntry();
+  document.getElementById("modal-name").focus();
+}
+
+function closeModal() {
+  document.getElementById("modal-overlay").classList.remove("open");
+}
+
+function addProductEntry() {
+  if (modalProductCount >= 5) return;
+  modalProductCount++;
+  const idx = modalProductCount;
+  const div = document.createElement("div");
+  div.className = "product-entry";
+  div.id = `product-entry-${idx}`;
+  div.innerHTML = `
+    <div class="product-header">
+      <span>Product ${idx}</span>
+      ${idx > 1 ? `<button class="btn-remove-product" onclick="removeProductEntry(${idx})">&times;</button>` : ''}
+    </div>
+    <div class="form-group">
+      <label>Product Name</label>
+      <input type="text" class="form-input" id="pname-${idx}" placeholder="e.g. Part A">
+    </div>
+    <div class="product-grid">
+      <div class="form-group">
+        <label>Price ($)</label>
+        <input type="number" class="form-input" id="pprice-${idx}" placeholder="82" step="0.01" min="0">
+      </div>
+      <div class="form-group">
+        <label>Package Size</label>
+        <input type="number" class="form-input" id="pqty-${idx}" placeholder="25" step="0.01" min="0.01">
+      </div>
+      <div class="form-group">
+        <label>Package Unit</label>
+        <select class="form-select" id="punit-${idx}">
+          <option value="lbs">lbs (dry)</option>
+          <option value="gal">gal (liquid)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Usage per Gallon</label>
+        <input type="number" class="form-input" id="pusage-${idx}" placeholder="5.0" step="0.01" min="0">
+      </div>
+    </div>
+    <div style="margin-top:4px;">
+      <span style="font-size:0.72rem; color:var(--text-muted);" id="pusage-unit-label-${idx}">grams per gallon of irrigation</span>
+    </div>
+  `;
+  document.getElementById("modal-products").appendChild(div);
+
+  document.getElementById(`punit-${idx}`).addEventListener("change", function() {
+    const label = this.value === "lbs" ? "grams per gallon of irrigation" : "mL per gallon of irrigation";
+    document.getElementById(`pusage-unit-label-${idx}`).textContent = label;
+  });
+
+  document.getElementById("btn-add-product").style.display = modalProductCount >= 5 ? "none" : "";
+}
+
+function removeProductEntry(idx) {
+  const el = document.getElementById(`product-entry-${idx}`);
+  if (el) el.remove();
+}
+
+function saveRecipe() {
+  const name = document.getElementById("modal-name").value.trim();
+  const ec = parseFloat(document.getElementById("modal-ec").value);
+
+  if (!name) { alert("Please enter a recipe name."); return; }
+  if (!ec || ec <= 0) { alert("Please enter a valid Mix EC."); return; }
+
+  const allNames = getAllRecipes().map(r => r.name.toLowerCase());
+  if (allNames.includes(name.toLowerCase())) {
+    alert("A recipe with this name already exists.");
+    return;
+  }
+
+  const products = [];
+  document.querySelectorAll(".product-entry").forEach(entry => {
+    const id = entry.id.replace("product-entry-", "");
+    const pname = document.getElementById(`pname-${id}`)?.value.trim();
+    const price = parseFloat(document.getElementById(`pprice-${id}`)?.value);
+    const qty = parseFloat(document.getElementById(`pqty-${id}`)?.value);
+    const unit = document.getElementById(`punit-${id}`)?.value;
+    const usage = parseFloat(document.getElementById(`pusage-${id}`)?.value);
+
+    if (pname && price > 0 && qty > 0 && usage >= 0) {
+      products.push({
+        name: pname,
+        price,
+        qty,
+        unit: unit || "lbs",
+        usage,
+        usageUnit: unit === "gal" ? "mL" : "g"
+      });
+    }
+  });
+
+  if (products.length === 0) {
+    alert("Please add at least one product with valid inputs.");
+    return;
+  }
+
+  localRecipes.push({ name, isFRA: false, mixEC: ec, products });
+  saveLocalRecipes();
+  closeModal();
+  render();
+}
+
+// ═══════════════════════════════════════════════
+// LOCAL STORAGE
+// ═══════════════════════════════════════════════
+
+function saveLocalRecipes() {
+  try {
+    localStorage.setItem("fra-cost-recipes", JSON.stringify(localRecipes));
+  } catch (e) {}
+}
+
+function loadLocalRecipes() {
+  try {
+    const data = localStorage.getItem("fra-cost-recipes");
+    if (data) localRecipes = JSON.parse(data);
+  } catch (e) {}
+}
+
+// ═══════════════════════════════════════════════
+// URL STATE
+// ═══════════════════════════════════════════════
+
+function updateURL() {
+  const p = new URLSearchParams();
+  if (config.normEC !== 3.0) p.set("nec", config.normEC);
+  if (config.irrigPerPlant !== 0.5) p.set("ir", config.irrigPerPlant);
+  if (config.sqftPerPlant !== 2) p.set("sf", config.sqftPerPlant);
+  if (config.cycleDays !== 63) p.set("cd", config.cycleDays);
+  if (config.yieldG !== 65) p.set("y", config.yieldG);
+  if (fraPricingTier !== "wholesale") p.set("pt", fraPricingTier);
+  if (sortCol !== "cpp") p.set("s", sortCol);
+  if (!sortAsc) p.set("sd", "d");
+  const qs = p.toString();
+  history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+}
+
+function loadFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.has("nec")) { const v = parseFloat(p.get("nec")); if (v > 0 && v <= 10) config.normEC = v; }
+  if (p.has("ir")) { const v = parseFloat(p.get("ir")); if (v > 0) config.irrigPerPlant = v; }
+  if (p.has("sf")) { const v = parseFloat(p.get("sf")); if (v > 0) config.sqftPerPlant = v; }
+  if (p.has("cd")) { const v = parseInt(p.get("cd")); if (v > 0) config.cycleDays = v; }
+  if (p.has("y")) { const v = parseFloat(p.get("y")); if (v > 0) config.yieldG = v; }
+  if (p.has("pt")) {
+    const v = p.get("pt");
+    if (["wholesale","commercial","msrp","custom"].includes(v)) fraPricingTier = v;
+  }
+  if (p.has("s")) {
+    const v = p.get("s");
+    if (["name","mixEC","rawCost","normCost","cpp"].includes(v)) sortCol = v;
+  }
+  if (p.has("sd") && p.get("sd") === "d") sortAsc = false;
+
+  // Sync inputs
+  document.getElementById("cfg-normEC").value = config.normEC;
+  document.getElementById("cfg-irrigRate").value = config.irrigPerPlant;
+  document.getElementById("cfg-sqftPlant").value = config.sqftPerPlant;
+  document.getElementById("cfg-cycleDays").value = config.cycleDays;
+  document.getElementById("cfg-yield").value = config.yieldG;
+
+  // Sync pricing tier buttons
+  document.querySelectorAll("#pricing-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === fraPricingTier);
+  });
+}
+
+function shareLink() {
+  const url = window.location.href;
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(url);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = url;
+    ta.style.position = "fixed";
+    ta.style.left = "-9999px";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+  }
+  const btn = event.currentTarget;
+  const origHTML = btn.innerHTML;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+  btn.style.borderColor = "var(--accent)";
+  btn.style.color = "var(--accent)";
+  setTimeout(() => { btn.innerHTML = origHTML; btn.style.borderColor = ""; btn.style.color = ""; }, 2000);
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+loadLocalRecipes();
+loadFromURL();
+render();
+</script>
+
+</body>
+</html>
