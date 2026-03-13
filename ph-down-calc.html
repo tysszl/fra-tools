@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Front Row Ag · pH Down Calculator</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -21,7 +19,44 @@
     --danger: #e63e3e;
   }
 
+  /* ── Light Mode ──────────────────────── */
+  body.light {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --card-border: #e2e5ea;
+    --accent: #1a7a5a;
+    --accent-dim: rgba(26,122,90,0.12);
+    --text: #1a1d23;
+    --text-dim: #474c53;
+    --text-muted: #5a6069;
+    --input-bg: #ffffff;
+    --input-border: #d0d4da;
+    --danger: #c53030;
+  }
+  body.light .card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  body.light .result-card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 0 12px rgba(26,122,90,0.08);
+  }
+  body.light .header h1 span { color: #1a1d23; }
+  body.light .note {
+    background: rgba(26,122,90,0.04);
+    border-color: rgba(26,122,90,0.12);
+  }
+
   * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── Focus States ──────────────────────── */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--accent-dim);
+  }
 
   input::-webkit-inner-spin-button,
   input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -34,9 +69,10 @@
     line-height: 1.5;
     min-height: 100vh;
     padding: 20px 16px 40px;
+    transition: background-color 0.3s, color 0.3s;
   }
 
-  .container { max-width: 520px; margin: 0 auto; }
+  .container { max-width: 520px; margin: 0 auto; position: relative; }
 
   /* ── Header ───────────────────────────── */
   .header {
@@ -49,7 +85,7 @@
     font-weight: 700;
     letter-spacing: -0.02em;
   }
-  .header h1 .brand { color: var(--accent); }
+  .header h1 span { color: #fff; }
   .header p {
     color: var(--text-muted);
     font-size: 0.82rem;
@@ -63,6 +99,7 @@
     border-radius: 14px;
     padding: 20px;
     margin-bottom: 14px;
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
   .card-label {
     font-size: 0.72rem;
@@ -118,6 +155,7 @@
     padding: 20px;
     margin-bottom: 14px;
     box-shadow: 0 0 20px rgba(62,230,182,0.06);
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
   }
   .result-row {
     display: flex;
@@ -174,6 +212,9 @@
     color: var(--text-dim);
     border-bottom: 1px solid rgba(42,42,42,0.5);
   }
+  body.light .ref-table td {
+    border-bottom-color: rgba(0,0,0,0.06);
+  }
   .ref-table td:first-child {
     text-align: left;
     font-weight: 600;
@@ -196,19 +237,171 @@
   }
   .note strong { color: var(--text-dim); font-weight: 600; }
 
+  /* ── Theme Toggle ────────────────────── */
+  .theme-toggle {
+    position: absolute;
+    top: 12px;
+    right: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .theme-toggle svg { width: 16px; height: 16px; }
+
   /* ── Mobile ────────────────────────────── */
   @media (max-width: 480px) {
     .input-label { min-width: 120px; font-size: 0.78rem; }
     .input-row input { width: 80px; }
     .result-value { font-size: 1.1rem; }
   }
+
+  /* ── Print Header (hidden on screen) ── */
+  .print-header { display: none; }
+  .print-footer { display: none; }
+
+  /* ── Print ────────────────────────────── */
+  @media print {
+    @page { margin: 0.5in; size: letter; }
+    body { background: #fff; color: #000; padding: 0; font-size: 11px; }
+    .container { max-width: 100%; padding: 0; }
+
+    *, *::before, *::after {
+      transition: none !important;
+      box-shadow: none !important;
+    }
+
+    /* Override CSS variables for print */
+    :root {
+      --text: #000;
+      --text-dim: #333;
+      --text-muted: #555;
+    }
+
+    /* Hide interactive elements */
+    .header, .screen-only { display: none !important; }
+
+    /* Show print header */
+    .print-header {
+      display: block;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #222;
+    }
+    .print-header-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .print-logo {
+      height: 42px;
+      width: auto;
+    }
+    .print-header-right { flex: 1; }
+    .print-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .print-config {
+      font-size: 10px;
+      color: #444;
+      margin-top: 1px;
+    }
+
+    /* Cards: clean for print */
+    .card {
+      background: #fff;
+      border: none;
+      border-radius: 0;
+      padding: 8px 0;
+      margin-bottom: 4px;
+      break-inside: avoid;
+    }
+    .card-label { color: #333; }
+
+    /* Result card */
+    .result-card {
+      background: #fff;
+      border: 2px solid #222;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      break-inside: avoid;
+    }
+    .result-value { color: #000; }
+
+    /* Inputs: flatten for print */
+    .input-row input {
+      background: none;
+      border: none;
+      color: #000;
+      font-weight: 700;
+      padding: 0;
+    }
+
+    /* Reference table */
+    .ref-table th { color: #333; border-bottom-color: #333; }
+    .ref-table td { color: #333; border-bottom-color: #ddd; }
+    .ref-table tr.active td { color: #000; font-weight: 700; }
+
+    /* Note */
+    .note {
+      background: #f9f9f9;
+      border-color: #ccc;
+      color: #333;
+    }
+    .note strong { color: #000; }
+
+    /* Print footer */
+    .print-footer {
+      display: block !important;
+      text-align: center;
+      font-size: 8px;
+      color: #555;
+      margin-top: 8px;
+      padding-top: 4px;
+      border-top: 1px solid #ddd;
+    }
+  }
 </style>
 </head>
 <body>
 
 <div class="container">
+
+  <!-- Theme Toggle (hidden in print) -->
+  <button class="theme-toggle screen-only" onclick="toggleTheme()" aria-label="Toggle light/dark mode">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  </button>
+
+  <!-- Print Header (hidden on screen, shown in print) -->
+  <div class="print-header">
+    <div class="print-header-row">
+      <div class="print-header-left">
+        <img src="logo.png" alt="Front Row Ag" class="print-logo">
+      </div>
+      <div class="print-header-right">
+        <div class="print-title">pH Down Calculator</div>
+        <div class="print-config" id="print-config-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
   <div class="header">
-    <h1><span class="brand">Front Row</span> pH Down Calculator</h1>
+    <h1><span>Front Row Ag</span> · pH Down Calculator</h1>
     <p>70% Phosphoric Acid &middot; Alkalinity Neutralization</p>
   </div>
 
@@ -273,6 +466,11 @@
     FRA recipes land in the 5.5–6.0 pH sweet spot with ~40 ppm residual alkalinity.
     Always verify with a pH meter — dissolved minerals and CO2 can shift actual results.
   </div>
+
+  <!-- Print Footer (hidden on screen, shown in print) -->
+  <div class="print-footer">
+    frontrowag.com · Generated by Front Row Ag pH Down Calculator
+  </div>
 </div>
 
 <script>
@@ -307,6 +505,7 @@
       : 'No alkalinity to neutralize';
 
     buildRefTable(neutralize);
+    updatePrintConfig(startAlk, targetAlk, volume);
   }
 
   function formatTotal(ml) {
@@ -315,7 +514,6 @@
   }
 
   function buildRefTable(activeNeutralize) {
-    // Round to nearest ref value for highlighting
     const closestRef = refPpms.reduce((prev, curr) =>
       Math.abs(curr - activeNeutralize) < Math.abs(prev - activeNeutralize) ? curr : prev
     );
@@ -335,12 +533,39 @@
     refTableBody.innerHTML = html;
   }
 
+  function updatePrintConfig(startAlk, targetAlk, volume) {
+    const el = document.getElementById('print-config-line');
+    if (el) {
+      el.textContent = `Alkalinity: ${startAlk} → ${targetAlk} ppm · Volume: ${volume} gal`;
+    }
+  }
+
+  // ── Theme Toggle ─────────────────────────
+  const ICON_SUN = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+  const ICON_MOON = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+
+  function toggleTheme() {
+    const isLight = document.body.classList.toggle('light');
+    localStorage.setItem('fra-phdown-theme', isLight ? 'light' : 'dark');
+    document.getElementById('theme-icon').innerHTML = isLight ? ICON_MOON : ICON_SUN;
+  }
+
+  function loadTheme() {
+    const savedTheme = localStorage.getItem('fra-phdown-theme');
+    const theme = savedTheme || 'dark';
+    if (theme === 'light') {
+      document.body.classList.add('light');
+      document.getElementById('theme-icon').innerHTML = ICON_MOON;
+    }
+  }
+
   // Recalculate on any input change
   startAlkEl.addEventListener('input', calculate);
   targetAlkEl.addEventListener('input', calculate);
   volumeEl.addEventListener('input', calculate);
 
   // Initialize
+  loadTheme();
   calculate();
 </script>
 
