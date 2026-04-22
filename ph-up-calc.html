@@ -3,29 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Front Row pH Up Calculator</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Front Row Ag · pH Up Calculator</title>
     <style>
+        :root {
+            --bg: #0d0d0d;
+            --card: #161616;
+            --card-border: #2a2a2a;
+            --accent: #3ee6b6;
+            --accent-dim: rgba(62,230,182,0.15);
+            --text: #e8e8e8;
+            --text-dim: #c0c0c0;
+            --text-muted: #a0a0a0;
+            --input-bg: #1c1c1c;
+            --input-border: #3a3a3a;
+            --danger: #e63e3e;
+        }
+
+        body.light {
+            --bg: #f5f6f8;
+            --card: #ffffff;
+            --card-border: #e2e5ea;
+            --accent: #1a7a5a;
+            --accent-dim: rgba(26,122,90,0.12);
+            --text: #1a1d23;
+            --text-dim: #474c53;
+            --text-muted: #5a6069;
+            --input-bg: #ffffff;
+            --input-border: #d0d4da;
+            --danger: #c53030;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
+        /* ── Focus States ──────────────────────── */
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+        .theme-toggle:focus-visible,
+        .export-btn:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px var(--accent-dim);
+        }
+
         body {
-            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #000000;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
             min-height: 100vh;
             padding: 20px;
-            color: #ffffff;
+            color: var(--text);
             line-height: 1.5;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         .container {
             max-width: 640px;
             margin: 0 auto;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
         }
 
         h1 {
@@ -36,20 +80,24 @@
             letter-spacing: -0.5px;
         }
 
+        h1 span {
+            color: #fff;
+        }
+
         .subtitle {
             text-align: center;
-            color: #888;
-            margin-bottom: 24px;
+            color: var(--text-muted);
+            margin-bottom: 0;
             font-size: 0.95rem;
         }
 
         /* Collapsible Sections */
         .collapsible {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
+            background: var(--card);
+            border-radius: 14px;
             margin-bottom: 12px;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
         }
 
         .collapsible-header {
@@ -62,7 +110,7 @@
         }
 
         .collapsible-header:hover {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--accent-dim);
         }
 
         .collapsible-icon {
@@ -94,7 +142,7 @@
         .collapsible-content {
             display: none;
             padding: 0 16px 16px 52px;
-            color: #ccc;
+            color: var(--text-dim);
             font-size: 0.9rem;
         }
 
@@ -103,28 +151,28 @@
         }
 
         .warning-section {
-            border-color: rgba(239, 68, 68, 0.3);
+            border-color: var(--danger);
         }
 
         .warning-section .collapsible-icon {
-            color: #ef4444;
+            color: var(--danger);
         }
 
         .info-section .collapsible-icon {
-            color: #3b82f6;
+            color: #4488dd;
         }
 
         .tech-section .collapsible-icon {
-            color: #888;
+            color: var(--text-muted);
         }
 
         /* Main Calculator Card */
         .calculator-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
+            background: var(--card);
+            border-radius: 14px;
             padding: 24px;
             margin-top: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--card-border);
         }
 
         .section-title {
@@ -142,10 +190,10 @@
 
         .segment-btn {
             padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 6px;
-            color: #ccc;
+            color: var(--text-dim);
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -153,21 +201,21 @@
         }
 
         .segment-btn:hover {
-            border-color: rgba(255, 255, 255, 0.3);
-            color: #fff;
+            border-color: var(--accent);
+            color: var(--text);
         }
 
         .segment-btn.active {
-            border-color: #2dd4bf;
-            color: #2dd4bf;
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         /* Mode Context */
         .mode-context {
             font-size: 0.85rem;
-            color: #888;
+            color: var(--text-muted);
             padding: 12px 16px;
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--input-bg);
             border-radius: 8px;
             margin-bottom: 16px;
             display: none;
@@ -181,11 +229,11 @@
         }
 
         .mode-context .label {
-            color: #aaa;
+            color: var(--text-muted);
         }
 
         .mode-context .detail {
-            color: #fff;
+            color: var(--text);
             font-weight: 500;
         }
 
@@ -209,7 +257,7 @@
             -webkit-appearance: none;
             width: 18px;
             height: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 2px solid var(--input-border);
             border-radius: 50%;
             cursor: pointer;
             position: relative;
@@ -217,7 +265,7 @@
         }
 
         .stock-option input[type="radio"]:checked {
-            border-color: #2dd4bf;
+            border-color: var(--accent);
         }
 
         .stock-option input[type="radio"]:checked::after {
@@ -228,34 +276,36 @@
             transform: translate(-50%, -50%);
             width: 8px;
             height: 8px;
-            background: #2dd4bf;
+            background: var(--accent);
             border-radius: 50%;
         }
 
         .stock-option label {
             cursor: pointer;
             font-size: 0.9rem;
-            color: #ccc;
+            color: var(--text-dim);
         }
 
         .stock-option input[type="radio"]:checked + label {
-            color: #fff;
+            color: var(--text);
         }
 
         .stock-option .custom-input {
             width: 70px;
             padding: 6px 10px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 6px;
-            color: #fff;
+            color: var(--text);
             font-size: 0.9rem;
             font-family: inherit;
+            font-weight: 600;
         }
 
         .stock-option .custom-input:focus {
-            outline: none;
-            border-color: #2dd4bf;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-color: var(--input-border);
         }
 
         .setting-row {
@@ -266,28 +316,30 @@
 
         .setting-label {
             font-size: 0.9rem;
-            color: #aaa;
+            color: var(--text-muted);
         }
 
         .setting-input {
             width: 100px;
             padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 6px;
-            color: #fff;
+            color: var(--text);
             font-size: 1rem;
             font-family: inherit;
+            font-weight: 600;
         }
 
         .setting-input:focus {
-            outline: none;
-            border-color: #2dd4bf;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+            border-color: var(--input-border);
         }
 
         .setting-unit {
             font-size: 0.85rem;
-            color: #888;
+            color: var(--text-muted);
         }
 
         /* EC Preset Buttons */
@@ -300,10 +352,10 @@
 
         .preset-btn {
             padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 6px;
-            color: #ccc;
+            color: var(--text-dim);
             font-size: 0.85rem;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -311,13 +363,13 @@
         }
 
         .preset-btn:hover {
-            border-color: rgba(255, 255, 255, 0.3);
-            color: #fff;
+            border-color: var(--accent);
+            color: var(--text);
         }
 
         .preset-btn.active {
-            border-color: #2dd4bf;
-            color: #2dd4bf;
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         /* Phase Table */
@@ -331,11 +383,11 @@
             text-align: left;
             font-size: 0.75rem;
             font-weight: 600;
-            color: #888;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
             padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--card-border);
         }
 
         .phase-table th:not(:first-child) {
@@ -362,10 +414,10 @@
             align-items: center;
             gap: 4px;
             padding: 4px 10px;
-            border: 1px solid #2dd4bf;
+            border: 1px solid var(--accent);
             border-radius: 6px;
             transition: all 0.2s;
-            color: #2dd4bf;
+            color: var(--accent);
             font-size: 0.75rem;
             font-weight: 600;
             text-transform: uppercase;
@@ -373,7 +425,7 @@
         }
 
         .unit-toggle:hover {
-            background: rgba(45, 212, 191, 0.15);
+            background: var(--accent-dim);
         }
 
         .unit-toggle svg {
@@ -391,7 +443,7 @@
         .unit-toggle.no-toggle {
             cursor: default;
             border-color: transparent;
-            color: #888;
+            color: var(--text-muted);
             padding: 0;
         }
 
@@ -404,7 +456,7 @@
         }
 
         .phase-row {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--card-border);
         }
 
         .phase-row:last-child {
@@ -428,8 +480,8 @@
         .ec-input-wrapper {
             display: inline-flex;
             align-items: center;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 6px;
             overflow: hidden;
         }
@@ -439,10 +491,11 @@
             padding: 8px 10px;
             background: transparent;
             border: none;
-            color: #fff;
+            color: var(--text);
             font-size: 1rem;
             text-align: right;
             font-family: inherit;
+            font-weight: 600;
         }
 
         .ec-input:focus {
@@ -460,15 +513,16 @@
         }
 
         .ec-input-wrapper:focus-within {
-            border-color: #2dd4bf;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
         /* Recipe dropdown */
         .recipe-select {
             background: transparent;
-            border: 1px solid #2dd4bf;
+            border: 1px solid var(--accent);
             border-radius: 4px;
-            color: #fff;
+            color: var(--text);
             font-weight: 600;
             font-size: 0.95rem;
             font-family: inherit;
@@ -484,17 +538,18 @@
         }
 
         .recipe-select:focus {
-            outline: none;
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
         }
 
         .recipe-select option {
-            background: #1a1a2e;
-            color: #fff;
+            background: var(--card);
+            color: var(--text);
         }
 
         .ec-unit {
             padding: 8px 10px 8px 4px;
-            color: #666;
+            color: var(--text-muted);
             font-size: 0.85rem;
         }
 
@@ -506,18 +561,18 @@
         .result-value {
             font-weight: 700;
             font-size: 1.1rem;
-            color: #2dd4bf;
+            color: var(--accent);
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
         }
 
         .result-unit {
             font-size: 0.75rem;
-            color: #888;
+            color: var(--text-muted);
             margin-left: 4px;
         }
 
         .result-warning {
-            color: #f59e0b;
+            color: #e6a23e;
             font-size: 0.75rem;
             display: none;
         }
@@ -530,7 +585,7 @@
         .action-col-label {
             display: block;
             font-size: 0.6rem;
-            color: #2dd4bf;
+            color: var(--accent);
             font-weight: 600;
             letter-spacing: 0.5px;
             text-transform: uppercase;
@@ -542,7 +597,7 @@
         .gpg-value {
             font-weight: 600;
             font-size: 1rem;
-            color: #888;
+            color: var(--text-muted);
             font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
         }
 
@@ -562,9 +617,9 @@
             width: 22px;
             height: 22px;
             border-radius: 50%;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            background: rgba(0, 0, 0, 0.3);
-            color: #888;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-muted);
             font-size: 0.75rem;
             font-weight: 600;
             cursor: pointer;
@@ -580,9 +635,9 @@
 
         .info-btn:hover,
         .info-btn.active {
-            border-color: #2dd4bf;
-            color: #2dd4bf;
-            background: rgba(45, 212, 191, 0.1);
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-dim);
         }
 
         .info-drawer {
@@ -598,8 +653,8 @@
         }
 
         .info-drawer-content {
-            background: rgba(45, 212, 191, 0.04);
-            border: 1px solid rgba(45, 212, 191, 0.15);
+            background: var(--accent-dim);
+            border: 1px solid var(--card-border);
             border-radius: 10px;
             padding: 14px 16px;
             margin-top: 8px;
@@ -607,7 +662,7 @@
 
         .info-drawer-content p {
             font-size: 0.85rem;
-            color: #ccc;
+            color: var(--text-dim);
             line-height: 1.6;
             margin: 0;
         }
@@ -622,7 +677,7 @@
             gap: 10px;
             margin-top: 24px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid var(--card-border);
             flex-wrap: wrap;
         }
 
@@ -630,10 +685,10 @@
             flex: 1;
             min-width: 140px;
             padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 8px;
-            color: #ccc;
+            color: var(--text-dim);
             font-size: 0.9rem;
             font-weight: 500;
             cursor: pointer;
@@ -646,15 +701,15 @@
         }
 
         .export-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
-            color: #fff;
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--text);
         }
 
         .export-btn.success {
-            background: rgba(45, 212, 191, 0.15);
-            border-color: #2dd4bf;
-            color: #2dd4bf;
+            background: var(--accent-dim);
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         /* Technical Details */
@@ -673,18 +728,18 @@
         .equation-table td {
             padding: 8px;
             text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid var(--card-border);
         }
 
         .equation-table th {
-            color: #888;
+            color: var(--text-muted);
             font-weight: 600;
         }
 
         .equation-table code {
             font-family: 'SF Mono', 'Monaco', monospace;
             font-size: 0.75rem;
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--input-bg);
             padding: 2px 6px;
             border-radius: 4px;
         }
@@ -696,7 +751,7 @@
         .charts-section h4 {
             font-size: 0.9rem;
             margin-bottom: 12px;
-            color: #aaa;
+            color: var(--text-muted);
         }
 
         .chart-grid {
@@ -706,7 +761,7 @@
         }
 
         .chart-item {
-            background: rgba(0, 0, 0, 0.3);
+            background: var(--input-bg);
             border-radius: 8px;
             overflow: hidden;
         }
@@ -715,8 +770,8 @@
             padding: 8px 12px;
             font-weight: 600;
             font-size: 0.85rem;
-            background: rgba(255, 255, 255, 0.05);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: var(--card);
+            border-bottom: 1px solid var(--card-border);
         }
 
         .chart-item img {
@@ -730,18 +785,158 @@
             text-align: center;
             margin-top: 32px;
             padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            color: #555;
+            border-top: 1px solid var(--card-border);
+            color: var(--text-muted);
             font-size: 0.8rem;
         }
 
         .footer a {
-            color: #888;
+            color: var(--text-muted);
             text-decoration: none;
         }
 
         .footer a:hover {
+            color: var(--text);
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: absolute;
+            top: 12px;
+            right: 0;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+            padding: 0;
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .theme-toggle svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* Light Mode Overrides */
+        body.light .card,
+        body.light .collapsible,
+        body.light .calculator-card {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        body.light h1 span {
+            color: #1a1d23;
+        }
+
+        body.light .toggle-btn.active,
+        body.light .segment-btn.active,
+        body.light .preset-btn.active {
+            background: var(--accent);
             color: #fff;
+            font-weight: 600;
+            border-color: var(--accent);
+        }
+
+        /* Print Styles */
+        .print-header {
+            display: none;
+        }
+
+        .print-footer {
+            display: none;
+        }
+
+        @media print {
+            :root {
+                --bg: #ffffff;
+                --card: #ffffff;
+                --card-border: #ddd;
+                --text: #000;
+                --text-dim: #333;
+                --text-muted: #555;
+                --accent: #1a7a5a;
+                --accent-dim: rgba(26,122,90,0.08);
+                --input-bg: #ffffff;
+                --input-border: #ccc;
+            }
+
+            body {
+                min-height: 0;
+                padding: 0;
+                background: #fff;
+                color: #000;
+            }
+
+            .print-header {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #000;
+            }
+
+            .print-header img {
+                height: 32px;
+                width: auto;
+            }
+
+            .print-header span {
+                font-size: 1.1rem;
+                font-weight: 700;
+            }
+
+            .print-footer {
+                display: block !important;
+                text-align: center;
+                margin-top: 12px;
+                padding-top: 4px;
+                border-top: 1px solid #ddd;
+                font-size: 8px;
+                color: #555;
+            }
+
+            .header,
+            .collapsible,
+            .theme-toggle,
+            .export-section,
+            .footer,
+            .screen-only {
+                display: none !important;
+            }
+
+            .calculator-card {
+                border: none;
+                padding: 0;
+                box-shadow: none;
+            }
+
+            .segment-control {
+                display: none;
+            }
+
+            .info-drawer {
+                display: none;
+            }
+
+            .info-btn {
+                display: none;
+            }
+        }
+
+        .screen-only {
+            /* visible on screen by default */
         }
 
         /* Responsive */
@@ -777,8 +972,23 @@
 </head>
 <body>
     <div class="container">
-        <h1>Front Row pH Up Calculator</h1>
-        <p class="subtitle">Find your recommended starting dosage for Front Row pH Up.</p>
+        <!-- Theme Toggle -->
+        <button class="theme-toggle screen-only" onclick="toggleTheme()" aria-label="Toggle light/dark theme">
+            <svg id="theme-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+        </button>
+
+        <!-- Print Header -->
+        <div class="print-header">
+            <img src="logo.png" alt="Front Row Ag">
+            <span>pH Up Calculator</span>
+        </div>
+
+        <div class="header">
+            <h1><span>Front Row Ag</span> &middot; pH Up Calculator</h1>
+            <p class="subtitle">Find your recommended starting dosage for Front Row pH Up.</p>
+        </div>
 
         <!-- Warning Section -->
         <div class="collapsible warning-section">
@@ -790,7 +1000,7 @@
                 </svg>
             </div>
             <div class="collapsible-content">
-                <strong style="color: #ef4444;">&#9888; Overuse of pH Up can result in catastrophic clogs, blockages, and PLANT DEATH.</strong>
+                <strong style="color: var(--danger);">&#9888; Overuse of pH Up can result in catastrophic clogs, blockages, and PLANT DEATH.</strong>
                 If you are using more than the recommended amounts, contact your Sales Rep or Retailer for assistance.
             </div>
         </div>
@@ -821,7 +1031,7 @@
             <div class="collapsible-content">
                 <p style="margin-bottom: 12px;">This calculator provides pH Up dosing recommendations based on your recipe and target EC. It's built on regression equations generated from 131 real-world data points, giving you precise starting points for dialing in your pH. All recommendations target a final pH of <strong>5.9</strong>.</p>
 
-                <p style="margin-bottom: 12px; padding: 10px; background: rgba(239, 68, 68, 0.1); border-radius: 6px; border-left: 3px solid #ef4444;"><strong style="color: #ef4444;">Important: RO water only.</strong> These recommendations assume you're starting with RO water. If your source water has alkalinity (tap water, well water), you will need <em>less</em> pH Up than shown. Using the full recommended amount with alkaline source water will cause problems.</p>
+                <p style="margin-bottom: 12px; padding: 10px; background: rgba(230, 62, 62, 0.1); border-radius: 6px; border-left: 3px solid var(--danger);"><strong style="color: var(--danger);">Important: RO water only.</strong> These recommendations assume you're starting with RO water. If your source water has alkalinity (tap water, well water), you will need <em>less</em> pH Up than shown. Using the full recommended amount with alkaline source water will cause problems.</p>
 
                 <p style="margin-bottom: 8px;"><strong>Features:</strong></p>
                 <ul style="margin-left: 16px; margin-bottom: 12px;">
@@ -845,9 +1055,9 @@
                 </svg>
             </div>
             <div class="collapsible-content">
-                <p style="margin-bottom: 10px;">As RO membranes age and approach their replacement threshold, they allow more carbonate and alkalinity to pass through. This gradually raises the natural buffering capacity of your source water — a phenomenon called <strong style="color: #fff;">alkalinity creep</strong>.</p>
+                <p style="margin-bottom: 10px;">As RO membranes age and approach their replacement threshold, they allow more carbonate and alkalinity to pass through. This gradually raises the natural buffering capacity of your source water — a phenomenon called <strong style="color: var(--text);">alkalinity creep</strong>.</p>
                 <p style="margin-bottom: 10px;">The practical effect: your pH Up demand drops over time without any change to your feed recipe. If you notice you're using less pH Up than usual, your membranes may be degrading.</p>
-                <p><strong style="color: #fff;">What to do:</strong> You can lower your standing pH target slightly as membranes age to account for the extra alkalinity passing through. When membranes are eventually replaced, pH Up demand will jump back up to baseline — so recalculate after any membrane change.</p>
+                <p><strong style="color: var(--text);">What to do:</strong> You can lower your standing pH target slightly as membranes age to account for the extra alkalinity passing through. When membranes are eventually replaced, pH Up demand will jump back up to baseline — so recalculate after any membrane change.</p>
             </div>
         </div>
 
@@ -859,8 +1069,8 @@
             </div>
             <div class="info-drawer" id="mode-drawer">
                 <div class="info-drawer-content">
-                    <p><strong style="color:#fff;">Direct to Reservoir:</strong> You're adding pH Up powder directly to your batch tank or reservoir at working strength. The calculator tells you exactly how many grams to add based on your reservoir size.</p>
-                    <p><strong style="color:#fff;">Stock Concentrate:</strong> You've pre-mixed pH Up into a concentrated stock solution that gets injected by dosing equipment. The calculator shows your injection rate (mL/gal or %) based on your stock concentration. Choose the preset that matches your injector, or enter a custom concentration.</p>
+                    <p><strong style="color: var(--text);">Direct to Reservoir:</strong> You're adding pH Up powder directly to your batch tank or reservoir at working strength. The calculator tells you exactly how many grams to add based on your reservoir size.</p>
+                    <p><strong style="color: var(--text);">Stock Concentrate:</strong> You've pre-mixed pH Up into a concentrated stock solution that gets injected by dosing equipment. The calculator shows your injection rate (mL/gal or %) based on your stock concentration. Choose the preset that matches your injector, or enter a custom concentration.</p>
                 </div>
             </div>
 
@@ -926,7 +1136,7 @@
                 </tbody>
             </table>
 
-            <div class="export-section">
+            <div class="export-section screen-only">
                 <button class="export-btn" id="copy-btn" onclick="copySummary()">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1031,8 +1241,13 @@
             </div>
         </div>
 
-        <div class="footer">
+        <div class="footer screen-only">
             <a href="https://frontrowag.com" target="_blank">Front Row Ag</a> &bull; pH Up Calculator
+        </div>
+
+        <!-- Print Footer -->
+        <div class="print-footer">
+            tools.frontrowag.com/ph-up-calc.html
         </div>
     </div>
 
@@ -1053,6 +1268,7 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
             renderPhaseRows();
             setupEventListeners();
             loadFromURL();
@@ -1434,6 +1650,24 @@
 
             if (hasCustomSettings) {
                 document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            }
+        }
+
+        // Theme toggle
+        const ICON_SUN = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+        const ICON_MOON = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light');
+            localStorage.setItem('fra-phup-theme', isLight ? 'light' : 'dark');
+            document.getElementById('theme-icon').innerHTML = isLight ? ICON_MOON : ICON_SUN;
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('fra-phup-theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light');
+                document.getElementById('theme-icon').innerHTML = ICON_MOON;
             }
         }
     </script>

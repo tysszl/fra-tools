@@ -21,6 +21,11 @@ Internal repo for Front Row Ag customer-facing calculator tools. Hosted via GitH
 
 Edit the HTML file, commit, and push. Changes go live in ~1 minute.
 
+## Conventions
+
+- **Single-file HTML.** Inline CSS and JS, no build steps. Each tool is self-contained.
+- **Recipe tool UX.** When Tyler asks for "custom inputs" on recipes, he means selecting from fixed presets per phase — not editing raw percentages.
+
 ## Assets
 
 - **logo.png** — Used in print/PDF header
