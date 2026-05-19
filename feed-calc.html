@@ -166,6 +166,16 @@
     border-color: var(--accent);
     color: var(--accent);
   }
+  .toggle-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .toggle-btn:disabled:hover {
+    border-color: var(--input-border);
+  }
+  .toggle-btn.active:disabled {
+    border-color: var(--accent);
+  }
 
   /* ── Section Labels ───────────────────── */
   .section-label {
@@ -623,6 +633,16 @@
     font-weight: 600;
   }
 
+  .config-note {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin-top: 8px;
+  }
+  .config-note[hidden] {
+    display: none;
+  }
+
   /* ── Theme Toggle ────────────────────── */
   .theme-toggle {
     position: absolute;
@@ -949,7 +969,12 @@
 
     <div class="config-spacer"></div>
     <div class="section-label">Output Units</div>
-    <div class="toggle-group" id="unit-group"></div>
+    <div class="toggle-group" id="unit-group">
+      <button class="toggle-btn active" data-val="mL/gal">mL/gal</button>
+      <button class="toggle-btn" data-val="injection %">injection %</button>
+      <button class="toggle-btn" data-val="ratio">ratio</button>
+      <button class="toggle-btn" data-val="mL/L">mL/L</button>
+    </div>
 
     <div class="config-spacer"></div>
     <div class="section-label">EC Presets</div>
@@ -958,6 +983,25 @@
       <button class="toggle-btn" data-val="standard">Standard</button>
       <button class="toggle-btn" data-val="custom">Custom</button>
     </div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label-row">
+      <div class="section-label">Recipe Schedule</div>
+      <button class="info-btn" onclick="toggleDrawer('recipe-schedule-drawer', this)" aria-label="What do the recipe schedule options mean?">?</button>
+    </div>
+    <div class="toggle-group" id="recipe-schedule-group">
+      <button class="toggle-btn active" data-val="standard">Standard Progression</button>
+      <button class="toggle-btn" data-val="stack-flower">Stack Through Flower</button>
+      <button class="toggle-btn" data-val="custom" disabled>Custom</button>
+    </div>
+    <div class="info-drawer" id="recipe-schedule-drawer">
+      <div class="info-drawer-content">
+        <p><strong>Standard Progression</strong> uses the normal Veg → Stretch → Stack → Swell → Ripen recipe sequence.</p>
+        <p><strong>Stack Through Flower</strong> keeps Veg / Moms on the Veg recipe, then uses the Stack recipe for each flower period. Target EC still follows the selected EC preset or your custom EC values.</p>
+        <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
+      </div>
+    </div>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode fixes the combined B + Bloom tank at Stack, so recipe presets are locked.</p>
 
     <div class="config-spacer"></div>
     <div class="section-label-row">
@@ -1133,6 +1177,40 @@ const RECIPES = {
 
 const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
 
+const RECIPE_SCHEDULE_OPTIONS = {
+  standard: {
+    label: "Standard Progression",
+    phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
+    selectable: true
+  },
+  "stack-flower": {
+    label: "Stack Through Flower",
+    phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Stack" },
+    selectable: true
+  },
+  custom: {
+    label: "Custom",
+    printLabel: "Custom Recipe Schedule",
+    selectable: false
+  },
+  "locked-stack": {
+    label: "Stack Recipe Locked",
+    selectable: false,
+    lockedOnly: true
+  }
+};
+
+const RECIPE_SCHEDULES = Object.fromEntries(
+  Object.entries(RECIPE_SCHEDULE_OPTIONS)
+    .filter(([, option]) => option.phaseRecipe)
+    .map(([key, option]) => [key, option.phaseRecipe])
+);
+
+const RECIPE_SCHEDULE_LABELS = Object.fromEntries(
+  Object.entries(RECIPE_SCHEDULE_OPTIONS)
+    .map(([key, option]) => [key, option.printLabel || option.label])
+);
+
 const EC_PRESETS = {
   high:     { Veg: 3.0, Stretch: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
   standard: { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.6 }
@@ -1168,6 +1246,7 @@ const VALID_APPS    = ["stock", "direct"];
 const VALID_METHODS = Object.keys(STOCK_RATES);
 const VALID_UNITS   = Object.keys(UNIT_FACTORS);
 const VALID_PRESETS = ["high", "standard", "custom"];
+const VALID_RECIPE_SCHEDULES = Object.keys(RECIPE_SCHEDULES);
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 
@@ -1221,8 +1300,13 @@ let state = {
   showTriologic: false,
   unit: "mL/gal",
   ecPreset: "high",
+  recipeSchedule: "standard",
   targetEC: { ...EC_PRESETS.high },
-  phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" }
+  phaseRecipe: { ...RECIPE_SCHEDULES.standard },
+  lastThreeDoserSchedule: {
+    recipeSchedule: "standard",
+    phaseRecipe: { ...RECIPE_SCHEDULES.standard }
+  }
 };
 
 // ═══════════════════════════════════════════════
@@ -1259,7 +1343,47 @@ function getStockConcDisplay(method, component, unit) {
 }
 
 function getRecipe(phase) {
-  return RECIPES[state.phaseRecipe[phase]];
+  return RECIPES[getPhaseRecipeName(phase)];
+}
+
+// AIDEV-NOTE: Recipe schedule presets only change recipe ratios. Target EC stays
+// controlled by the EC preset/custom EC values for each phase.
+function applyRecipeSchedule(schedule) {
+  if (!RECIPE_SCHEDULES[schedule]) return;
+  state.recipeSchedule = schedule;
+  state.phaseRecipe = { ...RECIPE_SCHEDULES[schedule] };
+  rememberThreeDoserSchedule();
+}
+
+function getRecipeScheduleLabel() {
+  if (state.doserMode === "2") return "Stack Recipe Locked";
+  return RECIPE_SCHEDULE_LABELS[state.recipeSchedule];
+}
+
+function getPhaseRecipeName(phase) {
+  return state.doserMode === "2" ? "Stack" : state.phaseRecipe[phase];
+}
+
+function recipesEqual(a, b) {
+  return PHASES.every(phase => a[phase] === b[phase]);
+}
+
+function deriveRecipeSchedule(phaseRecipe) {
+  const matched = Object.entries(RECIPE_SCHEDULES).find(([, recipe]) => recipesEqual(phaseRecipe, recipe));
+  return matched ? matched[0] : "custom";
+}
+
+function rememberThreeDoserSchedule() {
+  if (state.doserMode === "2") return;
+  state.lastThreeDoserSchedule = {
+    recipeSchedule: state.recipeSchedule,
+    phaseRecipe: { ...state.phaseRecipe }
+  };
+}
+
+function restoreThreeDoserSchedule() {
+  state.recipeSchedule = state.lastThreeDoserSchedule.recipeSchedule;
+  state.phaseRecipe = { ...state.lastThreeDoserSchedule.phaseRecipe };
 }
 
 // When PhosZyme is included, scale down A/B/Bloom so total (incl. PhZ) = target EC.
@@ -1417,6 +1541,8 @@ function render() {
 
   // Unit badge
   document.getElementById("unit-badge").textContent = unit === "ratio" ? "ratio" : unit;
+
+  syncRecipeScheduleControls();
 
   // EC displays
   PHASES.forEach(p => {
@@ -1634,6 +1760,7 @@ function render() {
   if (state.showBioFlo) printParts.push("BioFlo");
   if (state.showTriologic) printParts.push("Triologic");
   printParts.push(unit);
+  printParts.push(getRecipeScheduleLabel());
   document.getElementById("print-config-line").textContent = printParts.join(" · ");
 
   // URL state
@@ -1678,12 +1805,38 @@ function rebuildUnitGroup() {
   });
 }
 
+function renderRecipeScheduleGroup() {
+  const group = document.getElementById("recipe-schedule-group");
+  group.innerHTML = Object.entries(RECIPE_SCHEDULE_OPTIONS).map(([key, option]) => {
+    const hidden = option.lockedOnly ? " hidden" : "";
+    const disabled = option.selectable ? "" : " disabled";
+    return `<button class="toggle-btn" data-val="${key}"${hidden}${disabled}>${option.label}</button>`;
+  }).join("");
+}
+
 function applyApplicationState() {
   const isStock = state.application === "stock";
   document.getElementById("method-section").style.display = isStock ? "" : "none";
   document.getElementById("stock-card").style.display = isStock ? "" : "none";
   // Reset doser mode when switching to direct
-  if (!isStock) state.doserMode = "3";
+  if (!isStock && state.doserMode === "2") {
+    state.doserMode = "3";
+    restoreThreeDoserSchedule();
+  }
+}
+
+function syncRecipeScheduleControls() {
+  const locked = state.doserMode === "2";
+  const group = document.getElementById("recipe-schedule-group");
+  const activeSchedule = locked ? "locked-stack" : state.recipeSchedule;
+  group.dataset.state = activeSchedule;
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    const option = RECIPE_SCHEDULE_OPTIONS[btn.dataset.val];
+    btn.hidden = !!option.lockedOnly && !locked;
+    btn.disabled = locked || !option.selectable;
+    btn.classList.toggle("active", btn.dataset.val === activeSchedule);
+  });
+  document.getElementById("recipe-schedule-note").hidden = !locked;
 }
 
 function handleApplicationChange(val) {
@@ -1774,16 +1927,28 @@ function handleECPreset(val) {
   render();
 }
 
+function handleRecipeScheduleChange(val) {
+  if (state.doserMode === "2") return;
+  if (!RECIPE_SCHEDULE_OPTIONS[val]?.selectable) return;
+  applyRecipeSchedule(val);
+  render();
+}
+
 function handleRecipeChange(phase, recipeName) {
   state.phaseRecipe[phase] = recipeName;
+  state.recipeSchedule = deriveRecipeSchedule(state.phaseRecipe);
+  rememberThreeDoserSchedule();
   render();
 }
 
 function handleDoserChange(val) {
+  const previousMode = state.doserMode;
   state.doserMode = val;
-  if (val === "2") {
-    // Lock all phases to Stack recipe
-    PHASES.forEach(p => state.phaseRecipe[p] = "Stack");
+  if (val === "2" && previousMode !== "2") {
+    rememberThreeDoserSchedule();
+  }
+  if (val !== "2" && previousMode === "2") {
+    restoreThreeDoserSchedule();
   }
   render();
 }
@@ -1860,9 +2025,14 @@ function updateURL() {
   if (state.ecPreset === "custom") {
     PHASES.forEach(ph => p.set(`ec_${ph.toLowerCase()}`, state.targetEC[ph]));
   }
-  PHASES.forEach(ph => {
-    if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
-  });
+  if (state.doserMode !== "2") {
+    if (state.recipeSchedule !== "standard") p.set("rs", state.recipeSchedule);
+    if (state.recipeSchedule === "custom") {
+      PHASES.forEach(ph => {
+        if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
+      });
+    }
+  }
   const qs = p.toString();
   history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
 }
@@ -1877,7 +2047,6 @@ function loadFromURL() {
   if (p.has("m") && VALID_METHODS.includes(p.get("m"))) state.method = p.get("m");
   if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
     state.doserMode = p.get("d");
-    if (state.doserMode === "2") PHASES.forEach(ph => state.phaseRecipe[ph] = "Stack");
   }
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") !== "no");
@@ -1898,10 +2067,21 @@ function loadFromURL() {
       });
     }
   }
-  PHASES.forEach(ph => {
-    const rp = p.get(`rp_${ph.toLowerCase()}`);
-    if (rp && PHASES.includes(rp)) state.phaseRecipe[ph] = rp;
-  });
+  if (p.has("rs") && VALID_RECIPE_SCHEDULES.includes(p.get("rs")) && state.doserMode !== "2") {
+    applyRecipeSchedule(p.get("rs"));
+  }
+  if (state.doserMode !== "2") {
+    PHASES.forEach(ph => {
+      const rp = p.get(`rp_${ph.toLowerCase()}`);
+      if (rp && PHASES.includes(rp)) {
+        state.phaseRecipe[ph] = rp;
+      }
+    });
+    state.recipeSchedule = deriveRecipeSchedule(state.phaseRecipe);
+    rememberThreeDoserSchedule();
+  } else {
+    rememberThreeDoserSchedule();
+  }
   // Validate unit against application
   const validUnits = state.application === "stock" ? STOCK_UNITS : DIRECT_UNITS;
   if (!validUnits.includes(state.unit)) {
@@ -1926,6 +2106,9 @@ function syncToggleButtons() {
   document.getElementById("triologic-btn").classList.toggle("active", state.showTriologic);
   document.querySelectorAll("#ec-preset-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.ecPreset);
+  });
+  document.querySelectorAll("#recipe-schedule-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.recipeSchedule);
   });
 }
 
@@ -1971,6 +2154,7 @@ function copySummary() {
   if (state.showBioFlo) configParts.push("BioFlo");
   if (state.showTriologic) configParts.push("Triologic");
   configParts.push(unit);
+  configParts.push(getRecipeScheduleLabel());
 
   let html = `<h2 style="margin:0 0 4px;">Front Row Ag Feed Chart</h2>`;
   html += `<p style="color:#666;margin:0 0 12px;">${configParts.join(" · ")}</p>`;
@@ -2229,15 +2413,17 @@ function loadTheme() {
 // INIT
 // ═══════════════════════════════════════════════
 
+renderRecipeScheduleGroup();
 setupToggle("app-group", null, handleApplicationChange);
 setupToggle("method-group", "method");
 setupToggle("doser-group", null, handleDoserChange);
 setupToggle("ec-preset-group", null, handleECPreset);
+setupToggle("recipe-schedule-group", null, handleRecipeScheduleChange);
 loadTheme();
 loadFromURL();
-syncToggleButtons();
 applyApplicationState();
 rebuildUnitGroup();
+syncToggleButtons();
 render();
 
 // Scroll hint: remove fade when scrolled to end
