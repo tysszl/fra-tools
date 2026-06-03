@@ -1262,15 +1262,17 @@ const INSTRUCTIONS = [
 // based on PhosZyme toggle, and pH Up step only appears when toggled on.
 // AIDEV-NOTE: pH adjustment order matters — pH Down goes BEFORE fertilizers
 // (acidic, aids dissolution), pH Up goes AFTER fertilizers (alkaline, add last).
+// AIDEV-NOTE: DTR fill method — fill reservoir to 90% of final volume, dissolve products in order, then top off with water to target EC/PPM before final pH adjustment (R&D May 27 2026). Stock-tank prep is separate and fills to target VOLUME.
 function getReservoirInstructions(usePhz, usePhUp, met) {
   const bStep = usePhz ? "Add Part B and PhosZyme; agitate 3–5 minutes." : "Add Part B; agitate 3–5 minutes.";
   const steps = [
-    "Fill reservoir to target volume; begin agitation.",
+    "Fill reservoir to 90% of intended final volume; begin agitation.",
     "If using pH down: add pH down to target range before adding fertilizer.",
     "Add Part A; agitate 3–5 minutes.",
     bStep,
     "Add Bloom; agitate 3–5 minutes.",
-    "If using pH up: add pH up to target range after all fertilizers are mixed.",
+    "Check EC/PPM, then slowly top off with water until your target EC/PPM is reached.",
+    "If using pH up: add pH up to target range after EC/PPM is on target.",
     "Validate pH/EC and adjust as necessary."
   ];
   return steps;
