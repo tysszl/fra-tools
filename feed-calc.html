@@ -1019,7 +1019,7 @@
     </div>
     <div class="info-drawer" id="supplements-drawer">
       <div class="info-drawer-content">
-        <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode) at 9% of Part B weight — 4.5 lb per 50-lb Part B tank — which keeps the applied dose at or below 0.4 g/gal across all recipes and strengths. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
+        <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode) at 10% of Part B weight — 5 lb per 50-lb Part B tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
         <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
@@ -1153,15 +1153,17 @@
 // DATA — extracted from Ref sheet
 // ═══════════════════════════════════════════════
 
-// AIDEV-NOTE: phoszyme_ratio 0.12 → 0.09 (R&D/Marketing Jun 10 2026): monoammonium
-// (PhosZyme) capped at ≤0.4 g/gal applied. At 0.12 the co-injected dose hit ~0.49 g/gal
-// at high-strength Veg (3.0 EC). 0.09 = 4.5 lb per 50-lb Part B tank → worst case ~0.37.
-// DTR mode is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
+// AIDEV-NOTE: phoszyme_ratio 0.12 → 0.10 (R&D/Marketing Jun 10 2026): monoammonium
+// (PhosZyme) target ≤0.4 g/gal applied. At 0.12 the co-injected dose hit ~0.50 g/gal at
+// high-strength Veg (3.0 EC). 0.10 = 5 lb per 50-lb Part B tank (round-number field
+// additions, Tyler Jun 10) → worst case ~0.41 at high-strength Veg, a deliberate ~2%
+// allowance at that one brief phase; every other recipe lands well under 0.4. DTR mode
+// is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
 const CONSTANTS = {
   g_per_lb: 454,
   mL_per_gal: 3785,
   pct_mult: 100,
-  phoszyme_ratio: 0.09,
+  phoszyme_ratio: 0.10,
   L_per_gal: 3.785
 };
 
