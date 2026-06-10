@@ -962,7 +962,7 @@
       <div class="info-drawer" id="doser-drawer">
         <div class="info-drawer-content">
           <p><strong>3-Doser:</strong> Three separate stock tanks — Part A, Part B, and Bloom each get their own injector. This is the standard setup and allows full flexibility with per-phase recipe adjustments.</p>
-          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Stack recipe since the B-to-Bloom ratio is fixed in a single tank.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Swell recipe since the B-to-Bloom ratio is fixed in a single tank.</p>
         </div>
       </div>
     </div>
@@ -996,12 +996,14 @@
     </div>
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
-        <p><strong>Standard Progression</strong> uses the normal Veg → Stretch → Stack → Swell → Ripen recipe sequence.</p>
+        <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
+        <p><strong>Commercial (Stack → Swell)</strong> is the simplified production chart: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. Target EC follows the selected EC preset or your custom EC values.</p>
         <p><strong>Stack Through Flower</strong> keeps Veg / Moms on the Veg recipe, then uses the Stack recipe for each flower period. Target EC still follows the selected EC preset or your custom EC values.</p>
+        <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program and the general-purpose default. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
     </div>
-    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode fixes the combined B + Bloom tank at Stack, so recipe presets are locked.</p>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode fixes the combined B + Bloom tank at Swell, so recipe presets are locked.</p>
 
     <div class="config-spacer"></div>
     <div class="section-label-row">
@@ -1061,6 +1063,9 @@
       <tbody id="feed-body"></tbody>
     </table>
     </div>
+    <p id="twodoser-veg-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
+      Veg / Moms is not served in 2-doser: a combined B + Bloom tank can't deliver a zero-Bloom Veg recipe. Run veg / moms on a separate Part A + Part B feed.
+    </p>
     <div class="btn-row">
       <button class="btn" id="btn-copy" onclick="copySummary()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
@@ -1153,7 +1158,7 @@ const CONSTANTS = {
   L_per_gal: 3.785
 };
 
-const EC_PER_GRAM = { partA: 0.322, partB: 0.255, bloom: 0.200, phoszyme: 0.220 };
+const EC_PER_GRAM = { partA: 0.306, partB: 0.255, bloom: 0.200, phoszyme: 0.220 };
 
 const STOCK_RATES = {
   "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
@@ -1168,9 +1173,9 @@ const TANK_VOLUMES = {
 };
 
 const RECIPES = {
-  Veg:     { partA: 0.654471544715447, partB: 0.345528455284553, bloom: 0 },
+  Veg:     { partA: 0.6428571428571, partB: 0.3571428571429, bloom: 0 },
   Stretch: { partA: 0.55, partB: 0.29, bloom: 0.16 },
-  Stack:   { partA: 0.51499, partB: 0.2719123506099, bloom: 0.2130976493901 },
+  Stack:   { partA: 0.5021882, partB: 0.2789934, bloom: 0.2188184 },
   Swell:   { partA: 0.441, partB: 0.234, bloom: 0.325 },
   Ripen:   { partA: 0.35, partB: 0.30, bloom: 0.35 }
 };
@@ -1183,9 +1188,19 @@ const RECIPE_SCHEDULE_OPTIONS = {
     phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
     selectable: true
   },
+  commercial: {
+    label: "Commercial (Stack → Swell)",
+    phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
+    selectable: true
+  },
   "stack-flower": {
     label: "Stack Through Flower",
     phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Stack" },
+    selectable: true
+  },
+  "swell-flower": {
+    label: "Swell Through Flower",
+    phaseRecipe: { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" },
     selectable: true
   },
   custom: {
@@ -1193,8 +1208,8 @@ const RECIPE_SCHEDULE_OPTIONS = {
     printLabel: "Custom Recipe Schedule",
     selectable: false
   },
-  "locked-stack": {
-    label: "Stack Recipe Locked",
+  "locked-swell": {
+    label: "Swell Recipe Locked",
     selectable: false,
     lockedOnly: true
   }
@@ -1358,12 +1373,12 @@ function applyRecipeSchedule(schedule) {
 }
 
 function getRecipeScheduleLabel() {
-  if (state.doserMode === "2") return "Stack Recipe Locked";
+  if (state.doserMode === "2") return "Swell Recipe Locked";
   return RECIPE_SCHEDULE_LABELS[state.recipeSchedule];
 }
 
 function getPhaseRecipeName(phase) {
-  return state.doserMode === "2" ? "Stack" : state.phaseRecipe[phase];
+  return state.doserMode === "2" ? "Swell" : state.phaseRecipe[phase];
 }
 
 function recipesEqual(a, b) {
@@ -1553,11 +1568,11 @@ function render() {
     el.classList.remove('editable');
   });
 
-  // Recipe selects — locked to Stack in 2-doser mode
+  // Recipe selects — locked to Swell in 2-doser mode
   PHASES.forEach(p => {
     const sel = document.getElementById(`recipe-${p.toLowerCase()}`);
     if (is2Doser) {
-      sel.value = "Stack";
+      sel.value = p === "Veg" ? "Veg" : "Swell";
       sel.disabled = true;
       sel.classList.remove('modified');
     } else {
@@ -1580,6 +1595,7 @@ function render() {
   // Part A row (always present)
   html += `<tr><td><span class="component-dot dot-a"></span>Part A</td>`;
   PHASES.forEach(phase => {
+    if (is2Doser && phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
     const r = calcDosage(phase, "partA", method, unit, eEC);
     html += feedCell(r.display, r.dosage, r.ec, "val-a");
@@ -1591,6 +1607,7 @@ function render() {
     const label = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
     html += `<tr><td><span class="component-dot dot-bbloom"></span>${label}</td>`;
     PHASES.forEach(phase => {
+      if (phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       const resultB = calcDosage(phase, "partB", method, unit, eEC);
       const bloomEc = calcEcContribution(phase, "bloom", eEC);
@@ -1637,6 +1654,7 @@ function render() {
   }
 
   document.getElementById("feed-body").innerHTML = html;
+  document.getElementById("twodoser-veg-note").hidden = !is2Doser;
 
   // ── Supplemental products reference card ──
   renderSupplements();
@@ -1830,7 +1848,7 @@ function applyApplicationState() {
 function syncRecipeScheduleControls() {
   const locked = state.doserMode === "2";
   const group = document.getElementById("recipe-schedule-group");
-  const activeSchedule = locked ? "locked-stack" : state.recipeSchedule;
+  const activeSchedule = locked ? "locked-swell" : state.recipeSchedule;
   group.dataset.state = activeSchedule;
   group.querySelectorAll(".toggle-btn").forEach(btn => {
     const option = RECIPE_SCHEDULE_OPTIONS[btn.dataset.val];
@@ -2173,7 +2191,7 @@ function copySummary() {
   // Recipe row
   html += `<tr><td ${tl}>Recipe</td>`;
   PHASES.forEach(p => {
-    const recipe = is2Doser ? "Stack" : state.phaseRecipe[p];
+    const recipe = is2Doser ? (p === "Veg" ? "Veg" : "Swell") : state.phaseRecipe[p];
     html += `<td ${ts}>${recipe}</td>`;
   });
   html += `</tr>`;
@@ -2186,6 +2204,7 @@ function copySummary() {
   // Part A row
   html += `<tr><td ${tl}>Part A</td>`;
   PHASES.forEach(phase => {
+    if (is2Doser && phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
     const r = calcDosage(phase, "partA", method, unit, eEC);
     html += `<td ${ts}>${r.display}</td>`;
@@ -2197,6 +2216,7 @@ function copySummary() {
     const lbl = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
     html += `<tr><td ${tl}>${lbl}</td>`;
     PHASES.forEach(phase => {
+      if (phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       const resultB = calcDosage(phase, "partB", method, unit, eEC);
       html += `<td ${ts}>${resultB.display}</td>`;
@@ -2331,6 +2351,7 @@ function copySummary() {
   plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
   plain += "Target EC".padEnd(20) + PHASES.map(p => `${targetEC[p]}`.padEnd(12)).join("") + "\n\n";
   plain += "Part A".padEnd(20) + PHASES.map(phase => {
+    if (is2Doser && phase === "Veg") return "–".padEnd(12);
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
     return calcDosage(phase, "partA", method, unit, eEC).display.padEnd(12);
   }).join("") + "\n";
@@ -2338,6 +2359,7 @@ function copySummary() {
   if (is2Doser) {
     const lbl = usePhz ? "B+Bloom+PhZ" : "B + Bloom";
     plain += lbl.padEnd(20) + PHASES.map(phase => {
+      if (phase === "Veg") return "–".padEnd(12);
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
@@ -2352,6 +2374,8 @@ function copySummary() {
       return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
   }
+
+  if (is2Doser) plain += "\nVeg / Moms: run a separate Part A + Part B feed — a combined B + Bloom tank can't make a zero-Bloom Veg recipe.\n";
 
   if (state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic) {
     const met = isMetric(unit);
