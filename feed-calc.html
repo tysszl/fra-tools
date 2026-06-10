@@ -962,7 +962,7 @@
       <div class="info-drawer" id="doser-drawer">
         <div class="info-drawer-content">
           <p><strong>3-Doser:</strong> Three separate stock tanks — Part A, Part B, and Bloom each get their own injector. This is the standard setup and allows full flexibility with per-phase recipe adjustments.</p>
-          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Swell recipe since the B-to-Bloom ratio is fixed in a single tank.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Swell recipe since the B-to-Bloom ratio is fixed in a single tank. The two tanks are balanced to run within ~1 mL/gal of each other, so in practice set both dosers to the same injection rate and confirm with EC/PPM validation.</p>
         </div>
       </div>
     </div>
@@ -990,16 +990,16 @@
       <button class="info-btn" onclick="toggleDrawer('recipe-schedule-drawer', this)" aria-label="What do the recipe schedule options mean?">?</button>
     </div>
     <div class="toggle-group" id="recipe-schedule-group">
-      <button class="toggle-btn active" data-val="standard">Standard Progression</button>
-      <button class="toggle-btn" data-val="stack-flower">Stack Through Flower</button>
+      <button class="toggle-btn active" data-val="commercial">Commercial (Stack → Swell)</button>
+      <button class="toggle-btn" data-val="standard">Standard Progression</button>
+      <button class="toggle-btn" data-val="swell-flower">Swell Through Flower</button>
       <button class="toggle-btn" data-val="custom" disabled>Custom</button>
     </div>
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
+        <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. Target EC follows the selected EC preset or your custom EC values.</p>
         <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
-        <p><strong>Commercial (Stack → Swell)</strong> is the simplified production chart: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. Target EC follows the selected EC preset or your custom EC values.</p>
-        <p><strong>Stack Through Flower</strong> keeps Veg / Moms on the Veg recipe, then uses the Stack recipe for each flower period. Target EC still follows the selected EC preset or your custom EC values.</p>
-        <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program and the general-purpose default. Target EC still follows the selected EC preset or your custom EC values.</p>
+        <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
     </div>
@@ -1019,7 +1019,7 @@
     </div>
     <div class="info-drawer" id="supplements-drawer">
       <div class="info-drawer-content">
-        <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode). It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
+        <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode) at 9% of Part B weight — 4.5 lb per 50-lb Part B tank — which keeps the applied dose at or below 0.4 g/gal across all recipes and strengths. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
         <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
@@ -1065,6 +1065,9 @@
     </div>
     <p id="twodoser-veg-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
       Veg / Moms is not served in 2-doser: a combined B + Bloom tank can't deliver a zero-Bloom Veg recipe. Run veg / moms on a separate Part A + Part B feed.
+    </p>
+    <p id="twodoser-rate-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:6px; font-style:italic;">
+      Set both dosers to the same injection rate — Part A and the combined B + Bloom tank are balanced to run within ~1 mL/gal of each other. Confirm with EC/PPM validation.
     </p>
     <div class="btn-row">
       <button class="btn" id="btn-copy" onclick="copySummary()">
@@ -1150,11 +1153,15 @@
 // DATA — extracted from Ref sheet
 // ═══════════════════════════════════════════════
 
+// AIDEV-NOTE: phoszyme_ratio 0.12 → 0.09 (R&D/Marketing Jun 10 2026): monoammonium
+// (PhosZyme) capped at ≤0.4 g/gal applied. At 0.12 the co-injected dose hit ~0.49 g/gal
+// at high-strength Veg (3.0 EC). 0.09 = 4.5 lb per 50-lb Part B tank → worst case ~0.37.
+// DTR mode is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
 const CONSTANTS = {
   g_per_lb: 454,
   mL_per_gal: 3785,
   pct_mult: 100,
-  phoszyme_ratio: 0.12,
+  phoszyme_ratio: 0.09,
   L_per_gal: 3.785
 };
 
@@ -1182,20 +1189,18 @@ const RECIPES = {
 
 const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
 
+// AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Stack Through
+// Flower" was removed the same day — replaced by "Swell Through Flower" as the
+// single-recipe flower option. Old ?rs=stack-flower links fall back to the default.
 const RECIPE_SCHEDULE_OPTIONS = {
-  standard: {
-    label: "Standard Progression",
-    phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
-    selectable: true
-  },
   commercial: {
     label: "Commercial (Stack → Swell)",
     phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
     selectable: true
   },
-  "stack-flower": {
-    label: "Stack Through Flower",
-    phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Stack" },
+  standard: {
+    label: "Standard Progression",
+    phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
     selectable: true
   },
   "swell-flower": {
@@ -1299,7 +1304,8 @@ const INSTRUCTIONS_2DOSER = [
   "Tank 1: Add Part A over 5 minutes while agitating.",
   "Tank 2: Add Part B, then Bloom, then PhosZyme over 5 minutes while agitating.",
   "Add RO water to target volume in each tank; mix for 10 more minutes.",
-  "Validate and adjust each stock tank as necessary."
+  "Validate and adjust each stock tank as necessary.",
+  "Set both dosers to the same injection rate; confirm final solution EC/PPM."
 ];
 
 // ═══════════════════════════════════════════════
@@ -1317,12 +1323,12 @@ let state = {
   showTriologic: false,
   unit: "mL/gal",
   ecPreset: "high",
-  recipeSchedule: "standard",
+  recipeSchedule: "commercial",
   targetEC: { ...EC_PRESETS.high },
-  phaseRecipe: { ...RECIPE_SCHEDULES.standard },
+  phaseRecipe: { ...RECIPE_SCHEDULES.commercial },
   lastThreeDoserSchedule: {
-    recipeSchedule: "standard",
-    phaseRecipe: { ...RECIPE_SCHEDULES.standard }
+    recipeSchedule: "commercial",
+    phaseRecipe: { ...RECIPE_SCHEDULES.commercial }
   }
 };
 
@@ -1655,6 +1661,7 @@ function render() {
 
   document.getElementById("feed-body").innerHTML = html;
   document.getElementById("twodoser-veg-note").hidden = !is2Doser;
+  document.getElementById("twodoser-rate-note").hidden = !is2Doser;
 
   // ── Supplemental products reference card ──
   renderSupplements();
@@ -2046,7 +2053,7 @@ function updateURL() {
     PHASES.forEach(ph => p.set(`ec_${ph.toLowerCase()}`, state.targetEC[ph]));
   }
   if (state.doserMode !== "2") {
-    if (state.recipeSchedule !== "standard") p.set("rs", state.recipeSchedule);
+    if (state.recipeSchedule !== "commercial") p.set("rs", state.recipeSchedule);
     if (state.recipeSchedule === "custom") {
       PHASES.forEach(ph => {
         if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
