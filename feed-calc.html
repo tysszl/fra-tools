@@ -1028,7 +1028,7 @@
       <button class="info-btn" onclick="toggleDrawer('supplements-drawer', this)" aria-label="What are these supplements?">?</button>
     </div>
     <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-      <button class="toggle-btn active" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
+      <button class="toggle-btn" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
       <button class="toggle-btn" id="si-btn" onclick="toggleSi()">+ Si</button>
       <button class="toggle-btn" id="phup-btn" onclick="togglePhUp()">+ pH Up</button>
       <button class="toggle-btn active" id="bioflo-btn" onclick="toggleBioFlo()">+ BioFlo</button>
@@ -1036,7 +1036,7 @@
     </div>
     <div class="info-drawer" id="supplements-drawer">
       <div class="info-drawer-content">
-        <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the carrier's weight — 5 lb per 50-lb tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is Part B on the 3-Part line (or the combined B + Bloom tank in 2-doser mode) and the Component Plus tank on the C+ line. PhosZyme is not calcium-compatible, so it never goes in a tank with Part A or CaNO3. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
+        <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the carrier's weight — 5 lb per 50-lb tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is Part B on the 3-Part line (or the combined B + Bloom tank in 2-doser mode) and the Component Plus tank on the C+ line. PhosZyme is not calcium-compatible, so it never goes in a tank with Part A or CaNO3. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Toggle it on if your feed program includes PhosZyme.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
         <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
@@ -1369,7 +1369,7 @@ let state = {
   method: "3-2-2",
   lastThreePartMethod: "3-2-2",
   doserMode: "3",
-  usePhoszyme: true,
+  usePhoszyme: false,
   showSi: false,
   showPhUp: false,
   showBioFlo: false,
@@ -2142,7 +2142,7 @@ function updateURL() {
     if (state.method !== "3-2-2") p.set("m", state.method);
     if (state.doserMode === "2") p.set("d", "2");
   }
-  if (!state.usePhoszyme) p.set("phz", "no");
+  if (state.usePhoszyme) p.set("phz", "yes");
   if (state.showSi) p.set("si", "yes");
   if (state.showPhUp) p.set("phup", "yes");
   if (state.showBioFlo) p.set("bf", "yes");
@@ -2180,7 +2180,7 @@ function loadFromURL() {
     }
   }
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
-    state.usePhoszyme = (p.get("phz") !== "no");
+    state.usePhoszyme = (p.get("phz") === "yes");
   }
   if (p.get("si") === "yes") state.showSi = true;
   if (p.get("phup") === "yes") state.showPhUp = true;
