@@ -920,6 +920,22 @@
     </div>
 
     <div class="section-label-row">
+      <div class="section-label">Product Line</div>
+      <button class="info-btn" onclick="toggleDrawer('line-drawer', this)" aria-label="What's the difference between the 3-Part and Component Plus lines?">?</button>
+    </div>
+    <div class="toggle-group" id="line-group">
+      <button class="toggle-btn active" data-val="3part">3-Part (A / B / Bloom)</button>
+      <button class="toggle-btn" data-val="cplus">Component Plus (CaNO3 / C+ / MKP)</button>
+    </div>
+    <div class="info-drawer" id="line-drawer">
+      <div class="info-drawer-content">
+        <p><strong>3-Part</strong> is Front Row's flagship line: Part A, Part B, and Bloom. Part A carries calcium, nitrogen, potassium, and micronutrients; Part B and Bloom carry the phosphorus, potassium, magnesium, and sulfur balance across the cycle.</p>
+        <p><strong>Component Plus</strong> is the three-product commodity-pairing line: calcium nitrate (CaNO3), Component Plus (C+), and monopotassium phosphate (MKP). C+ (2-16-20 with 8% Mg, 11% S, and a full chelated micronutrient package) is the backbone; CaNO3 and MKP supply the calcium and phosphorus it deliberately omits. Stocks mix at 1 lb per gallon in each of the three tanks, and injection rates differ between tanks since each product carries a different share of the total EC. The C+ line has no Stretch recipe — Stretch-week EC targets run the Stack recipe. C+ stock concentrate must be used within 14 days of mixing.</p>
+      </div>
+    </div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label-row">
       <div class="section-label">Application</div>
       <button class="info-btn" onclick="toggleDrawer('app-drawer', this)" aria-label="What's the difference between stock concentrate and direct to reservoir?">?</button>
     </div>
@@ -966,6 +982,7 @@
         </div>
       </div>
     </div>
+    <p class="config-note" id="cplus-stock-note" style="display:none">Component Plus stock mixes at 1 lb per gallon in each of the three tanks (1-1-1). Injection rates differ between tanks — each product carries a different share of the total EC.</p>
 
     <div class="config-spacer"></div>
     <div class="section-label">Output Units</div>
@@ -998,7 +1015,7 @@
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
         <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. On the commercial chart, mid-flower EC holds flat — the Swell weeks run at the same preset EC as the Stack weeks (e.g. 2.7 at High Strength) until Ripen. Custom EC values override this.</p>
-        <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
+        <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle. On the Component Plus line, which has no Stretch recipe, the Stretch weeks run the Stack recipe at the Stretch EC target.</p>
         <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
@@ -1019,7 +1036,7 @@
     </div>
     <div class="info-drawer" id="supplements-drawer">
       <div class="info-drawer-content">
-        <p><strong>PhosZyme</strong> is added to the Part B stock tank (or the combined B + Bloom tank in 2-doser mode) at 10% of Part B weight — 5 lb per 50-lb Part B tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
+        <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the carrier's weight — 5 lb per 50-lb tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is Part B on the 3-Part line (or the combined B + Bloom tank in 2-doser mode) and the Component Plus tank on the C+ line. PhosZyme is not calcium-compatible, so it never goes in a tank with Part A or CaNO3. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Most facilities include PhosZyme by default.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
         <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
@@ -1124,6 +1141,9 @@
     <p id="phz-footnote" style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
       * When mixed with Part B stock solution, PhosZyme will increase the validation EC.
     </p>
+    <p id="cplus-shelf-note" style="display:none; font-size:0.75rem; color:var(--text-dim); margin-top:6px; font-style:italic;">
+      Component Plus stock concentrate: use within 14 days of mixing. Store in opaque containers at room temperature, away from direct or artificial light.
+    </p>
   </div>
 
   <!-- Mixing Instructions Card (collapsible) -->
@@ -1167,66 +1187,95 @@ const CONSTANTS = {
   L_per_gal: 3.785
 };
 
-const EC_PER_GRAM = { partA: 0.306, partB: 0.255, bloom: 0.200, phoszyme: 0.220 };
-
-const STOCK_RATES = {
-  "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
-  "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
-  "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 }
+// AIDEV-NOTE: Two product lines share one calculation engine via structural roles
+// (docs/feed-recipes.md "pseudo-Part A pattern"): partA = calcium delivery
+// (Part A / CaNO3), partB = PhosZyme carrier (Part B / Component Plus), bloom =
+// P-heavy bulk (Bloom / MKP). All math keys on the role; LINES swaps the labels,
+// EC/g constants, recipes, stock rates, and recipe schedules. PhosZyme carrier
+// math (10% of partB) is identical in both lines because C+ is the carrier there.
+const LINES = {
+  "3part": {
+    label: "3-Part",
+    names: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
+    stockNames: { partA: "A", partB: "B", bloom: "Bloom" },
+    fullNames: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
+    phzComboLabel: "B + PhosZyme",
+    ecPerGram: { partA: 0.306, partB: 0.255, bloom: 0.200, phoszyme: 0.220 },
+    recipes: {
+      Veg:     { partA: 0.6428571428571, partB: 0.3571428571429, bloom: 0 },
+      Stretch: { partA: 0.55, partB: 0.29, bloom: 0.16 },
+      Stack:   { partA: 0.5021882, partB: 0.2789934, bloom: 0.2188184 },
+      Swell:   { partA: 0.441, partB: 0.234, bloom: 0.325 },
+      Ripen:   { partA: 0.35, partB: 0.30, bloom: 0.35 }
+    },
+    recipeNames: ["Veg", "Stretch", "Stack", "Swell", "Ripen"],
+    stockRates: {
+      "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
+      "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
+      "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 }
+    },
+    tankVolumes: {
+      "4-3-3": { tankA: 53.5, tankB: 60 },
+      "3-2-2": { tankA: 50, tankB: 50 },
+      "1-1-1": { tankA: 50, tankB: 50 }
+    },
+    defaultMethod: "3-2-2",
+    schedules: {
+      commercial:     { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
+      standard:       { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
+      "swell-flower": { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" }
+    }
+  },
+  cplus: {
+    label: "Component Plus",
+    names: { partA: "CaNO3", partB: "C+", bloom: "MKP" },
+    stockNames: { partA: "CaNO3", partB: "C+", bloom: "MKP" },
+    fullNames: { partA: "Calcium Nitrate", partB: "Component Plus", bloom: "MKP" },
+    phzComboLabel: "C+ + PhosZyme",
+    ecPerGram: { partA: 0.317, partB: 0.283, bloom: 0.195, phoszyme: 0.220 },
+    // AIDEV-NOTE: C+ recipes per docs/feed-recipes.md + Excel master C+ US tab
+    // (Jun 10 2026). No Stretch recipe in the C+ line — Stretch-EC weeks run Stack
+    // ratios. PhosZyme rides in the C+ tank (never CaNO3 — calcium incompatibility).
+    recipes: {
+      Veg:   { partA: 0.60, partB: 0.40, bloom: 0 },
+      Stack: { partA: 0.496, partB: 0.32, bloom: 0.184 },
+      Swell: { partA: 0.3684, partB: 0.3294, bloom: 0.3022 },
+      Ripen: { partA: 0.315, partB: 0.30, bloom: 0.385 }
+    },
+    recipeNames: ["Veg", "Stack", "Swell", "Ripen"],
+    stockRates: {
+      "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 }
+    },
+    tankVolumes: {
+      "1-1-1": { tankA: 50, tankB: 50 }
+    },
+    defaultMethod: "1-1-1",
+    schedules: {
+      commercial:     { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
+      standard:       { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
+      "swell-flower": { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" }
+    }
+  }
 };
 
-const TANK_VOLUMES = {
-  "4-3-3": { tankA: 53.5, tankB: 60 },
-  "3-2-2": { tankA: 50, tankB: 50 },
-  "1-1-1": { tankA: 50, tankB: 50 }
-};
-
-const RECIPES = {
-  Veg:     { partA: 0.6428571428571, partB: 0.3571428571429, bloom: 0 },
-  Stretch: { partA: 0.55, partB: 0.29, bloom: 0.16 },
-  Stack:   { partA: 0.5021882, partB: 0.2789934, bloom: 0.2188184 },
-  Swell:   { partA: 0.441, partB: 0.234, bloom: 0.325 },
-  Ripen:   { partA: 0.35, partB: 0.30, bloom: 0.35 }
-};
+function LINE() { return LINES[state.line]; }
+function ecPerGram() { return LINE().ecPerGram; }
 
 const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
 
 // AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Stack Through
 // Flower" was removed the same day — replaced by "Swell Through Flower" as the
 // single-recipe flower option. Old ?rs=stack-flower links fall back to the default.
+// Per-line phaseRecipe maps live in LINES[line].schedules (C+ has no Stretch recipe).
 const RECIPE_SCHEDULE_OPTIONS = {
-  commercial: {
-    label: "Commercial (Stack → Swell)",
-    phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
-    selectable: true
-  },
-  standard: {
-    label: "Standard Progression",
-    phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
-    selectable: true
-  },
-  "swell-flower": {
-    label: "Swell Through Flower",
-    phaseRecipe: { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" },
-    selectable: true
-  },
-  custom: {
-    label: "Custom",
-    printLabel: "Custom Recipe Schedule",
-    selectable: false
-  },
-  "locked-swell": {
-    label: "Swell Recipe Locked",
-    selectable: false,
-    lockedOnly: true
-  }
+  commercial:     { label: "Commercial (Stack → Swell)", selectable: true },
+  standard:       { label: "Standard Progression", selectable: true },
+  "swell-flower": { label: "Swell Through Flower", selectable: true },
+  custom:         { label: "Custom", printLabel: "Custom Recipe Schedule", selectable: false },
+  "locked-swell": { label: "Swell Recipe Locked", selectable: false, lockedOnly: true }
 };
 
-const RECIPE_SCHEDULES = Object.fromEntries(
-  Object.entries(RECIPE_SCHEDULE_OPTIONS)
-    .filter(([, option]) => option.phaseRecipe)
-    .map(([key, option]) => [key, option.phaseRecipe])
-);
+function getRecipeSchedules() { return LINE().schedules; }
 
 const RECIPE_SCHEDULE_LABELS = Object.fromEntries(
   Object.entries(RECIPE_SCHEDULE_OPTIONS)
@@ -1265,10 +1314,9 @@ const STOCK_UNITS  = ["mL/gal", "injection %", "ratio", "mL/L"];
 const DIRECT_UNITS = ["g/gal", "g/L"];
 
 const VALID_APPS    = ["stock", "direct"];
-const VALID_METHODS = Object.keys(STOCK_RATES);
 const VALID_UNITS   = Object.keys(UNIT_FACTORS);
 const VALID_PRESETS = ["high", "standard", "custom"];
-const VALID_RECIPE_SCHEDULES = Object.keys(RECIPE_SCHEDULES);
+const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 
@@ -1286,13 +1334,14 @@ const INSTRUCTIONS = [
 // (acidic, aids dissolution), pH Up goes AFTER fertilizers (alkaline, add last).
 // AIDEV-NOTE: DTR fill method — fill reservoir to 90% of final volume, dissolve products in order, then top off with water to target EC/PPM before final pH adjustment (R&D May 27 2026). Stock-tank prep is separate and fills to target VOLUME.
 function getReservoirInstructions(usePhz, usePhUp, met) {
-  const bStep = usePhz ? "Add Part B and PhosZyme; agitate 3–5 minutes." : "Add Part B; agitate 3–5 minutes.";
+  const n = LINE().fullNames;
+  const bStep = usePhz ? `Add ${n.partB} and PhosZyme; agitate 3–5 minutes.` : `Add ${n.partB}; agitate 3–5 minutes.`;
   const steps = [
     "Fill reservoir to 90% of intended final volume; begin agitation.",
     "If using pH down: add pH down to target range before adding fertilizer.",
-    "Add Part A; agitate 3–5 minutes.",
+    `Add ${n.partA}; agitate 3–5 minutes.`,
     bStep,
-    "Add Bloom; agitate 3–5 minutes.",
+    `Add ${n.bloom}; agitate 3–5 minutes.`,
     "Check EC/PPM, then slowly top off with water until your target EC/PPM is reached.",
     "If using pH up: add pH up to target range after EC/PPM is on target.",
     "Validate pH/EC and adjust as necessary."
@@ -1315,8 +1364,10 @@ const INSTRUCTIONS_2DOSER = [
 // ═══════════════════════════════════════════════
 
 let state = {
+  line: "3part",
   application: "stock",
   method: "3-2-2",
+  lastThreePartMethod: "3-2-2",
   doserMode: "3",
   usePhoszyme: true,
   showSi: false,
@@ -1327,10 +1378,10 @@ let state = {
   ecPreset: "high",
   recipeSchedule: "commercial",
   targetEC: { ...EC_PRESETS.high },
-  phaseRecipe: { ...RECIPE_SCHEDULES.commercial },
+  phaseRecipe: { ...LINES["3part"].schedules.commercial },
   lastThreeDoserSchedule: {
     recipeSchedule: "commercial",
-    phaseRecipe: { ...RECIPE_SCHEDULES.commercial }
+    phaseRecipe: { ...LINES["3part"].schedules.commercial }
   }
 };
 
@@ -1356,11 +1407,11 @@ function getUnitFactor(unit) {
 
 function getStockConc(method, component) {
   if (state.application === "direct") return 1;
-  return STOCK_RATES[method][component];
+  return LINE().stockRates[method][component];
 }
 
 function getStockConcDisplay(method, component, unit) {
-  const base = STOCK_RATES[method][component];
+  const base = LINE().stockRates[method][component];
   if (isMetric(unit)) {
     return Math.round(base * CONSTANTS.g_per_lb / CONSTANTS.L_per_gal);
   }
@@ -1368,7 +1419,7 @@ function getStockConcDisplay(method, component, unit) {
 }
 
 function getRecipe(phase) {
-  return RECIPES[getPhaseRecipeName(phase)];
+  return LINE().recipes[getPhaseRecipeName(phase)];
 }
 
 // AIDEV-NOTE: Recipe schedules change recipe ratios; target EC follows the EC preset —
@@ -1382,9 +1433,9 @@ function syncTargetECToPreset() {
 }
 
 function applyRecipeSchedule(schedule) {
-  if (!RECIPE_SCHEDULES[schedule]) return;
+  if (!getRecipeSchedules()[schedule]) return;
   state.recipeSchedule = schedule;
-  state.phaseRecipe = { ...RECIPE_SCHEDULES[schedule] };
+  state.phaseRecipe = { ...getRecipeSchedules()[schedule] };
   rememberThreeDoserSchedule();
   syncTargetECToPreset();
 }
@@ -1403,7 +1454,7 @@ function recipesEqual(a, b) {
 }
 
 function deriveRecipeSchedule(phaseRecipe) {
-  const matched = Object.entries(RECIPE_SCHEDULES).find(([, recipe]) => recipesEqual(phaseRecipe, recipe));
+  const matched = Object.entries(getRecipeSchedules()).find(([, recipe]) => recipesEqual(phaseRecipe, recipe));
   return matched ? matched[0] : "custom";
 }
 
@@ -1425,7 +1476,7 @@ function restoreThreeDoserSchedule() {
 function getPhzScaleFactor(phase) {
   if (!state.usePhoszyme) return 1;
   const recipe = getRecipe(phase);
-  const phzOverhead = recipe.partB * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+  const phzOverhead = recipe.partB * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
   return 1 / (1 + phzOverhead);
 }
 
@@ -1437,7 +1488,7 @@ function calcDosage(phase, component, method, unit, targetEC) {
   const ecContrib = calcEcContribution(phase, component, targetEC);
   if (ecContrib === 0) return { dosage: 0, ec: 0, display: "–" };
 
-  const ecPerG = EC_PER_GRAM[component];
+  const ecPerG = ecPerGram()[component];
   const stockConc = getStockConc(method, component);
 
   if (unit === "ratio") {
@@ -1459,7 +1510,7 @@ function calcPhoszymeDosage(phase, method, unit, targetEC) {
   if (partBResult.dosage === 0) return { dosage: 0, ec: 0, display: "–" };
 
   const partBEc = calcEcContribution(phase, "partB", targetEC);
-  const phzEc = partBEc * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+  const phzEc = partBEc * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
 
   if (unit === "g/gal" || unit === "g/L") {
     const val = isMetric(unit) ? PHOSZYME_FIXED_G_GAL / CONSTANTS.L_per_gal : PHOSZYME_FIXED_G_GAL;
@@ -1480,8 +1531,9 @@ function calcSiRate(ec) {
 
 function calcStockTanks(method, unit) {
   const met = isMetric(unit);
-  const vols = TANK_VOLUMES[method];
-  const rates = STOCK_RATES[method];
+  const vols = LINE().tankVolumes[method];
+  const rates = LINE().stockRates[method];
+  const names = LINE().stockNames;
 
   const volA = met ? Math.round(vols.tankA * CONSTANTS.L_per_gal) : vols.tankA;
   const volB = met ? Math.round(vols.tankB * CONSTANTS.L_per_gal) : vols.tankB;
@@ -1510,10 +1562,10 @@ function calcStockTanks(method, unit) {
     return +(rateLbs * CONSTANTS.g_per_lb * ecBase * (sampleVol / 5 / CONSTANTS.mL_per_gal)).toFixed(2);
   }
 
-  const valA    = met ? valEC(concA, EC_PER_GRAM.partA)       : valEC_imp(rates.partA, EC_PER_GRAM.partA);
-  const valB    = met ? valEC(concB, EC_PER_GRAM.partB)       : valEC_imp(rates.partB, EC_PER_GRAM.partB);
-  const valPhz  = met ? valEC(concPhz, EC_PER_GRAM.phoszyme)  : valEC_imp(rates.partB * CONSTANTS.phoszyme_ratio, EC_PER_GRAM.phoszyme);
-  const valBlm  = met ? valEC(concBloom, EC_PER_GRAM.bloom)   : valEC_imp(rates.bloom, EC_PER_GRAM.bloom);
+  const valA    = met ? valEC(concA, ecPerGram().partA)       : valEC_imp(rates.partA, ecPerGram().partA);
+  const valB    = met ? valEC(concB, ecPerGram().partB)       : valEC_imp(rates.partB, ecPerGram().partB);
+  const valPhz  = met ? valEC(concPhz, ecPerGram().phoszyme)  : valEC_imp(rates.partB * CONSTANTS.phoszyme_ratio, ecPerGram().phoszyme);
+  const valBlm  = met ? valEC(concBloom, ecPerGram().bloom)   : valEC_imp(rates.bloom, ecPerGram().bloom);
 
   return {
     volUnit: met ? "L" : "gal",
@@ -1522,10 +1574,10 @@ function calcStockTanks(method, unit) {
     sampleUnit: met ? "mL / 20L" : "mL / 5gal",
     ecUnit: met ? "EC / g / L" : "EC / g / gal",
     rows: [
-      { tank: 1, part: "A",          vol: volA, wt: wtA,    conc: concA,    sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.partA).toFixed(3)    : EC_PER_GRAM.partA,    valEC: valA,   cls: "val-a" },
-      { tank: 2, part: "B",          vol: volB, wt: wtB,    conc: concB,    sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.partB).toFixed(3)    : EC_PER_GRAM.partB,    valEC: valB,   cls: "val-b" },
-      { tank: "–", part: "PhosZyme*", vol: volB, wt: wtPhz,  conc: concPhz,  sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.phoszyme).toFixed(3) : EC_PER_GRAM.phoszyme, valEC: valPhz, cls: "val-phz" },
-      { tank: 3, part: "Bloom",      vol: volB, wt: wtBloom, conc: concBloom, sample: sampleVol, ecG: met ? ecPerUnit_raw(EC_PER_GRAM.bloom).toFixed(3)   : EC_PER_GRAM.bloom,   valEC: valBlm, cls: "val-bloom" }
+      { key: "partA", tank: 1, part: names.partA,  vol: volA, wt: wtA,    conc: concA,    sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().partA).toFixed(3)    : ecPerGram().partA,    valEC: valA,   cls: "val-a" },
+      { key: "partB", tank: 2, part: names.partB,  vol: volB, wt: wtB,    conc: concB,    sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().partB).toFixed(3)    : ecPerGram().partB,    valEC: valB,   cls: "val-b" },
+      { key: "phz",  tank: "–", part: "PhosZyme*", vol: volB, wt: wtPhz,  conc: concPhz,  sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().phoszyme).toFixed(3) : ecPerGram().phoszyme, valEC: valPhz, cls: "val-phz" },
+      { key: "bloom", tank: 3, part: names.bloom,  vol: volB, wt: wtBloom, conc: concBloom, sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().bloom).toFixed(3)   : ecPerGram().bloom,   valEC: valBlm, cls: "val-bloom" }
     ]
   };
 }
@@ -1566,12 +1618,7 @@ function render() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
-  const components = [
-    { key: "partA", label: "Part A", cls: "val-a", dotCls: "dot-a" },
-    { key: "partB", label: "Part B", cls: "val-b", dotCls: "dot-b" },
-    { key: "bloom", label: "Bloom", cls: "val-bloom", dotCls: "dot-bloom" },
-    { key: "phoszyme", label: "PhosZyme", cls: "val-phz", dotCls: "dot-phz" }
-  ];
+  const names = LINE().names;
 
   // Unit badge
   document.getElementById("unit-badge").textContent = unit === "ratio" ? "ratio" : unit;
@@ -1609,8 +1656,8 @@ function render() {
     return `<td><div class="val ${cls}">${display}</div><div class="ec-sub">${ec.toFixed(2)} EC</div></td>`;
   }
 
-  // Part A row (always present)
-  html += `<tr><td><span class="component-dot dot-a"></span>Part A</td>`;
+  // Part A / CaNO3 row (always present)
+  html += `<tr><td><span class="component-dot dot-a"></span>${names.partA}</td>`;
   PHASES.forEach(phase => {
     if (is2Doser && phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
@@ -1630,7 +1677,7 @@ function render() {
       const bloomEc = calcEcContribution(phase, "bloom", eEC);
       let combinedEc = resultB.ec + bloomEc;
       if (usePhz) {
-        combinedEc += calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+        combinedEc += calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
       }
       html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-bbloom");
     });
@@ -1639,19 +1686,19 @@ function render() {
   } else {
     // ── 3-Doser ──
     if (usePhz) {
-      // B + PhosZyme combined row
-      html += `<tr><td><span class="component-dot dot-b"></span>B + PhosZyme</td>`;
+      // Carrier + PhosZyme combined row (B + PhZ / C+ + PhZ)
+      html += `<tr><td><span class="component-dot dot-b"></span>${LINE().phzComboLabel}</td>`;
       PHASES.forEach(phase => {
         const eEC = targetEC[phase] * getPhzScaleFactor(phase);
         const resultB = calcDosage(phase, "partB", method, unit, eEC);
-        const phzEc = calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (EC_PER_GRAM.phoszyme / EC_PER_GRAM.partB);
+        const phzEc = calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
         const combinedEc = resultB.ec + phzEc;
         html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-b");
       });
       html += "</tr>";
     } else {
-      // Standard Part B row (no PhosZyme)
-      html += `<tr><td><span class="component-dot dot-b"></span>Part B</td>`;
+      // Standard carrier row (no PhosZyme)
+      html += `<tr><td><span class="component-dot dot-b"></span>${names.partB}</td>`;
       PHASES.forEach(phase => {
         const eEC = targetEC[phase] * getPhzScaleFactor(phase);
         const r = calcDosage(phase, "partB", method, unit, eEC);
@@ -1660,8 +1707,8 @@ function render() {
       html += "</tr>";
     }
 
-    // Bloom row (always in 3-doser)
-    html += `<tr><td><span class="component-dot dot-bloom"></span>Bloom</td>`;
+    // Bloom / MKP row (always in 3-doser)
+    html += `<tr><td><span class="component-dot dot-bloom"></span>${names.bloom}</td>`;
     PHASES.forEach(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       const r = calcDosage(phase, "bloom", method, unit, eEC);
@@ -1680,7 +1727,7 @@ function render() {
   // Stock tank table (only when stock concentrate)
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    const titlePrefix = state.line === "cplus" ? `Component Plus ${method}` : (is2Doser ? `${method} 2-Doser` : method);
     document.getElementById("stock-title").textContent = `${titlePrefix} Stock Concentrate Rates`;
     document.getElementById("vol-header").textContent = stock.volUnit;
     document.getElementById("wt-header").textContent = stock.wtUnit;
@@ -1689,19 +1736,19 @@ function render() {
     document.getElementById("ec-gal-header").textContent = stock.ecUnit;
 
     let stockHtml = "";
-    const tank2Parts = usePhz ? ["B", "PhosZyme*", "Bloom"] : ["B", "Bloom"];
+    const tank2Keys = usePhz ? ["partB", "phz", "bloom"] : ["partB", "bloom"];
     const t2Tint = 'background:rgba(136,102,204,0.06);';
     const t2Border = 'border-left:3px solid var(--b-bloom);';
 
-    // AIDEV-NOTE: When PhosZyme is ON (non-2-doser), Part B's tank cell uses rowspan=2
-    // to visually group both products under "Tank 2" with no dividing border.
+    // AIDEV-NOTE: When PhosZyme is ON (non-2-doser), the carrier row's tank cell uses
+    // rowspan=2 to visually group both products under "Tank 2" with no dividing border.
     stock.rows.forEach((r, i) => {
       // Skip PhosZyme row when PhosZyme is excluded
-      if (!usePhz && r.part === "PhosZyme*") return;
+      if (!usePhz && r.key === "phz") return;
 
-      const isTank2 = tank2Parts.includes(r.part);
+      const isTank2 = tank2Keys.includes(r.key);
       // PhosZyme is always a sub-item of Tank 2 (both modes); Bloom only in 2-doser
-      const isSubItem = r.part === "PhosZyme*" || (is2Doser && r.part === "Bloom");
+      const isSubItem = r.key === "phz" || (is2Doser && r.key === "bloom");
 
       let tankLabel = r.tank;
       let partLabel = r.part;
@@ -1713,9 +1760,9 @@ function render() {
         partLabel = `+ ${r.part}`;
       }
 
-      // Part B row spans 2 rows in the tank column when PhosZyme is included (non-2-doser)
-      const bWithPhz = !is2Doser && usePhz && r.part === "B";
-      const isPhzSubRow = !is2Doser && r.part === "PhosZyme*";
+      // Carrier row spans 2 rows in the tank column when PhosZyme is included (non-2-doser)
+      const bWithPhz = !is2Doser && usePhz && r.key === "partB";
+      const isPhzSubRow = !is2Doser && r.key === "phz";
 
       let tankCell;
       if (isPhzSubRow) {
@@ -1742,7 +1789,7 @@ function render() {
 
     // In 2-doser mode: add combined Tank 2 validation row
     if (is2Doser) {
-      const tank2Rows = stock.rows.filter(r => tank2Parts.includes(r.part));
+      const tank2Rows = stock.rows.filter(r => tank2Keys.includes(r.key));
       const combinedValEC = tank2Rows.reduce((sum, r) => sum + r.valEC, 0).toFixed(2);
       stockHtml += `<tr style="border-top:1px solid var(--card-border);${t2Tint}">
         <td style="${t2Border}"></td>
@@ -1762,10 +1809,17 @@ function render() {
       footnote.style.display = "none";
     } else {
       footnote.style.display = "";
-      footnote.textContent = is2Doser
-        ? "* PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2). The Tank 2 Total reflects all three products."
-        : "* When mixed with Part B stock solution, PhosZyme will increase the validation EC.";
+      if (state.line === "cplus") {
+        footnote.textContent = "* PhosZyme is mixed into the Component Plus stock tank — never the CaNO3 tank (PhosZyme is not calcium-compatible). It will increase the Tank 2 validation EC.";
+      } else {
+        footnote.textContent = is2Doser
+          ? "* PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2). The Tank 2 Total reflects all three products."
+          : "* When mixed with Part B stock solution, PhosZyme will increase the validation EC.";
+      }
     }
+
+    // C+ stock shelf-life note (label requirement: use within 14 days)
+    document.getElementById("cplus-shelf-note").style.display = state.line === "cplus" ? "" : "none";
 
     // Mixing instructions (stock mode)
     const instrList = document.getElementById("instructions-list");
@@ -1785,7 +1839,7 @@ function render() {
   }
 
   // Print config line
-  const printParts = [];
+  const printParts = [LINE().label];
   if (isStock) {
     printParts.push(`${method} Stock Concentrate`);
     printParts.push(is2Doser ? "2-Doser" : "3-Doser");
@@ -1854,13 +1908,48 @@ function renderRecipeScheduleGroup() {
 
 function applyApplicationState() {
   const isStock = state.application === "stock";
-  document.getElementById("method-section").style.display = isStock ? "" : "none";
+  const is3Part = state.line === "3part";
+  // Method + doser choices only exist on the 3-Part line (C+ stock is always 1-1-1, 3 tanks)
+  document.getElementById("method-section").style.display = isStock && is3Part ? "" : "none";
+  document.getElementById("cplus-stock-note").style.display = isStock && !is3Part ? "" : "none";
   document.getElementById("stock-card").style.display = isStock ? "" : "none";
   // Reset doser mode when switching to direct
   if (!isStock && state.doserMode === "2") {
     state.doserMode = "3";
     restoreThreeDoserSchedule();
   }
+}
+
+function rebuildRecipeSelects() {
+  const options = LINE().recipeNames.map(n => `<option>${n}</option>`).join("");
+  PHASES.forEach(p => {
+    document.getElementById(`recipe-${p.toLowerCase()}`).innerHTML = options;
+  });
+}
+
+function handleLineChange(val) {
+  if (!LINES[val] || state.line === val) return;
+  if (state.line === "3part") state.lastThreePartMethod = state.method;
+  state.line = val;
+  if (val === "cplus") {
+    state.method = "1-1-1";
+    // C+ runs three tanks — no combined-tank 2-doser program
+    if (state.doserMode === "2") {
+      state.doserMode = "3";
+      restoreThreeDoserSchedule();
+    }
+    // C+ has no Stretch recipe — Stretch-EC weeks run Stack ratios
+    PHASES.forEach(p => { if (state.phaseRecipe[p] === "Stretch") state.phaseRecipe[p] = "Stack"; });
+  } else {
+    state.method = state.lastThreePartMethod || "3-2-2";
+  }
+  state.recipeSchedule = deriveRecipeSchedule(state.phaseRecipe);
+  rememberThreeDoserSchedule();
+  syncTargetECToPreset();
+  rebuildRecipeSelects();
+  applyApplicationState();
+  syncToggleButtons();
+  render();
 }
 
 function syncRecipeScheduleControls() {
@@ -2047,8 +2136,9 @@ function updateURL() {
   const fac = document.getElementById("facility-input").value.trim();
   if (fac) p.set("fac", fac);
   // Only write params that differ from defaults
+  if (state.line !== "3part") p.set("line", state.line);
   if (state.application !== "stock") p.set("a", state.application);
-  if (state.application === "stock") {
+  if (state.application === "stock" && state.line === "3part") {
     if (state.method !== "3-2-2") p.set("m", state.method);
     if (state.doserMode === "2") p.set("d", "2");
   }
@@ -2080,10 +2170,14 @@ function loadFromURL() {
     document.getElementById("facility-input").value = p.get("fac");
     document.getElementById("print-facility").textContent = p.get("fac");
   }
+  if (p.has("line") && LINES[p.get("line")]) state.line = p.get("line");
+  if (state.line !== "3part") state.method = LINE().defaultMethod;
   if (p.has("a") && VALID_APPS.includes(p.get("a"))) state.application = p.get("a");
-  if (p.has("m") && VALID_METHODS.includes(p.get("m"))) state.method = p.get("m");
-  if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
-    state.doserMode = p.get("d");
+  if (state.line === "3part") {
+    if (p.has("m") && LINE().stockRates[p.get("m")]) state.method = p.get("m");
+    if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
+      state.doserMode = p.get("d");
+    }
   }
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") !== "no");
@@ -2110,7 +2204,7 @@ function loadFromURL() {
   if (state.doserMode !== "2") {
     PHASES.forEach(ph => {
       const rp = p.get(`rp_${ph.toLowerCase()}`);
-      if (rp && PHASES.includes(rp)) {
+      if (rp && LINE().recipeNames.includes(rp)) {
         state.phaseRecipe[ph] = rp;
       }
     });
@@ -2127,6 +2221,9 @@ function loadFromURL() {
 }
 
 function syncToggleButtons() {
+  document.querySelectorAll("#line-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.line);
+  });
   document.querySelectorAll("#app-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.application);
   });
@@ -2171,6 +2268,7 @@ function copySummary() {
   const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
   const usePhz = state.usePhoszyme;
+  const names = LINE().names;
   const phaseLabels = ["Veg / Moms", "Wk 1–2", "Wk 3–4", "Wk 5–7", "Final Wks"];
 
   const ts = 'style="border:1px solid #ccc;padding:6px 10px;text-align:center;"';
@@ -2178,7 +2276,7 @@ function copySummary() {
   const tl = 'style="border:1px solid #ccc;padding:6px 10px;text-align:left;font-weight:600;"';
 
   // ── Config summary ──
-  let configParts = [];
+  let configParts = [LINE().label];
   if (isStock) {
     configParts.push(`${method} stock concentrate`);
     configParts.push(is2Doser ? "2-Doser" : "3-Doser");
@@ -2218,8 +2316,8 @@ function copySummary() {
   PHASES.forEach(p => html += `<td ${ts}><b>${targetEC[p]}</b></td>`);
   html += `</tr>`;
 
-  // Part A row
-  html += `<tr><td ${tl}>Part A</td>`;
+  // Part A / CaNO3 row
+  html += `<tr><td ${tl}>${names.partA}</td>`;
   PHASES.forEach(phase => {
     if (is2Doser && phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
@@ -2240,8 +2338,8 @@ function copySummary() {
     });
     html += `</tr>`;
   } else {
-    // Part B row (or B + PhosZyme)
-    const bLbl = usePhz ? "B + PhosZyme" : "Part B";
+    // Carrier row (or carrier + PhosZyme)
+    const bLbl = usePhz ? LINE().phzComboLabel : names.partB;
     html += `<tr><td ${tl}>${bLbl}</td>`;
     PHASES.forEach(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
@@ -2250,8 +2348,8 @@ function copySummary() {
     });
     html += `</tr>`;
 
-    // Bloom row
-    html += `<tr><td ${tl}>Bloom</td>`;
+    // Bloom / MKP row
+    html += `<tr><td ${tl}>${names.bloom}</td>`;
     PHASES.forEach(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       const r = calcDosage(phase, "bloom", method, unit, eEC);
@@ -2290,26 +2388,26 @@ function copySummary() {
   // ── Stock Concentrate Table (stock mode only) ──
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    const titlePrefix = state.line === "cplus" ? `Component Plus ${method}` : (is2Doser ? `${method} 2-Doser` : method);
     html += `<h3 style="margin:20px 0 6px;">${titlePrefix} Stock Concentrate Rates</h3>`;
     html += `<table style="border-collapse:collapse;font-size:14px;">`;
     html += `<tr><th ${th}>Tank</th><th ${th}>Part</th><th ${th}>${stock.volUnit}</th><th ${th}>${stock.wtUnit}</th><th ${th}>${stock.concUnit}</th>`;
     html += `<th ${th}>${stock.sampleUnit}</th><th ${th}>${stock.ecUnit}</th><th ${th}>Valid. EC</th></tr>`;
 
-    const tank2Parts = usePhz ? ["B", "PhosZyme*", "Bloom"] : ["B", "Bloom"];
+    const tank2Keys = usePhz ? ["partB", "phz", "bloom"] : ["partB", "bloom"];
     stock.rows.forEach(r => {
-      if (!usePhz && r.part === "PhosZyme*") return;
+      if (!usePhz && r.key === "phz") return;
       let tankLabel = r.tank;
-      const isSubItem = is2Doser && (r.part === "PhosZyme*" || r.part === "Bloom");
+      const isSubItem = is2Doser && (r.key === "phz" || r.key === "bloom");
       // Non-2-doser: PhosZyme is a sub-item of Tank 2
-      const isPhzSub = !is2Doser && r.part === "PhosZyme*";
+      const isPhzSub = !is2Doser && r.key === "phz";
       if (is2Doser && isSubItem) tankLabel = "";
       if (isPhzSub) tankLabel = "";
       const partLabel = (isSubItem || isPhzSub) ? `+ ${r.part}` : r.part;
-      const bg = is2Doser && tank2Parts.includes(r.part) ? 'background:#f9f7fd;' : '';
+      const bg = is2Doser && tank2Keys.includes(r.key) ? 'background:#f9f7fd;' : '';
 
-      // Rowspan for Part B when PhosZyme included (non-2-doser)
-      const bWithPhz = !is2Doser && usePhz && r.part === "B";
+      // Rowspan for the carrier row when PhosZyme included (non-2-doser)
+      const bWithPhz = !is2Doser && usePhz && r.key === "partB";
       let tankCell;
       if (isPhzSub) {
         tankCell = "";
@@ -2327,7 +2425,7 @@ function copySummary() {
 
     // Tank 2 Total row for 2-doser
     if (is2Doser) {
-      const tank2Rows = stock.rows.filter(r => tank2Parts.includes(r.part));
+      const tank2Rows = stock.rows.filter(r => tank2Keys.includes(r.key));
       const combinedValEC = tank2Rows.reduce((sum, r) => sum + r.valEC, 0).toFixed(2);
       html += `<tr style="background:#f9f7fd;"><td ${ts}></td><td ${tl}><b>Tank 2 Total</b></td>`;
       html += `<td ${ts}></td><td ${ts}></td><td ${ts}></td><td ${ts}></td><td ${ts}></td>`;
@@ -2336,10 +2434,18 @@ function copySummary() {
     html += `</table>`;
 
     if (usePhz) {
-      const note = is2Doser
-        ? "PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2)."
-        : "PhosZyme is mixed into the Part B stock tank. It will increase the validation EC.";
+      let note;
+      if (state.line === "cplus") {
+        note = "PhosZyme is mixed into the Component Plus stock tank — never the CaNO3 tank (not calcium-compatible). It will increase the Tank 2 validation EC.";
+      } else {
+        note = is2Doser
+          ? "PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2)."
+          : "PhosZyme is mixed into the Part B stock tank. It will increase the validation EC.";
+      }
       html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">* ${note}</p>`;
+    }
+    if (state.line === "cplus") {
+      html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">Component Plus stock concentrate: use within 14 days of mixing. Store in opaque containers at room temperature, away from direct or artificial light.</p>`;
     }
 
     // ── Mixing Instructions ──
@@ -2357,7 +2463,7 @@ function copySummary() {
     // Direct to Reservoir mixing instructions
     html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
     html += `<ol style="font-size:14px;padding-left:20px;">`;
-    getReservoirInstructions(usePhz, state.showPhUp, met).forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
+    getReservoirInstructions(usePhz, state.showPhUp, isMetric(unit)).forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
     html += `</ol>`;
   }
 
@@ -2367,7 +2473,7 @@ function copySummary() {
   let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
   plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
   plain += "Target EC".padEnd(20) + PHASES.map(p => `${targetEC[p]}`.padEnd(12)).join("") + "\n\n";
-  plain += "Part A".padEnd(20) + PHASES.map(phase => {
+  plain += names.partA.padEnd(20) + PHASES.map(phase => {
     if (is2Doser && phase === "Veg") return "–".padEnd(12);
     const eEC = targetEC[phase] * getPhzScaleFactor(phase);
     return calcDosage(phase, "partA", method, unit, eEC).display.padEnd(12);
@@ -2381,12 +2487,12 @@ function copySummary() {
       return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
   } else {
-    const bLbl = usePhz ? "B + PhosZyme" : "Part B";
+    const bLbl = usePhz ? LINE().phzComboLabel : names.partB;
     plain += bLbl.padEnd(20) + PHASES.map(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
-    plain += "Bloom".padEnd(20) + PHASES.map(phase => {
+    plain += names.bloom.padEnd(20) + PHASES.map(phase => {
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
       return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
@@ -2457,6 +2563,7 @@ function loadTheme() {
 // ═══════════════════════════════════════════════
 
 renderRecipeScheduleGroup();
+setupToggle("line-group", null, handleLineChange);
 setupToggle("app-group", null, handleApplicationChange);
 setupToggle("method-group", "method");
 setupToggle("doser-group", null, handleDoserChange);
@@ -2464,6 +2571,7 @@ setupToggle("ec-preset-group", null, handleECPreset);
 setupToggle("recipe-schedule-group", null, handleRecipeScheduleChange);
 loadTheme();
 loadFromURL();
+rebuildRecipeSelects();
 syncTargetECToPreset();
 applyApplicationState();
 rebuildUnitGroup();
