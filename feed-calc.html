@@ -997,7 +997,7 @@
     </div>
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
-        <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. Target EC follows the selected EC preset or your custom EC values.</p>
+        <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. On the commercial chart, mid-flower EC holds flat — the Swell weeks run at the same preset EC as the Stack weeks (e.g. 2.7 at High Strength) until Ripen. Custom EC values override this.</p>
         <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
         <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
@@ -1371,13 +1371,22 @@ function getRecipe(phase) {
   return RECIPES[getPhaseRecipeName(phase)];
 }
 
-// AIDEV-NOTE: Recipe schedule presets only change recipe ratios. Target EC stays
-// controlled by the EC preset/custom EC values for each phase.
+// AIDEV-NOTE: Recipe schedules change recipe ratios; target EC follows the EC preset —
+// with one exception: the commercial chart holds mid-flower EC flat (Swell phase runs at
+// the Stack-phase preset EC until Ripen; parity with the Excel master, Tyler Jun 10 2026).
+// Custom EC values always win — the override only applies while a preset drives ECs.
+function syncTargetECToPreset() {
+  if (state.ecPreset !== "high" && state.ecPreset !== "standard") return;
+  state.targetEC = { ...EC_PRESETS[state.ecPreset] };
+  if (state.recipeSchedule === "commercial") state.targetEC.Swell = state.targetEC.Stack;
+}
+
 function applyRecipeSchedule(schedule) {
   if (!RECIPE_SCHEDULES[schedule]) return;
   state.recipeSchedule = schedule;
   state.phaseRecipe = { ...RECIPE_SCHEDULES[schedule] };
   rememberThreeDoserSchedule();
+  syncTargetECToPreset();
 }
 
 function getRecipeScheduleLabel() {
@@ -1950,9 +1959,7 @@ function toggleDrawer(drawerId, btn) {
 
 function handleECPreset(val) {
   state.ecPreset = val;
-  if (val === "high" || val === "standard") {
-    state.targetEC = { ...EC_PRESETS[val] };
-  }
+  syncTargetECToPreset();
   render();
 }
 
@@ -1967,6 +1974,7 @@ function handleRecipeChange(phase, recipeName) {
   state.phaseRecipe[phase] = recipeName;
   state.recipeSchedule = deriveRecipeSchedule(state.phaseRecipe);
   rememberThreeDoserSchedule();
+  syncTargetECToPreset();
   render();
 }
 
@@ -2456,6 +2464,7 @@ setupToggle("ec-preset-group", null, handleECPreset);
 setupToggle("recipe-schedule-group", null, handleRecipeScheduleChange);
 loadTheme();
 loadFromURL();
+syncTargetECToPreset();
 applyApplicationState();
 rebuildUnitGroup();
 syncToggleButtons();
