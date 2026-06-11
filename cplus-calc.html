@@ -1074,6 +1074,7 @@
       <button class="toggle-btn" data-val="custom">Custom</button>
     </div>
 
+    <div id="recipe-schedule-section">
     <div class="config-spacer"></div>
     <div class="section-label-row">
       <div class="section-label">Recipe Schedule</div>
@@ -1091,7 +1092,8 @@
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
     </div>
-    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode fixes the combined C+ + MKP tank at Swell, so recipe presets are locked.</p>
+    </div>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode locks every phase to the Swell recipe — the combined tank fixes the C+-to-MKP ratio — so the recipe schedule options are hidden.</p>
 
     <div class="config-spacer"></div>
     <div class="section-label-row">
@@ -1982,6 +1984,8 @@ function syncRecipeScheduleControls() {
     btn.disabled = locked || !option.selectable;
     btn.classList.toggle("active", btn.dataset.val === activeSchedule);
   });
+  // 2-doser: hide the schedule section entirely (no choice exists); the note explains why
+  document.getElementById("recipe-schedule-section").style.display = locked ? "none" : "";
   document.getElementById("recipe-schedule-note").hidden = !locked;
 }
 
