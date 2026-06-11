@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Front Row Ag · Feed Calculator</title>
+<meta name="robots" content="noindex, nofollow">
+<title>Front Row Ag · Component Plus Calculator</title>
 <style>
   :root {
     --bg: #0d0d0d;
@@ -878,9 +879,101 @@
     /* 2-doser tint in print */
     .stock-table tr[style*="rgba(136,102,204"] { background: #f5f3fa !important; }
   }
+
+  /* ── Access Gate ─────────────────────── */
+  /* AIDEV-NOTE: Client-side commercial gate — friction, not security. The page is
+     static HTML on a public host, so the gate's job is to keep the C+ program out
+     of casual customer view, not to defeat a determined reader of the source. */
+  body.gate-locked .container { display: none; }
+  #gate-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #gate-overlay[hidden] { display: none; }
+  .gate-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 32px 28px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+  }
+  .gate-card h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+  .gate-card .gate-intro {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+  .gate-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    padding: 10px 12px;
+    font-family: inherit;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .gate-input:focus { outline: none; border-color: var(--accent); }
+  .gate-btn {
+    width: 100%;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .gate-btn:hover { background: var(--accent); color: #0d2920; }
+  .gate-error {
+    font-size: 0.78rem;
+    color: var(--danger);
+    margin-top: 10px;
+  }
+  .gate-error[hidden] { display: none; }
+  .gate-footer {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 16px;
+  }
+  .gate-footer a { color: var(--accent); text-decoration: none; }
+  @media print {
+    #gate-overlay { display: none !important; }
+  }
 </style>
 </head>
-<body>
+<body class="gate-locked">
+
+<!-- Access Gate (commercial program — code provided by FRA reps) -->
+<div id="gate-overlay">
+  <div class="gate-card">
+    <h1>Front Row Ag · Component Plus Calculator</h1>
+    <p class="gate-intro">This calculator is part of Front Row Ag's commercial Component Plus program and is available to participating customers. Enter the access code provided by your Front Row Ag representative.</p>
+    <input type="text" class="gate-input" id="gate-input" placeholder="Access code" autocomplete="off" autocapitalize="off">
+    <button class="gate-btn" onclick="tryUnlock()">Unlock Calculator</button>
+    <p class="gate-error" id="gate-error" hidden>That code didn't match — check with your Front Row Ag representative.</p>
+    <p class="gate-footer"><a href="https://www.FrontRowAg.com" target="_blank">FrontRowAg.com</a></p>
+  </div>
+</div>
 
 <div class="container">
 
@@ -898,7 +991,7 @@
         <img src="logo.png" alt="Front Row Ag" class="print-logo">
       </div>
       <div class="print-header-right">
-        <div class="print-title">Feed Calculator</div>
+        <div class="print-title">Component Plus Feed Calculator</div>
         <div class="print-facility" id="print-facility"></div>
         <div class="print-config" id="print-config-line"></div>
       </div>
@@ -907,8 +1000,8 @@
 
   <!-- Header -->
   <div class="header">
-    <h1><span>Front Row Ag</span> · Feed Calculator</h1>
-    <p>Stock concentrate mixing rates & feed schedules</p>
+    <h1><span>Front Row Ag</span> · Component Plus Calculator</h1>
+    <p>Stock concentrate mixing rates & feed schedules · CaNO3 / C+ / MKP</p>
   </div>
 
   <!-- Configuration Card -->
@@ -919,6 +1012,17 @@
       <input type="text" class="facility-input" id="facility-input" placeholder="Facility name (optional — appears on printed chart)" oninput="updateFacility()">
     </div>
 
+    <div class="section-label-row">
+      <div class="section-label">The Component Plus Line</div>
+      <button class="info-btn" onclick="toggleDrawer('line-drawer', this)" aria-label="What is the Component Plus line?">?</button>
+    </div>
+    <div class="info-drawer" id="line-drawer">
+      <div class="info-drawer-content">
+        <p><strong>Component Plus</strong> is the three-product commodity-pairing line: calcium nitrate (CaNO3), Component Plus (C+), and monopotassium phosphate (MKP). C+ (2-16-20 with 8% Mg, 11% S, and a full chelated micronutrient package) is the backbone; CaNO3 and MKP supply the calcium and phosphorus it deliberately omits. The C+ line has no Stretch recipe — Stretch-week EC targets run the Stack recipe. C+ stock concentrate must be used within 14 days of mixing.</p>
+      </div>
+    </div>
+
+    <div class="config-spacer"></div>
     <div class="section-label-row">
       <div class="section-label">Application</div>
       <button class="info-btn" onclick="toggleDrawer('app-drawer', this)" aria-label="What's the difference between stock concentrate and direct to reservoir?">?</button>
@@ -937,21 +1041,6 @@
     <div id="method-section">
       <div class="config-spacer"></div>
       <div class="section-label-row">
-        <div class="section-label">Mixing Method</div>
-        <button class="info-btn" onclick="toggleDrawer('method-drawer', this)" aria-label="What do these mixing methods mean?">?</button>
-      </div>
-      <div class="toggle-group" id="method-group">
-        <button class="toggle-btn active" data-val="3-2-2">3-2-2</button>
-        <button class="toggle-btn" data-val="1-1-1">1-1-1</button>
-      </div>
-      <div class="info-drawer" id="method-drawer">
-        <div class="info-drawer-content">
-          <p><strong>3:2:2</strong> is the standard mixing method. Three 25-pound bags of Part A go into a 50-gallon stock tank (75 lbs total at 1.5 lbs/gal). Part B and Bloom each get two 25-pound bags into 50 gallons (50 lbs each at 1 lb/gal). Because Part A is more concentrated, the injection rates come out equal across all three parts — which simplifies day-to-day dosing.</p>
-          <p><strong>1:1:1</strong> means everything is mixed at 1 pound per gallon — 50 pounds of each part into 50-gallon stock tanks. This is a lower concentration than 3:2:2 and is used by facilities that prefer a uniform weight ratio. Injection rates will differ between parts since each contributes a different share of the total EC.</p>
-        </div>
-      </div>
-      <div class="config-spacer"></div>
-      <div class="section-label-row">
         <div class="section-label">Dosers</div>
         <button class="info-btn" onclick="toggleDrawer('doser-drawer', this)" aria-label="What's the difference between 3-doser and 2-doser?">?</button>
       </div>
@@ -961,11 +1050,12 @@
       </div>
       <div class="info-drawer" id="doser-drawer">
         <div class="info-drawer-content">
-          <p><strong>3-Doser:</strong> Three separate stock tanks — Part A, Part B, and Bloom each get their own injector. This is the standard setup and allows full flexibility with per-phase recipe adjustments.</p>
-          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Swell recipe since the B-to-Bloom ratio is fixed in a single tank. The two tanks are balanced to run within ~1 mL/gal of each other, so in practice set both dosers to the same injection rate and confirm with EC/PPM validation.</p>
+          <p><strong>3-Doser:</strong> Three separate stock tanks — CaNO3, Component Plus, and MKP each get their own injector, mixed at 1 lb per gallon (1-1-1). This is the standard setup and allows full flexibility with per-phase recipe adjustments. Injection rates differ between tanks since each product carries a different share of the total EC.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — CaNO3 alone in Tank 1 at 0.75 lb/gal, and C+ + MKP combined in Tank 2 at 0.75 + 1.00 lb/gal. Used in facilities with only two injectors. Calcium can never share a tank with phosphate or sulfate, so CaNO3 always stays alone. The combined tank fixes the C+-to-MKP ratio, which locks all flower phases to the Swell recipe, and the concentrations are balanced so both tanks run at the same injection rate — one doser setting, equal drawdown. Confirm with EC/PPM validation.</p>
         </div>
       </div>
     </div>
+    <p class="config-note" id="cplus-stock-note" style="display:none">Component Plus stock mixes at 1 lb per gallon in each of the three tanks (1-1-1). Injection rates differ between tanks — each product carries a different share of the total EC.</p>
 
     <div class="config-spacer"></div>
     <div class="section-label">Output Units</div>
@@ -991,19 +1081,17 @@
     </div>
     <div class="toggle-group" id="recipe-schedule-group">
       <button class="toggle-btn active" data-val="commercial">Commercial (Stack → Swell)</button>
-      <button class="toggle-btn" data-val="standard">Standard Progression</button>
       <button class="toggle-btn" data-val="swell-flower">Swell Through Flower</button>
       <button class="toggle-btn" data-val="custom" disabled>Custom</button>
     </div>
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
         <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. On the commercial chart, mid-flower EC holds flat — the Swell weeks run at the same preset EC as the Stack weeks (e.g. 2.7 at High Strength) until Ripen. Custom EC values override this.</p>
-        <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
         <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
     </div>
-    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode fixes the combined B + Bloom tank at Swell, so recipe presets are locked.</p>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode fixes the combined C+ + MKP tank at Swell, so recipe presets are locked.</p>
 
     <div class="config-spacer"></div>
     <div class="section-label-row">
@@ -1019,7 +1107,7 @@
     </div>
     <div class="info-drawer" id="supplements-drawer">
       <div class="info-drawer-content">
-        <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the carrier's weight — 5 lb per 50-lb tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is Part B (or the combined B + Bloom tank in 2-doser mode). PhosZyme is not calcium-compatible, so it never goes in a tank with Part A. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Toggle it on if your feed program includes PhosZyme.</p>
+        <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the Component Plus weight — 5 lb per 50-lb C+ tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is the Component Plus tank (in 2-doser mode, the combined C+ + MKP tank). PhosZyme is not calcium-compatible, so it never goes in a tank with CaNO3. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Toggle it on if your feed program includes PhosZyme.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
         <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
@@ -1064,10 +1152,10 @@
     </table>
     </div>
     <p id="twodoser-veg-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
-      Veg / Moms is not served in 2-doser: a combined B + Bloom tank can't deliver a zero-Bloom Veg recipe. Run veg / moms on a separate Part A + Part B feed.
+      Veg / Moms is not served in 2-doser: a combined C+ + MKP tank can't deliver a zero-MKP Veg recipe. Run veg / moms on a separate CaNO3 + C+ feed.
     </p>
     <p id="twodoser-rate-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:6px; font-style:italic;">
-      Set both dosers to the same injection rate — Part A and the combined B + Bloom tank are balanced to run within ~1 mL/gal of each other. Confirm with EC/PPM validation.
+      Set both dosers to the same injection rate — the CaNO3 tank (0.75 lb/gal) and the combined C+ + MKP tank are concentration-balanced to run at the same rate. Confirm with EC/PPM validation.
     </p>
     <div class="btn-row">
       <button class="btn" id="btn-copy" onclick="copySummary()">
@@ -1122,7 +1210,10 @@
     </table>
     </div>
     <p id="phz-footnote" style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
-      * When mixed with Part B stock solution, PhosZyme will increase the validation EC.
+      * When mixed with Component Plus stock solution, PhosZyme will increase the validation EC.
+    </p>
+    <p id="cplus-shelf-note" style="display:none; font-size:0.75rem; color:var(--text-dim); margin-top:6px; font-style:italic;">
+      Component Plus stock concentrate: use within 14 days of mixing. Store in opaque containers at room temperature, away from direct or artificial light.
     </p>
   </div>
 
@@ -1138,12 +1229,12 @@
   </div>
 
   <div class="footer">
-    <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · Feed Calculator
+    <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · Component Plus Calculator
   </div>
 
   <!-- Print Footer (hidden on screen, shown in print) -->
   <div class="print-footer" style="display:none;">
-    frontrowag.com · Generated by Front Row Ag Feed Calculator
+    frontrowag.com · Generated by Front Row Ag Component Plus Calculator
   </div>
 
 </div>
@@ -1155,7 +1246,7 @@
 
 // AIDEV-NOTE: phoszyme_ratio 0.12 → 0.10 (R&D/Marketing Jun 10 2026): monoammonium
 // (PhosZyme) target ≤0.4 g/gal applied. At 0.12 the co-injected dose hit ~0.50 g/gal at
-// high-strength Veg (3.0 EC). 0.10 = 5 lb per 50-lb Part B tank (round-number field
+// high-strength Veg (3.0 EC). 0.10 = 5 lb per 50-lb carrier (C+) tank (round-number field
 // additions, Tyler Jun 10) → worst case ~0.41 at high-strength Veg, a deliberate ~2%
 // allowance at that one brief phase; every other recipe lands well under 0.4. DTR mode
 // is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
@@ -1167,41 +1258,49 @@ const CONSTANTS = {
   L_per_gal: 3.785
 };
 
-// AIDEV-NOTE: This public page is the 3-Part line only. The Component Plus line
-// moved to cplus-calc.html (commercially gated, unlinked) on Jun 11 2026 — old
-// ?line=cplus links silently fall back to 3-Part here. The calculation engine
-// keys on structural roles (docs/feed-recipes.md "pseudo-Part A pattern"):
-// partA = calcium delivery, partB = PhosZyme carrier, bloom = P-heavy bulk.
+// AIDEV-NOTE: This page is the Component Plus line only — the public 3-Part
+// calculator lives in feed-calc.html. The calculation engine is shared via
+// structural roles (docs/feed-recipes.md "pseudo-Part A pattern"): partA =
+// calcium delivery (CaNO3), partB = PhosZyme carrier (Component Plus), bloom =
+// P-heavy bulk (MKP). All math keys on the role; LINES holds the labels,
+// EC/g constants, recipes, stock rates, and recipe schedules.
 const LINES = {
-  "3part": {
-    label: "3-Part",
-    names: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
-    stockNames: { partA: "A", partB: "B", bloom: "Bloom" },
-    fullNames: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
-    phzComboLabel: "B + PhosZyme",
-    ecPerGram: { partA: 0.306, partB: 0.255, bloom: 0.200, phoszyme: 0.220 },
+  cplus: {
+    label: "Component Plus",
+    names: { partA: "CaNO3", partB: "C+", bloom: "MKP" },
+    stockNames: { partA: "CaNO3", partB: "C+", bloom: "MKP" },
+    fullNames: { partA: "Calcium Nitrate", partB: "Component Plus", bloom: "MKP" },
+    phzComboLabel: "C+ + PhosZyme",
+    ecPerGram: { partA: 0.317, partB: 0.283, bloom: 0.195, phoszyme: 0.220 },
+    // AIDEV-NOTE: C+ recipes per docs/feed-recipes.md + Excel master C+ US tab
+    // (Jun 10 2026). No Stretch recipe in the C+ line — Stretch-EC weeks run Stack
+    // ratios. PhosZyme rides in the C+ tank (never CaNO3 — calcium incompatibility).
     recipes: {
-      Veg:     { partA: 0.6428571428571, partB: 0.3571428571429, bloom: 0 },
-      Stretch: { partA: 0.55, partB: 0.29, bloom: 0.16 },
-      Stack:   { partA: 0.5021882, partB: 0.2789934, bloom: 0.2188184 },
-      Swell:   { partA: 0.441, partB: 0.234, bloom: 0.325 },
-      Ripen:   { partA: 0.35, partB: 0.30, bloom: 0.35 }
+      Veg:   { partA: 0.60, partB: 0.40, bloom: 0 },
+      Stack: { partA: 0.496, partB: 0.32, bloom: 0.184 },
+      Swell: { partA: 0.3684, partB: 0.3294, bloom: 0.3022 },
+      Ripen: { partA: 0.315, partB: 0.30, bloom: 0.385 }
     },
-    recipeNames: ["Veg", "Stretch", "Stack", "Swell", "Ripen"],
+    recipeNames: ["Veg", "Stack", "Swell", "Ripen"],
+    // AIDEV-NOTE: 2-doser stock rates generalize the Shang-Ri-La two-tote design
+    // (Jun 10 2026, active/shang-ri-la-cplus-2tote.md in the internal repo):
+    // Tank 1 = CaNO3 alone (calcium can't share a tank with phosphate/sulfate);
+    // Tank 2 = C+ + MKP combined at the Swell weight ratio (MKP:C+ = 1.00:0.75 =
+    // 1.333 vs Swell's required 1.331, 0.2% off). CaNO3 at 0.75 lb/gal equalizes
+    // both tanks' injection rates (Δ ~0.05%) — one doser setting, equal drawdown.
     stockRates: {
-      "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
-      "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
-      "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 }
+      "1-1-1":   { partA: 1.00, partB: 1.00, bloom: 1.00 },
+      "2-doser": { partA: 0.75, partB: 0.75, bloom: 1.00 }
     },
     tankVolumes: {
-      "4-3-3": { tankA: 53.5, tankB: 60 },
-      "3-2-2": { tankA: 50, tankB: 50 },
-      "1-1-1": { tankA: 50, tankB: 50 }
+      "1-1-1":   { tankA: 50, tankB: 50 },
+      "2-doser": { tankA: 50, tankB: 50 }
     },
-    defaultMethod: "3-2-2",
+    defaultMethod: "1-1-1",
+    // AIDEV-NOTE: "standard" (full craft progression) removed Jun 11 2026 — obsolete
+    // on the C+ line. Old ?rs=standard links fall back to the commercial default.
     schedules: {
       commercial:     { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
-      standard:       { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
       "swell-flower": { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" }
     }
   }
@@ -1212,13 +1311,12 @@ function ecPerGram() { return LINE().ecPerGram; }
 
 const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
 
-// AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Stack Through
-// Flower" was removed the same day — replaced by "Swell Through Flower" as the
-// single-recipe flower option. Old ?rs=stack-flower links fall back to the default.
-// Per-line phaseRecipe maps live in LINES[line].schedules (C+ has no Stretch recipe).
+// AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Standard
+// Progression" was removed from the C+ page Jun 11 2026 (obsolete on this line).
+// Old ?rs=standard / ?rs=stack-flower links fall back to the default.
+// The phaseRecipe maps live in LINES.cplus.schedules (C+ has no Stretch recipe).
 const RECIPE_SCHEDULE_OPTIONS = {
   commercial:     { label: "Commercial (Stack → Swell)", selectable: true },
-  standard:       { label: "Standard Progression", selectable: true },
   "swell-flower": { label: "Swell Through Flower", selectable: true },
   custom:         { label: "Custom", printLabel: "Custom Recipe Schedule", selectable: false },
   "locked-swell": { label: "Swell Recipe Locked", selectable: false, lockedOnly: true }
@@ -1265,7 +1363,7 @@ const DIRECT_UNITS = ["g/gal", "g/L"];
 const VALID_APPS    = ["stock", "direct"];
 const VALID_UNITS   = Object.keys(UNIT_FACTORS);
 const VALID_PRESETS = ["high", "standard", "custom"];
-const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
+const VALID_RECIPE_SCHEDULES = Object.keys(LINES.cplus.schedules);
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 
@@ -1298,11 +1396,13 @@ function getReservoirInstructions(usePhz, usePhUp, met) {
   return steps;
 }
 
+// AIDEV-NOTE: Tank 2 order — dissolve C+ fully before MKP (MKP dissolves slowly,
+// especially in cold water); PhosZyme rides Tank 2, never the CaNO3 tank.
 const INSTRUCTIONS_2DOSER = [
   "Start with two clean stock tanks marked at target volume.",
   "Add RO water to 50% of target volume in each tank; begin agitating.",
-  "Tank 1: Add Part A over 5 minutes while agitating.",
-  "Tank 2: Add Part B, then Bloom, then PhosZyme over 5 minutes while agitating.",
+  "Tank 1: Add calcium nitrate over 5 minutes while agitating.",
+  "Tank 2: Add Component Plus and let it dissolve fully, then PhosZyme, then MKP, while agitating (MKP dissolves slowly in cold water).",
   "Add RO water to target volume in each tank; mix for 10 more minutes.",
   "Validate and adjust each stock tank as necessary.",
   "Set both dosers to the same injection rate; confirm final solution EC/PPM."
@@ -1313,9 +1413,9 @@ const INSTRUCTIONS_2DOSER = [
 // ═══════════════════════════════════════════════
 
 let state = {
-  line: "3part",
+  line: "cplus",
   application: "stock",
-  method: "3-2-2",
+  method: "1-1-1",
   doserMode: "3",
   usePhoszyme: false,
   showSi: false,
@@ -1326,10 +1426,10 @@ let state = {
   ecPreset: "high",
   recipeSchedule: "commercial",
   targetEC: { ...EC_PRESETS.high },
-  phaseRecipe: { ...LINES["3part"].schedules.commercial },
+  phaseRecipe: { ...LINES.cplus.schedules.commercial },
   lastThreeDoserSchedule: {
     recipeSchedule: "commercial",
-    phaseRecipe: { ...LINES["3part"].schedules.commercial }
+    phaseRecipe: { ...LINES.cplus.schedules.commercial }
   }
 };
 
@@ -1615,8 +1715,8 @@ function render() {
   html += "</tr>";
 
   if (is2Doser) {
-    // ── 2-Doser: combined B + Bloom row (+ PhosZyme if included) ──
-    const label = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
+    // ── 2-Doser: combined C+ + MKP row (+ PhosZyme if included) ──
+    const label = usePhz ? "C+ + MKP + PhosZyme" : "C+ + MKP";
     html += `<tr><td><span class="component-dot dot-bbloom"></span>${label}</td>`;
     PHASES.forEach(phase => {
       if (phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
@@ -1672,10 +1772,13 @@ function render() {
   // ── Supplemental products reference card ──
   renderSupplements();
 
+  // 3-doser stock-mix note (1-1-1, rates differ per tank) — N/A in 2-doser or DTR
+  document.getElementById("cplus-stock-note").style.display = isStock && !is2Doser ? "" : "none";
+
   // Stock tank table (only when stock concentrate)
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    const titlePrefix = is2Doser ? "Component Plus 2-Doser" : "Component Plus 1-1-1";
     document.getElementById("stock-title").textContent = `${titlePrefix} Stock Concentrate Rates`;
     document.getElementById("vol-header").textContent = stock.volUnit;
     document.getElementById("wt-header").textContent = stock.wtUnit;
@@ -1758,9 +1861,12 @@ function render() {
     } else {
       footnote.style.display = "";
       footnote.textContent = is2Doser
-        ? "* PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2). The Tank 2 Total reflects all three products."
-        : "* When mixed with Part B stock solution, PhosZyme will increase the validation EC.";
+        ? "* PhosZyme is mixed into the combined C+ + MKP stock tank (Tank 2) — never the CaNO3 tank (PhosZyme is not calcium-compatible). The Tank 2 Total reflects all three products."
+        : "* PhosZyme is mixed into the Component Plus stock tank — never the CaNO3 tank (PhosZyme is not calcium-compatible). It will increase the Tank 2 validation EC.";
     }
+
+    // C+ stock shelf-life note (label requirement: use within 14 days)
+    document.getElementById("cplus-shelf-note").style.display = "";
 
     // Mixing instructions (stock mode)
     const instrList = document.getElementById("instructions-list");
@@ -1782,8 +1888,7 @@ function render() {
   // Print config line
   const printParts = [LINE().label];
   if (isStock) {
-    printParts.push(`${method} Stock Concentrate`);
-    printParts.push(is2Doser ? "2-Doser" : "3-Doser");
+    printParts.push(is2Doser ? "2-Doser Stock Concentrate (CaNO3 | C+ + MKP)" : "1-1-1 Stock Concentrate · 3-Doser");
   } else {
     printParts.push("Direct to Reservoir");
   }
@@ -1854,6 +1959,7 @@ function applyApplicationState() {
   // Reset doser mode when switching to direct
   if (!isStock && state.doserMode === "2") {
     state.doserMode = "3";
+    state.method = "1-1-1";
     restoreThreeDoserSchedule();
   }
 }
@@ -1983,6 +2089,8 @@ function handleRecipeChange(phase, recipeName) {
 function handleDoserChange(val) {
   const previousMode = state.doserMode;
   state.doserMode = val;
+  // 2-doser uses its own stock concentrations (CaNO3 0.75 | C+ 0.75 + MKP 1.00)
+  state.method = val === "2" ? "2-doser" : "1-1-1";
   if (val === "2" && previousMode !== "2") {
     rememberThreeDoserSchedule();
   }
@@ -2045,15 +2153,14 @@ function renderECInputs() {
 
 function updateURL() {
   const p = new URLSearchParams();
+  // Keep the access key in the URL so Share Link produces a working gated link
+  if (gateKey) p.set("key", gateKey);
   if (document.body.classList.contains('light')) p.set("t", "light");
   const fac = document.getElementById("facility-input").value.trim();
   if (fac) p.set("fac", fac);
   // Only write params that differ from defaults
   if (state.application !== "stock") p.set("a", state.application);
-  if (state.application === "stock") {
-    if (state.method !== "3-2-2") p.set("m", state.method);
-    if (state.doserMode === "2") p.set("d", "2");
-  }
+  if (state.application === "stock" && state.doserMode === "2") p.set("d", "2");
   if (state.usePhoszyme) p.set("phz", "yes");
   if (state.showSi) p.set("si", "yes");
   if (state.showPhUp) p.set("phup", "yes");
@@ -2083,9 +2190,9 @@ function loadFromURL() {
     document.getElementById("print-facility").textContent = p.get("fac");
   }
   if (p.has("a") && VALID_APPS.includes(p.get("a"))) state.application = p.get("a");
-  if (p.has("m") && LINE().stockRates[p.get("m")]) state.method = p.get("m");
-  if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
+  if (state.application === "stock" && p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
     state.doserMode = p.get("d");
+    state.method = state.doserMode === "2" ? "2-doser" : "1-1-1";
   }
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") === "yes");
@@ -2131,9 +2238,6 @@ function loadFromURL() {
 function syncToggleButtons() {
   document.querySelectorAll("#app-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.application);
-  });
-  document.querySelectorAll("#method-group .toggle-btn").forEach(b => {
-    b.classList.toggle("active", b.dataset.val === state.method);
   });
   document.querySelectorAll("#doser-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.doserMode);
@@ -2183,8 +2287,7 @@ function copySummary() {
   // ── Config summary ──
   let configParts = [LINE().label];
   if (isStock) {
-    configParts.push(`${method} stock concentrate`);
-    configParts.push(is2Doser ? "2-Doser" : "3-Doser");
+    configParts.push(is2Doser ? "2-Doser stock concentrate (CaNO3 | C+ + MKP)" : "1-1-1 stock concentrate · 3-Doser");
   } else {
     configParts.push("Direct to reservoir");
   }
@@ -2196,7 +2299,7 @@ function copySummary() {
   configParts.push(unit);
   configParts.push(getRecipeScheduleLabel());
 
-  let html = `<h2 style="margin:0 0 4px;">Front Row Ag Feed Chart</h2>`;
+  let html = `<h2 style="margin:0 0 4px;">Front Row Ag Component Plus Feed Chart</h2>`;
   html += `<p style="color:#666;margin:0 0 12px;">${configParts.join(" · ")}</p>`;
 
   // ── Feed Schedule Table ──
@@ -2232,8 +2335,8 @@ function copySummary() {
   html += `</tr>`;
 
   if (is2Doser) {
-    // Combined B + Bloom row
-    const lbl = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
+    // Combined C+ + MKP row
+    const lbl = usePhz ? "C+ + MKP + PhosZyme" : "C+ + MKP";
     html += `<tr><td ${tl}>${lbl}</td>`;
     PHASES.forEach(phase => {
       if (phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
@@ -2293,7 +2396,7 @@ function copySummary() {
   // ── Stock Concentrate Table (stock mode only) ──
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    const titlePrefix = is2Doser ? "Component Plus 2-Doser" : "Component Plus 1-1-1";
     html += `<h3 style="margin:20px 0 6px;">${titlePrefix} Stock Concentrate Rates</h3>`;
     html += `<table style="border-collapse:collapse;font-size:14px;">`;
     html += `<tr><th ${th}>Tank</th><th ${th}>Part</th><th ${th}>${stock.volUnit}</th><th ${th}>${stock.wtUnit}</th><th ${th}>${stock.concUnit}</th>`;
@@ -2340,10 +2443,11 @@ function copySummary() {
 
     if (usePhz) {
       const note = is2Doser
-        ? "PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2)."
-        : "PhosZyme is mixed into the Part B stock tank. It will increase the validation EC.";
+        ? "PhosZyme is mixed into the combined C+ + MKP stock tank (Tank 2) — never the CaNO3 tank (not calcium-compatible)."
+        : "PhosZyme is mixed into the Component Plus stock tank — never the CaNO3 tank (not calcium-compatible). It will increase the Tank 2 validation EC.";
       html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">* ${note}</p>`;
     }
+    html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">Component Plus stock concentrate: use within 14 days of mixing. Store in opaque containers at room temperature, away from direct or artificial light.</p>`;
 
     // ── Mixing Instructions ──
     let instrSet;
@@ -2367,7 +2471,7 @@ function copySummary() {
   html += `<p style="font-size:11px;color:#555;margin-top:16px;">Generated by Front Row Ag Feed Calculator</p>`;
 
   // ── Plain text fallback ──
-  let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
+  let plain = `Front Row Ag Component Plus Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
   plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
   plain += "Target EC".padEnd(20) + PHASES.map(p => `${targetEC[p]}`.padEnd(12)).join("") + "\n\n";
   plain += names.partA.padEnd(20) + PHASES.map(phase => {
@@ -2377,7 +2481,7 @@ function copySummary() {
   }).join("") + "\n";
 
   if (is2Doser) {
-    const lbl = usePhz ? "B+Bloom+PhZ" : "B + Bloom";
+    const lbl = usePhz ? "C+ +MKP+PhZ" : "C+ + MKP";
     plain += lbl.padEnd(20) + PHASES.map(phase => {
       if (phase === "Veg") return "–".padEnd(12);
       const eEC = targetEC[phase] * getPhzScaleFactor(phase);
@@ -2395,7 +2499,7 @@ function copySummary() {
     }).join("") + "\n";
   }
 
-  if (is2Doser) plain += "\nVeg / Moms: run a separate Part A + Part B feed — a combined B + Bloom tank can't make a zero-Bloom Veg recipe.\n";
+  if (is2Doser) plain += "\nVeg / Moms: run a separate CaNO3 + C+ feed — a combined C+ + MKP tank can't make a zero-MKP Veg recipe.\n";
 
   if (state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic) {
     const met = isMetric(unit);
@@ -2456,12 +2560,65 @@ function loadTheme() {
 }
 
 // ═══════════════════════════════════════════════
+// ACCESS GATE
+// ═══════════════════════════════════════════════
+// AIDEV-NOTE: Commercial gate, not security — the code (normalized to lowercase,
+// trimmed) is checked against a djb2 hash so it isn't readable in source, the
+// accepted code is kept in localStorage + the ?key= URL param so unlocks persist
+// and Share Link produces working links. To change the code: compute the new hash
+// with the gateHash() function below (e.g. in the browser console) and replace
+// GATE_HASH, then re-distribute the new code; old saved codes stop validating.
+const GATE_HASH = "d5ab5114";
+let gateKey = null;
+
+function gateNorm(s) { return (s || "").trim().toLowerCase(); }
+
+function gateHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (((h << 5) + h) + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+
+function gateCheck(code) { return gateHash(gateNorm(code)) === GATE_HASH; }
+
+function gateUnlock(code, silent) {
+  gateKey = gateNorm(code);
+  try { localStorage.setItem("fra-cplus-key", gateKey); } catch (e) {}
+  document.getElementById("gate-overlay").hidden = true;
+  document.body.classList.remove("gate-locked");
+  if (!silent) updateURL();
+}
+
+function tryUnlock() {
+  const v = document.getElementById("gate-input").value;
+  if (gateCheck(v)) {
+    document.getElementById("gate-error").hidden = true;
+    gateUnlock(v, false);
+  } else {
+    document.getElementById("gate-error").hidden = false;
+  }
+}
+
+function initGate() {
+  // silent=true: runs before loadFromURL, so don't rewrite the URL yet
+  const p = new URLSearchParams(window.location.search);
+  const urlKey = p.get("key");
+  let saved = null;
+  try { saved = localStorage.getItem("fra-cplus-key"); } catch (e) {}
+  if (urlKey && gateCheck(urlKey)) gateUnlock(urlKey, true);
+  else if (saved && gateCheck(saved)) gateUnlock(saved, true);
+  document.getElementById("gate-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") tryUnlock();
+  });
+}
+
+// ═══════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════
 
+initGate();
 renderRecipeScheduleGroup();
 setupToggle("app-group", null, handleApplicationChange);
-setupToggle("method-group", "method");
 setupToggle("doser-group", null, handleDoserChange);
 setupToggle("ec-preset-group", null, handleECPreset);
 setupToggle("recipe-schedule-group", null, handleRecipeScheduleChange);
