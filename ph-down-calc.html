@@ -269,6 +269,28 @@
   .print-header { display: none; }
   .print-footer { display: none; }
 
+.tools-link {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto 0;
+    padding: 10px 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 600;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .tools-link:hover,
+  .tools-link:focus-visible {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    outline: none;
+  }
+
   /* ── Print ────────────────────────────── */
   @media print {
     @page { margin: 0.5in; size: letter; }
@@ -466,6 +488,8 @@
     FRA recipes land in the 5.5–6.0 pH sweet spot with ~40 ppm residual alkalinity.
     Always verify with a pH meter — dissolved minerals and CO2 can shift actual results.
   </div>
+
+  <a class="tools-link screen-only" href="index.html">Back to All Calculator Tools</a>
 
   <!-- Print Footer (hidden on screen, shown in print) -->
   <div class="print-footer">
