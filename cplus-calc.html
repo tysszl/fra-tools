@@ -1109,7 +1109,7 @@
     </div>
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
-        <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. On the commercial chart, mid-flower EC holds flat — the Swell weeks run at the same preset EC as the Stack weeks (e.g. 2.7 at High Strength) until Ripen. Custom EC values override this.</p>
+        <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. The Swell phase steps down through mid-flower: weeks 3–5 run at the higher Swell EC (2.7 High / 2.2 Standard), weeks 6–8/9 at the lower Swell EC (2.4 High / 2.0 Standard), before Ripen. Custom EC values override this.</p>
         <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
@@ -1496,14 +1496,14 @@ function getRecipe(phase) {
   return LINE().recipes[getPhaseRecipeName(phase)];
 }
 
-// AIDEV-NOTE: Recipe schedules change recipe ratios; target EC follows the EC preset —
-// with one exception: the commercial chart holds mid-flower EC flat (Swell phase runs at
-// the Stack-phase preset EC until Ripen; parity with the Excel master, Tyler Jun 10 2026).
-// Custom EC values always win — the override only applies while a preset drives ECs.
+// AIDEV-NOTE: Recipe schedules change recipe ratios; target EC follows the EC preset.
+// The commercial chart's mid-flower steps down: weeks 3-5 (Stack column, Swell recipe) run
+// at the Stack preset EC, weeks 6-8/9 (Swell column, Swell recipe) at the lower Swell preset
+// EC — 2.4 High / 2.0 Standard — matching the 322/DTR charts (Matthew, Jun 16 2026; reverts
+// the Jun 10 flat-mid-flower override). Custom EC values always win.
 function syncTargetECToPreset() {
   if (state.ecPreset !== "high" && state.ecPreset !== "standard") return;
   state.targetEC = { ...EC_PRESETS[state.ecPreset] };
-  if (state.recipeSchedule === "commercial") state.targetEC.Swell = state.targetEC.Stack;
 }
 
 function applyRecipeSchedule(schedule) {
