@@ -900,6 +900,113 @@
     /* 2-doser tint in print */
     .stock-table tr[style*="rgba(136,102,204"] { background: #f5f3fa !important; }
   }
+
+  /* ══════════════════════════════════════════════════════════
+     FEED CHART — print styling layer (design system)
+     A self-contained, brandable wrapper around the calculator's
+     generated chart. Every visual decision flows from the design
+     tokens declared on #branded-print, so the whole sheet adapts
+     by editing a handful of variables (brand color, spacing scale,
+     table density). Hidden on screen; shown only for print.
+     Layout: page 1 = the program (chart + reference),
+             page 2 = the procedure (mixing + stock build).
+     ══════════════════════════════════════════════════════════ */
+  #branded-print { display: none; }
+
+  @media print {
+    /* Swap the interactive calculator for the branded sheet */
+    .container > *:not(#branded-print) { display: none !important; }
+    #branded-print { display: block !important; }
+
+    /* ── Design tokens ── */
+    #branded-print {
+      --red: #b01e23;          /* primary brand red (titles, rules)   */
+      --red-deep: #8a1418;     /* table/section header bars           */
+      --green: #3c6e3c;        /* units pill                          */
+      --ink: #1a1a1a;          /* body text                           */
+      --muted: #5f5f5f;        /* captions, footer                    */
+      --head: #3a3a3a;         /* chart phase row                     */
+      --hair: #cccccc;         /* table borders                       */
+      --grid: #999999;         /* chart borders                       */
+      --tint: #f5f5f5;         /* zebra / label fill                  */
+      --a: #4a8a00; --b: #2266bb; --bloom: #bb2020; --bbloom: #6644aa;
+      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;   /* spacing scale */
+      --radius: 5px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      line-height: 1.35;
+    }
+    #branded-print * {
+      box-shadow: none !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+
+    /* ── Page + vertical rhythm ── */
+    .fc-page { box-sizing: border-box; width: 100%; page-break-after: always; break-after: page; }
+    .fc-page:last-child { page-break-after: auto; break-after: auto; }
+    .fc-page > * + * { margin-top: var(--s4); }      /* space major sections */
+    .fc-stack > * + * { margin-top: var(--s2); }     /* space items in a column */
+    .fc-reference > * + * { margin-top: var(--s3); } /* grid → full-width table */
+
+    /* ── Title bar (page 1 header) ── */
+    .fc-titlebar { display: flex; align-items: center; gap: var(--s4); border-bottom: 3px solid var(--red); padding-bottom: var(--s3); }
+    .fc-titlebar__logo { height: 56px; width: auto; flex: none; }
+    .fc-titlebar__text { flex: 1; min-width: 0; }
+    .fc-titlebar__title { color: var(--red); font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.12; }
+    .fc-titlebar__sub { font-size: 13px; font-weight: 600; color: var(--head); margin-top: 3px; }
+    .fc-titlebar__meta { display: flex; align-items: center; gap: var(--s3); flex: none; }
+    .fc-pill { background: var(--green); color: #fff; font-weight: 700; font-size: 11px; letter-spacing: 0.04em; padding: 5px 12px; border-radius: var(--radius); white-space: nowrap; text-transform: uppercase; }
+    .fc-qr { height: 50px; width: 50px; }
+
+    /* ── Full-bleed image bands (page-2 header + visual) ── */
+    .fc-imgband { width: 100%; height: auto; display: block; }
+
+    /* ── Section label bar ── */
+    .fc-band { background: var(--red-deep); color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 10px; font-size: 11px; border-radius: 3px; margin-bottom: var(--s1); }
+
+    /* ── Hero feed chart ── */
+    .fc-chart { border-collapse: collapse; width: 100%; font-size: 11.5px; }
+    .fc-chart td { border: 1px solid var(--grid); padding: 7px 6px; text-align: center; vertical-align: middle; }
+    .fc-chart__label { text-align: right !important; font-weight: 700; background: var(--tint); white-space: nowrap; font-size: 11px; }
+    .fc-chart__phase { background: var(--head); color: #fff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.02em; }
+    .fc-chart__recipe { font-weight: 800; font-size: 14px; }
+    .fc-chart__ec { font-weight: 800; font-size: 15px; background: #f7f7f7; }
+    .fc-chart__val { font-weight: 700; font-size: 15px; }
+    .fc-chart__val--a { color: var(--a); }
+    .fc-chart__val--b { color: var(--b); }
+    .fc-chart__val--bloom { color: var(--bloom); }
+    .fc-chart__val--bbloom { color: var(--bbloom); }
+    .fc-sub { font-size: 9px; color: var(--red); margin-top: 1px; }
+
+    /* ── Captions ── */
+    .fc-caption { font-size: 9.5px; color: var(--muted); margin-top: var(--s1); }
+    .fc-caption--italic { font-style: italic; }
+
+    /* ── Reference grid + tables ── */
+    .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+    .fc-table { border-collapse: collapse; width: 100%; font-size: 10px; }
+    .fc-table th, .fc-table td { border: 1px solid var(--hair); padding: 2px 6px; text-align: left; vertical-align: top; }
+    .fc-table thead th { background: var(--red-deep); color: #fff; text-transform: uppercase; font-size: 9px; letter-spacing: 0.02em; }
+    .fc-table tbody tr:nth-child(even) { background: var(--tint); }
+    .fc-table .nowrap { white-space: nowrap; }
+
+    /* ── Prose block (EC considerations) ── */
+    .fc-prose h4 { color: var(--red); font-size: 12px; margin: 0 0 var(--s1); text-transform: uppercase; letter-spacing: 0.02em; }
+    .fc-prose p { font-size: 10.5px; line-height: 1.4; margin: 0; }
+
+    /* ── Mixing steps + notes (page 2) ── */
+    .fc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+    .fc-steps { border: 2px solid var(--red); border-radius: 6px; padding: var(--s3) var(--s4); }
+    .fc-steps ol { margin: 0; padding-left: 18px; }
+    .fc-steps li { font-size: 11.5px; margin-bottom: var(--s2); line-height: 1.35; }
+    .fc-notes h4 { color: var(--red); font-size: 12px; margin: 0 0 var(--s1); text-transform: uppercase; letter-spacing: 0.02em; }
+    .fc-notes ul { margin: 0; padding-left: 16px; }
+    .fc-notes li { font-size: 11.5px; margin-bottom: var(--s2); line-height: 1.35; }
+
+    /* ── Footer ── */
+    .fc-foot { display: flex; align-items: center; justify-content: center; gap: var(--s2); margin-top: var(--s3); padding-top: var(--s2); border-top: 1px solid var(--hair); font-size: 9.5px; color: var(--muted); }
+    .fc-foot img { height: 18px; width: auto; }
+  }
 </style>
 </head>
 <body>
@@ -1172,6 +1279,9 @@
     frontrowag.com · Generated by Front Row Ag Feed Calculator
   </div>
 
+  <!-- ── Branded print chart (hidden on screen; rendered only for print) ── -->
+  <div id="branded-print" aria-hidden="true"></div>
+
 </div>
 
 <script>
@@ -1259,7 +1369,7 @@ const RECIPE_SCHEDULE_LABELS = Object.fromEntries(
 
 const EC_PRESETS = {
   high:     { Veg: 3.0, Stretch: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
-  standard: { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.6 }
+  standard: { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.4 }
 };
 
 const UNIT_FACTORS = {
@@ -1588,6 +1698,274 @@ function copyRichText(html, plain) {
   return copyToClipboard(plain);
 }
 
+// ═══════════════════════════════════════════════
+// SHARED FEED-ROW MODEL
+// Single source of truth for BOTH the on-screen feed table
+// and the branded print chart, so their numbers can never
+// drift. Each row: { label, dotCls, valCls,
+// cells: [ {display,dosage,ec} | null ] }  (null cell = dash).
+// ═══════════════════════════════════════════════
+function computeFeedRows() {
+  const { method, unit, targetEC } = state;
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const names = LINE().names;
+  const phzEcFactor = CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
+  const rows = [];
+
+  // Part A — always present
+  rows.push({
+    label: names.partA, dotCls: "dot-a", valCls: "val-a",
+    cells: PHASES.map(phase => {
+      if (is2Doser && phase === "Veg") return null;
+      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const r = calcDosage(phase, "partA", method, unit, eEC);
+      return { display: r.display, dosage: r.dosage, ec: r.ec };
+    })
+  });
+
+  if (is2Doser) {
+    rows.push({
+      label: usePhz ? "B + Bloom + PhosZyme" : "B + Bloom", dotCls: "dot-bbloom", valCls: "val-bbloom",
+      cells: PHASES.map(phase => {
+        if (phase === "Veg") return null;
+        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+        const resultB = calcDosage(phase, "partB", method, unit, eEC);
+        let combinedEc = resultB.ec + calcEcContribution(phase, "bloom", eEC);
+        if (usePhz) combinedEc += calcEcContribution(phase, "partB", eEC) * phzEcFactor;
+        return { display: resultB.display, dosage: resultB.dosage, ec: combinedEc };
+      })
+    });
+  } else {
+    if (usePhz) {
+      rows.push({
+        label: LINE().phzComboLabel, dotCls: "dot-b", valCls: "val-b",
+        cells: PHASES.map(phase => {
+          const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+          const resultB = calcDosage(phase, "partB", method, unit, eEC);
+          const phzEc = calcEcContribution(phase, "partB", eEC) * phzEcFactor;
+          return { display: resultB.display, dosage: resultB.dosage, ec: resultB.ec + phzEc };
+        })
+      });
+    } else {
+      rows.push({
+        label: names.partB, dotCls: "dot-b", valCls: "val-b",
+        cells: PHASES.map(phase => {
+          const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+          const r = calcDosage(phase, "partB", method, unit, eEC);
+          return { display: r.display, dosage: r.dosage, ec: r.ec };
+        })
+      });
+    }
+    rows.push({
+      label: names.bloom, dotCls: "dot-bloom", valCls: "val-bloom",
+      cells: PHASES.map(phase => {
+        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+        const r = calcDosage(phase, "bloom", method, unit, eEC);
+        return { display: r.display, dosage: r.dosage, ec: r.ec };
+      })
+    });
+  }
+  return rows;
+}
+
+// ═══════════════════════════════════════════════
+// BRANDED PRINT CHART (Kelsey layout, US units)
+// Renders a 2-page customer-ready feed chart that mirrors
+// the on-screen configuration. Header + mixing visual swap
+// on the Application toggle (Direct to Reservoir vs Stock).
+// Assets: assets/feed-chart/. Static reference content is
+// transcribed from DTR v5.5; live numbers come from the
+// same engine the on-screen table uses (computeFeedRows,
+// calcStockTanks, ecPerGram) so the printed chart can never
+// drift from the calculator.
+// ═══════════════════════════════════════════════
+const BP_ASSETS = {
+  dtrHeader:   "assets/feed-chart/dtr-header.png",
+  stockHeader: "assets/feed-chart/stock-header.png",
+  dtrStep:     "assets/feed-chart/dtr-stepbystep.png",
+  stockStep:   "assets/feed-chart/stock-visualguide.png",
+  qr:          "assets/feed-chart/qr-moreinfo.png"
+};
+
+const BP_DTR_NOTES = [
+  "When using Front Row Si, reservoirs should be fully used within 48 hours.",
+  "Without Front Row Si, reservoirs should be used within 5–7 days.",
+  "Avoid mixing strong oxidizers, especially peroxides, into reservoirs. If running a sterile reservoir, use calcium hypochlorite at 1–3 g / 100 gallons.",
+  "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
+  "If using PhosZyme, add with Part B."
+];
+const BP_STOCK_NOTES = [
+  "Mix each part into its own stock tank; validate stock EC before use and adjust as necessary.",
+  "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
+  "If using PhosZyme, mix it into the Part B stock tank — never with Part A.",
+  "Avoid mixing strong oxidizers, especially peroxides, into stock tanks.",
+  "Set injectors to the listed rates, then confirm final solution EC/PPM at the emitter."
+];
+const BP_EC_CONSIDERATIONS = "Given the variance in facility infrastructure, cultivation methods, and cultivars, it's impossible to give a specific EC prescription that applies to all scenarios. Most facilities feed at 2.0–3.0 EC with Front Row Ag, and our \"Standard\" and \"High Strength\" feed charts reflect effective feeding strategies in this range.";
+const BP_FEED_CHART_NOTES = "These feed charts are not a prescription, but an example of the general ranges and relationship of EC and recipes that can be used. Each facility and cultivation methodology will require customization of EC values. See \"EC Considerations.\"";
+const BP_HIGHER_LOWER = [
+  ["Smaller pots", "Larger pots"],
+  ["Frequent irrigation", "Infrequent irrigation"],
+  ["Consistent runoff", "Less runoff"],
+  ["Substrate monitoring", "No substrate monitoring"],
+  ["Higher PPFD", "Lower PPFD"],
+  ["Heavy feeding strains", "Lower feeding strains"],
+  ["Higher CO2", "Lower CO2"],
+  ["Tight environmental control", "Less environmental control"]
+];
+const BP_SI_VS_EC = [["< 2.3", "0.5"], ["2.3–2.7", "0.375"], ["2.7–3.1", "0.25"], ["3.1–3.5", "0.125"], ["> 3.5", "0"]];
+const BP_ADDITIVES = [
+  ["Front Row Si", "0.5–2 mL/gal", "Foliar, 1x/week, Veg through Wk 3 of flower (stem strength / stress)."],
+  ["Triologic", "1–2 mL/gal", "Use 1x per week."],
+  ["BioFlo", "30 mL/gal", "As needed to clear biofilm from irrigation lines."],
+  ["Front Row pH Up", "0.05–0.25 g/gal", "Mix 5–15 minutes."]
+];
+const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
+
+function fcFoot() {
+  return `<div class="fc-foot"><img src="logo.png" alt="Front Row Ag">Front Row Ag &middot; order@solsticeag.com &middot; +1 844-420-6883 &middot; frontrowag.com</div>`;
+}
+
+// Reference table that packs a two-column list into four columns
+// (two value-pairs per row) to keep tall lists compact.
+function fcPairTable(h1, h2, pairs) {
+  let body = "";
+  for (let i = 0; i < pairs.length; i += 2) {
+    const a = pairs[i], b = pairs[i + 1] || ["", ""];
+    body += `<tr><td>${a[0]}</td><td>${a[1]}</td><td>${b[0]}</td><td>${b[1]}</td></tr>`;
+  }
+  return `<table class="fc-table"><thead><tr><th>${h1}</th><th>${h2}</th><th>${h1}</th><th>${h2}</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+
+// Labelled section: a red band header above its content.
+function fcSection(title, body) {
+  return `<div><div class="fc-band">${title}</div>${body}</div>`;
+}
+
+function fcStockTable() {
+  const stock = calcStockTanks(state.method, state.unit);
+  const usePhz = state.usePhoszyme;
+  const is2Doser = state.doserMode === "2";
+  let rows = "";
+  stock.rows.forEach(r => {
+    if (!usePhz && r.key === "phz") return;
+    const sub = r.key === "phz" || (is2Doser && r.key === "bloom");
+    rows += `<tr><td>${sub ? "" : r.tank}</td><td>${sub ? "+ " + r.part : r.part}</td><td>${r.vol}</td><td>${r.wt}</td><td>${r.conc}</td><td>${r.sample}</td><td>${r.ecG}</td><td><b>${r.valEC}</b></td></tr>`;
+  });
+  if (is2Doser) {
+    const t2 = ["partB", "phz", "bloom"].filter(k => usePhz || k !== "phz");
+    const tot = stock.rows.filter(r => t2.includes(r.key)).reduce((s, r) => s + r.valEC, 0).toFixed(2);
+    rows += `<tr><td></td><td><b>Tank 2 Total</b></td><td></td><td></td><td></td><td></td><td></td><td><b>${tot}</b></td></tr>`;
+  }
+  const table = `<table class="fc-table"><thead><tr><th>Tank</th><th>Part</th><th>${stock.volUnit}</th><th>${stock.wtUnit}</th><th>${stock.concUnit}</th><th>${stock.sampleUnit}</th><th>${stock.ecUnit}</th><th>Valid. EC</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return fcSection(`${state.method}${is2Doser ? " &middot; 2-Doser" : ""} Stock Concentrate Rates`, table);
+}
+
+function renderBrandedPrint() {
+  const el = document.getElementById("branded-print");
+  if (!el) return;
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const unit = state.unit;
+  const facility = document.getElementById("facility-input").value.trim();
+  const headerImg = isStock ? BP_ASSETS.stockHeader : BP_ASSETS.dtrHeader;
+  const stepImg = isStock ? BP_ASSETS.stockStep : BP_ASSETS.dtrStep;
+  const notes = isStock ? BP_STOCK_NOTES : BP_DTR_NOTES;
+  const notesTitle = isStock ? "Stock Concentrate Notes" : "Direct to Reservoir Notes";
+  const chartTitle = isStock
+    ? `${state.method}${is2Doser ? " &middot; 2-Doser" : ""} Stock Concentrate Feed Chart`
+    : "Direct to Reservoir Feed Chart";
+
+  // Mixing steps — same source the on-screen instructions card uses
+  let steps;
+  if (isStock) {
+    if (is2Doser) steps = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
+    else steps = INSTRUCTIONS;
+  } else {
+    steps = getReservoirInstructions(usePhz, state.showPhUp, isMetric(unit));
+  }
+
+  const recipeNames = PHASES.map(p => getPhaseRecipeName(p));
+  const eg = ecPerGram();
+
+  // The hero feed table (numbers come straight from computeFeedRows so the
+  // printed chart can never drift from the on-screen calculator).
+  const bodyRows = computeFeedRows().map(row => {
+    const cells = row.cells.map(c => {
+      if (!c || c.dosage === 0 || c.display === "–") return `<td>–</td>`;
+      const suffix = row.valCls.replace("val-", "");
+      return `<td><span class="fc-chart__val fc-chart__val--${suffix}">${c.display}</span><div class="fc-sub">${c.ec.toFixed(2)} EC</div></td>`;
+    }).join("");
+    return `<tr><td class="fc-chart__label">${row.label}</td>${cells}</tr>`;
+  }).join("");
+
+  const chart =
+    `<table class="fc-chart">`
+    + `<tr><td class="fc-chart__label">Phase</td>${BP_PHASE_LABELS.map(l => `<td class="fc-chart__phase">${l}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Recipe</td>${recipeNames.map(rn => `<td class="fc-chart__recipe">${rn}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Target EC</td>${PHASES.map(p => `<td class="fc-chart__ec">${state.targetEC[p]}</td>`).join("")}</tr>`
+    + bodyRows
+    + `</table>`;
+
+  const additiveTable =
+    `<table class="fc-table"><thead><tr><th>Additive</th><th>Rate</th><th>Notes</th></tr></thead><tbody>`
+    + BP_ADDITIVES.map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
+    + `</tbody></table>`;
+
+  const partEcTable =
+    `<table class="fc-table"><tbody>`
+    + `<tr><td>Part A</td><td>${eg.partA.toFixed(3)}</td></tr>`
+    + `<tr><td>Part B</td><td>${eg.partB.toFixed(3)}</td></tr>`
+    + `<tr><td>Bloom</td><td>${eg.bloom.toFixed(3)}</td></tr>`
+    + `</tbody></table>`;
+
+  // ── Page 1 — the feed program (chart + reference) ──
+  const p1 =
+    `<div class="fc-page">`
+    + `<div class="fc-titlebar">`
+    +   `<img class="fc-titlebar__logo" src="logo.png" alt="Front Row Ag">`
+    +   `<div class="fc-titlebar__text"><div class="fc-titlebar__title">${chartTitle}</div>${facility ? `<div class="fc-titlebar__sub">${facility}</div>` : ""}</div>`
+    +   `<div class="fc-titlebar__meta"><div class="fc-pill">USA &middot; ${unit}</div><img class="fc-qr" src="${BP_ASSETS.qr}" alt="More info"></div>`
+    + `</div>`
+    + `<div>`
+    +   chart
+    +   `<div class="fc-caption">All part values in ${unit}. Sub-values are each part's EC contribution.</div>`
+    +   `<div class="fc-caption fc-caption--italic">${BP_FEED_CHART_NOTES}</div>`
+    + `</div>`
+    + `<div class="fc-reference">`
+    +   `<div class="fc-grid">`
+    +     `<div class="fc-stack">`
+    +       fcSection("Additive Usage Rates", additiveTable)
+    +       fcSection("Part EC Contribution (per g/gal)", partEcTable)
+    +     `</div>`
+    +     `<div class="fc-stack">`
+    +       `<div class="fc-prose"><h4>EC Considerations</h4><p>${BP_EC_CONSIDERATIONS}</p></div>`
+    +       fcSection("Si Rate by Feed EC", fcPairTable("Feed EC", "Si (mL/gal)", BP_SI_VS_EC))
+    +     `</div>`
+    +   `</div>`
+    +   fcSection("Higher EC vs Lower EC", fcPairTable("Higher EC", "Lower EC", BP_HIGHER_LOWER))
+    + `</div>`
+    + fcFoot()
+    + `</div>`;
+
+  // ── Page 2 — the mixing procedure ──
+  const p2 =
+    `<div class="fc-page">`
+    + `<img class="fc-imgband" src="${headerImg}" alt="Front Row Ag">`
+    + `<div class="fc-cols">`
+    +   `<div class="fc-steps"><ol>${steps.map(s => `<li>${s}</li>`).join("")}</ol></div>`
+    +   `<div class="fc-notes"><h4>${notesTitle}</h4><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
+    + `</div>`
+    + `<img class="fc-imgband" src="${stepImg}" alt="Mixing steps">`
+    + (isStock ? fcStockTable() : "")
+    + fcFoot()
+    + `</div>`;
+
+  el.innerHTML = p1 + p2;
+}
+
 function render() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
@@ -1620,76 +1998,21 @@ function render() {
     }
   });
 
-  // Feed table body
-  let html = "";
+  // Feed table body — built from the shared row model so the
+  // on-screen table and the branded print chart can never drift.
   const usePhz = state.usePhoszyme;
-
-  // Helper: render a single feed cell
-  function feedCell(display, dosage, ec, cls) {
-    if (dosage === 0 || display === "–") return `<td><span class="dash">–</span></td>`;
-    return `<td><div class="val ${cls}">${display}</div><div class="ec-sub">${ec.toFixed(2)} EC</div></td>`;
-  }
-
-  // Part A / CaNO3 row (always present)
-  html += `<tr><td><span class="component-dot dot-a"></span>${names.partA}</td>`;
-  PHASES.forEach(phase => {
-    if (is2Doser && phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
-    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-    const r = calcDosage(phase, "partA", method, unit, eEC);
-    html += feedCell(r.display, r.dosage, r.ec, "val-a");
-  });
-  html += "</tr>";
-
-  if (is2Doser) {
-    // ── 2-Doser: combined B + Bloom row (+ PhosZyme if included) ──
-    const label = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
-    html += `<tr><td><span class="component-dot dot-bbloom"></span>${label}</td>`;
-    PHASES.forEach(phase => {
-      if (phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-      const resultB = calcDosage(phase, "partB", method, unit, eEC);
-      const bloomEc = calcEcContribution(phase, "bloom", eEC);
-      let combinedEc = resultB.ec + bloomEc;
-      if (usePhz) {
-        combinedEc += calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
+  let html = "";
+  computeFeedRows().forEach(row => {
+    html += `<tr><td><span class="component-dot ${row.dotCls}"></span>${row.label}</td>`;
+    row.cells.forEach(cell => {
+      if (!cell || cell.dosage === 0 || cell.display === "–") {
+        html += `<td><span class="dash">–</span></td>`;
+      } else {
+        html += `<td><div class="val ${row.valCls}">${cell.display}</div><div class="ec-sub">${cell.ec.toFixed(2)} EC</div></td>`;
       }
-      html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-bbloom");
     });
     html += "</tr>";
-
-  } else {
-    // ── 3-Doser ──
-    if (usePhz) {
-      // Carrier + PhosZyme combined row (B + PhZ / C+ + PhZ)
-      html += `<tr><td><span class="component-dot dot-b"></span>${LINE().phzComboLabel}</td>`;
-      PHASES.forEach(phase => {
-        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-        const resultB = calcDosage(phase, "partB", method, unit, eEC);
-        const phzEc = calcEcContribution(phase, "partB", eEC) * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
-        const combinedEc = resultB.ec + phzEc;
-        html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-b");
-      });
-      html += "</tr>";
-    } else {
-      // Standard carrier row (no PhosZyme)
-      html += `<tr><td><span class="component-dot dot-b"></span>${names.partB}</td>`;
-      PHASES.forEach(phase => {
-        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-        const r = calcDosage(phase, "partB", method, unit, eEC);
-        html += feedCell(r.display, r.dosage, r.ec, "val-b");
-      });
-      html += "</tr>";
-    }
-
-    // Bloom / MKP row (always in 3-doser)
-    html += `<tr><td><span class="component-dot dot-bloom"></span>${names.bloom}</td>`;
-    PHASES.forEach(phase => {
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
-      const r = calcDosage(phase, "bloom", method, unit, eEC);
-      html += feedCell(r.display, r.dosage, r.ec, "val-bloom");
-    });
-    html += "</tr>";
-  }
+  });
 
   document.getElementById("feed-body").innerHTML = html;
   document.getElementById("twodoser-veg-note").hidden = !is2Doser;
@@ -1821,6 +2144,9 @@ function render() {
   printParts.push(unit);
   printParts.push(getRecipeScheduleLabel());
   document.getElementById("print-config-line").textContent = printParts.join(" · ");
+
+  // Branded print chart (mirrors the current config)
+  renderBrandedPrint();
 
   // URL state
   updateURL();
