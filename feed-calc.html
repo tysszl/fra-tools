@@ -985,6 +985,11 @@
     .fc-chart tr:first-child td { border-top: none; }
     .fc-chart tr:last-child td { border-bottom: none; }
     .fc-chart__label { text-align: right !important; font-family: var(--label); font-weight: 700; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #575757; background: var(--tint); white-space: nowrap; padding-right: 10px !important; }
+    /* Product row labels take their part color (mirrors the value colors) */
+    .fc-chart__label--a { color: var(--a); font-size: 11px; }
+    .fc-chart__label--b { color: var(--b); font-size: 11px; }
+    .fc-chart__label--bloom { color: var(--bloom); font-size: 11px; }
+    .fc-chart__label--bbloom { color: var(--bbloom); font-size: 11px; }
     .fc-chart__phase { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 6px; border-color: var(--red-deep) !important; }
     .fc-chart__recipe { font-family: var(--disp); font-weight: 600; font-size: 18px; }
     .fc-chart__ec { font-family: var(--disp); font-weight: 600; font-size: 19px; background: var(--ec-tint); }
@@ -1976,12 +1981,12 @@ function renderBrandedPrint() {
   // The hero feed table (numbers come straight from computeFeedRows so the
   // printed chart can never drift from the on-screen calculator).
   const bodyRows = computeFeedRows().map(row => {
+    const suffix = row.valCls.replace("val-", "");
     const cells = row.cells.map(c => {
       if (!c || c.dosage === 0 || c.display === "–") return `<td>–</td>`;
-      const suffix = row.valCls.replace("val-", "");
       return `<td><span class="fc-chart__val fc-chart__val--${suffix}">${c.display}</span><div class="fc-sub">${c.ec.toFixed(2)} EC</div></td>`;
     }).join("");
-    return `<tr><td class="fc-chart__label">${row.label}</td>${cells}</tr>`;
+    return `<tr><td class="fc-chart__label fc-chart__label--${suffix}">${row.label}</td>${cells}</tr>`;
   }).join("");
 
   const chart =
