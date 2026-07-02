@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Front Row Ag · Feed Calculator</title>
+<!-- Brand fonts for the printed chart. Montserrat + Atkinson Hyperlegible are
+     the actual FRA brand faces (per the designed chart PDFs); Oswald stands in
+     for the commercial condensed display face. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -902,14 +908,16 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     FEED CHART — print styling layer (design system)
-     A self-contained, brandable wrapper around the calculator's
-     generated chart. Every visual decision flows from the design
-     tokens declared on #branded-print, so the whole sheet adapts
-     by editing a handful of variables (brand color, spacing scale,
-     table density). Hidden on screen; shown only for print.
-     Layout: page 1 = the program (chart + reference),
-             page 2 = the procedure (mixing + stock build).
+     FEED CHART — print styling layer (design system v2)
+     Recreates the FRA brand sheet in pure HTML/CSS — no pasted
+     header images. Brand colors are sampled from the designed
+     chart assets; typography matches the brand PDF (Montserrat
+     for labels, Atkinson Hyperlegible for body; Oswald stands
+     in for the commercial condensed display face). Every visual
+     decision flows from the tokens on #branded-print.
+     Layout: page 1 = the program (masthead, hero chart, EC
+             reference), page 2 = the procedure (mixing steps,
+             visual guide, stock rates).
      ══════════════════════════════════════════════════════════ */
   #branded-print { display: none; }
 
@@ -920,19 +928,20 @@
 
     /* ── Design tokens ── */
     #branded-print {
-      --red: #b01e23;          /* primary brand red (titles, rules)   */
-      --red-deep: #8a1418;     /* table/section header bars           */
-      --green: #3c6e3c;        /* units pill                          */
-      --ink: #1a1a1a;          /* body text                           */
-      --muted: #5f5f5f;        /* captions, footer                    */
-      --head: #3a3a3a;         /* chart phase row                     */
-      --hair: #cccccc;         /* table borders                       */
-      --grid: #999999;         /* chart borders                       */
-      --tint: #f5f5f5;         /* zebra / label fill                  */
+      --red: #ab3431;          /* brand red — display titles, accents  */
+      --red-deep: #832a27;     /* deep red — section bands, chart head */
+      --green: #4e703f;        /* unit band green                      */
+      --ink: #1c1c1c;          /* body text                            */
+      --muted: #676767;        /* captions, footer                     */
+      --hair: #d6d2cc;         /* light table borders                  */
+      --grid: #bdb9b2;         /* chart cell borders                   */
+      --tint: #f4f2ee;         /* warm fill — label col, table heads   */
+      --ec-tint: #edf1e8;      /* green-cast fill — target EC row      */
       --a: #4a8a00; --b: #2266bb; --bloom: #bb2020; --bbloom: #6644aa;
-      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px;   /* spacing scale */
-      --radius: 5px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 18px;   /* spacing scale */
+      --disp: "Oswald", "Arial Narrow", "Helvetica Neue", sans-serif;
+      --label: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+      font-family: "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
       color: var(--ink);
       line-height: 1.35;
     }
@@ -942,70 +951,107 @@
     }
 
     /* ── Page + vertical rhythm ── */
-    .fc-page { box-sizing: border-box; width: 100%; page-break-after: always; break-after: page; }
+    /* Fixed page height (letter minus @page margins, with rounding slack)
+       + flex column so the footer pins to the bottom of every sheet. */
+    .fc-page { box-sizing: border-box; width: 100%; height: 10.1in; display: flex; flex-direction: column; page-break-after: always; break-after: page; }
     .fc-page:last-child { page-break-after: auto; break-after: auto; }
     .fc-page > * + * { margin-top: var(--s4); }      /* space major sections */
-    .fc-stack > * + * { margin-top: var(--s2); }     /* space items in a column */
-    .fc-reference > * + * { margin-top: var(--s3); } /* grid → full-width table */
+    .fc-stack > * + * { margin-top: var(--s3); }     /* space items in a column */
 
-    /* ── Title bar (page 1 header) ── */
-    .fc-titlebar { display: flex; align-items: center; gap: var(--s4); border-bottom: 3px solid var(--red); padding-bottom: var(--s3); }
-    .fc-titlebar__logo { height: 56px; width: auto; flex: none; }
-    .fc-titlebar__text { flex: 1; min-width: 0; }
-    .fc-titlebar__title { color: var(--red); font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.12; }
-    .fc-titlebar__sub { font-size: 13px; font-weight: 600; color: var(--head); margin-top: 3px; }
-    .fc-titlebar__meta { display: flex; align-items: center; gap: var(--s3); flex: none; }
-    .fc-pill { background: var(--green); color: #fff; font-weight: 700; font-size: 11px; letter-spacing: 0.04em; padding: 5px 12px; border-radius: var(--radius); white-space: nowrap; text-transform: uppercase; }
-    .fc-qr { height: 50px; width: 50px; }
+    /* ── Masthead (shared page header — brand lockup in HTML) ── */
+    .fc-masthead { display: flex; align-items: center; gap: var(--s4); }
+    .fc-masthead__logo { height: 56px; width: auto; flex: none; }
+    .fc-masthead__titles { flex: 1; text-align: right; line-height: 1.04; }
+    .fc-masthead__main { font-family: var(--disp); font-weight: 700; font-size: 30px; color: var(--red); text-transform: uppercase; letter-spacing: 0.01em; }
+    .fc-masthead__sub { font-family: var(--disp); font-weight: 600; font-size: 16px; color: var(--ink); text-transform: uppercase; letter-spacing: 0.16em; margin-top: 2px; }
+    .fc-masthead__qr { flex: none; }
+    .fc-masthead__qr img { height: 58px; width: auto; display: block; }
 
-    /* ── Full-bleed image bands (page-2 header + visual) ── */
-    .fc-imgband { width: 100%; height: auto; display: block; }
+    /* Green unit band under the masthead */
+    .fc-unitband { display: flex; justify-content: space-between; align-items: center; background: var(--green); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.09em; padding: 5px 14px; border-radius: 3px; margin-top: var(--s2) !important; }
 
-    /* ── Section label bar ── */
-    .fc-band { background: var(--red-deep); color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; padding: 4px 10px; font-size: 11px; border-radius: 3px; margin-bottom: var(--s1); }
+    /* ── Section band (deep red, one rounded end) ── */
+    .fc-band { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 5px 14px; font-size: 10px; border-radius: 3px 14px 14px 3px; margin-bottom: var(--s2); }
+
+    /* ── Small red heading ── */
+    .fc-h { color: var(--red); font-family: var(--label); font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 var(--s1); }
 
     /* ── Hero feed chart ── */
-    .fc-chart { border-collapse: collapse; width: 100%; font-size: 11.5px; }
-    .fc-chart td { border: 1px solid var(--grid); padding: 7px 6px; text-align: center; vertical-align: middle; }
-    .fc-chart__label { text-align: right !important; font-weight: 700; background: var(--tint); white-space: nowrap; font-size: 11px; }
-    .fc-chart__phase { background: var(--head); color: #fff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.02em; }
-    .fc-chart__recipe { font-weight: 800; font-size: 14px; }
-    .fc-chart__ec { font-weight: 800; font-size: 15px; background: #f7f7f7; }
-    .fc-chart__val { font-weight: 700; font-size: 15px; }
+    .fc-chartwrap { border: 1.5px solid #3a3a3a; border-radius: 6px; overflow: hidden; }
+    .fc-chart { border-collapse: collapse; width: 100%; }
+    .fc-chart td { border: 1px solid var(--grid); padding: 13px 6px; text-align: center; vertical-align: middle; }
+    .fc-chart tr td:first-child { border-left: none; }
+    .fc-chart tr td:last-child { border-right: none; }
+    .fc-chart tr:first-child td { border-top: none; }
+    .fc-chart tr:last-child td { border-bottom: none; }
+    .fc-chart__label { text-align: right !important; font-family: var(--label); font-weight: 700; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #575757; background: var(--tint); white-space: nowrap; padding-right: 10px !important; }
+    .fc-chart__phase { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 6px; border-color: var(--red-deep) !important; }
+    .fc-chart__recipe { font-family: var(--disp); font-weight: 600; font-size: 18px; }
+    .fc-chart__ec { font-family: var(--disp); font-weight: 600; font-size: 19px; background: var(--ec-tint); }
+    .fc-chart__val { font-family: var(--disp); font-weight: 600; font-size: 21px; }
     .fc-chart__val--a { color: var(--a); }
     .fc-chart__val--b { color: var(--b); }
     .fc-chart__val--bloom { color: var(--bloom); }
     .fc-chart__val--bbloom { color: var(--bbloom); }
-    .fc-sub { font-size: 9px; color: var(--red); margin-top: 1px; }
+    .fc-sub { font-size: 8.5px; color: var(--muted); margin-top: 2px; }
 
     /* ── Captions ── */
-    .fc-caption { font-size: 9.5px; color: var(--muted); margin-top: var(--s1); }
+    .fc-caption { font-size: 9.5px; color: var(--muted); margin-top: 5px; }
     .fc-caption--italic { font-style: italic; }
 
     /* ── Reference grid + tables ── */
     .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
     .fc-table { border-collapse: collapse; width: 100%; font-size: 10px; }
-    .fc-table th, .fc-table td { border: 1px solid var(--hair); padding: 2px 6px; text-align: left; vertical-align: top; }
-    .fc-table thead th { background: var(--red-deep); color: #fff; text-transform: uppercase; font-size: 9px; letter-spacing: 0.02em; }
-    .fc-table tbody tr:nth-child(even) { background: var(--tint); }
+    .fc-table th, .fc-table td { border: 1px solid var(--hair); padding: 4.5px 8px; text-align: left; vertical-align: top; }
+    .fc-table thead th { background: var(--tint); color: #3f3f3f; font-family: var(--label); font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: 0.05em; }
+    .fc-table tbody tr:nth-child(even) { background: #faf9f7; }
     .fc-table .nowrap { white-space: nowrap; }
 
     /* ── Prose block (EC considerations) ── */
-    .fc-prose h4 { color: var(--red); font-size: 12px; margin: 0 0 var(--s1); text-transform: uppercase; letter-spacing: 0.02em; }
-    .fc-prose p { font-size: 10.5px; line-height: 1.4; margin: 0; }
+    .fc-prose p { font-size: 10px; line-height: 1.5; margin: 0; }
+
+    /* ── Stock rates table: proportional fixed columns, centered numbers ── */
+    .fc-table--rates { table-layout: fixed; }
+    .fc-table--rates th { white-space: nowrap; padding-left: 6px; padding-right: 6px; }
+    .fc-table--rates th, .fc-table--rates td { text-align: center; }
+    .fc-table--rates th:nth-child(2), .fc-table--rates td:nth-child(2) { text-align: left; }
+    .fc-table--rates th:nth-child(1) { width: 9%; }
+    .fc-table--rates th:nth-child(2) { width: 14%; }
+    .fc-table--rates th:nth-child(3) { width: 8%; }
+    .fc-table--rates th:nth-child(4) { width: 8%; }
+    .fc-table--rates th:nth-child(5) { width: 14%; }
+    .fc-table--rates th:nth-child(6) { width: 15%; }
+    .fc-table--rates th:nth-child(7) { width: 16%; }
+    .fc-table--rates th:nth-child(8) { width: 16%; }
+
+    /* ── Validation steps (right third, beside the stock rates table) ── */
+    .fc-valsteps ol { margin: 0; padding-left: 16px; }
+    .fc-valsteps li { font-size: 9.5px; line-height: 1.4; margin-bottom: 4px; }
+    .fc-valsteps li::marker { color: var(--red); font-weight: 700; font-family: var(--label); }
 
     /* ── Mixing steps + notes (page 2) ── */
     .fc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
-    .fc-steps { border: 2px solid var(--red); border-radius: 6px; padding: var(--s3) var(--s4); }
-    .fc-steps ol { margin: 0; padding-left: 18px; }
-    .fc-steps li { font-size: 11.5px; margin-bottom: var(--s2); line-height: 1.35; }
-    .fc-notes h4 { color: var(--red); font-size: 12px; margin: 0 0 var(--s1); text-transform: uppercase; letter-spacing: 0.02em; }
+    .fc-steps { border: 2px solid var(--red); border-radius: 10px; padding: var(--s3) var(--s4); }
+    .fc-steps ol { margin: 0; padding-left: 20px; }
+    .fc-steps li { font-size: 10.5px; margin-bottom: var(--s2); line-height: 1.4; }
+    .fc-steps li::marker { color: var(--red); font-weight: 700; font-family: var(--label); }
     .fc-notes ul { margin: 0; padding-left: 16px; }
-    .fc-notes li { font-size: 11.5px; margin-bottom: var(--s2); line-height: 1.35; }
+    .fc-notes li { font-size: 10.5px; margin-bottom: var(--s2); line-height: 1.4; }
 
-    /* ── Footer ── */
-    .fc-foot { display: flex; align-items: center; justify-content: center; gap: var(--s2); margin-top: var(--s3); padding-top: var(--s2); border-top: 1px solid var(--hair); font-size: 9.5px; color: var(--muted); }
-    .fc-foot img { height: 18px; width: auto; }
+    /* ── Visual guide art (cropped illustration, band added in HTML) ── */
+    .fc-art { width: 94%; height: auto; display: block; margin: 0 auto; }
+
+    /* ── Mixing-page density (page 2 carries more content than page 1) ── */
+    .fc-page--mix { --s4: 15px; }
+    .fc-page--mix .fc-grid { grid-template-columns: 2fr 1fr; }
+    .fc-page--mix .fc-steps li, .fc-page--mix .fc-notes li { margin-bottom: 6px; }
+
+    /* ── Facility notes (flexes to absorb leftover page-1 height as ruled lines) ── */
+    .fc-notesarea { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+    .fc-notesarea__lines { flex: 1; background: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--hair) 27px, var(--hair) 28px); }
+
+    /* ── Footer (margin-top:auto pins it to the sheet bottom) ── */
+    .fc-foot { text-align: center; margin-top: auto; padding-top: var(--s2); border-top: 1px solid var(--hair); font-family: var(--label); font-weight: 600; font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
   }
 </style>
 </head>
@@ -1434,11 +1480,13 @@ function getReservoirInstructions(usePhz, usePhUp, met) {
   return steps;
 }
 
+// AIDEV-NOTE: The two tank-addition steps are one list item so the step
+// numbers line up with the 3-step visual guide on the printed chart
+// (print renders stock steps from 0: prep=0, water=1, fertilizer=2, fill=3).
 const INSTRUCTIONS_2DOSER = [
   "Start with two clean stock tanks marked at target volume.",
   "Add RO water to 50% of target volume in each tank; begin agitating.",
-  "Tank 1: Add Part A over 5 minutes while agitating.",
-  "Tank 2: Add Part B, then Bloom, then PhosZyme over 5 minutes while agitating.",
+  "Tank 1: Add Part A over 5 minutes while agitating. Tank 2: Add Part B, then Bloom, then PhosZyme over 5 minutes while agitating.",
   "Add RO water to target volume in each tank; mix for 10 more minutes.",
   "Validate and adjust each stock tank as necessary.",
   "Set both dosers to the same injection rate; confirm final solution EC/PPM."
@@ -1770,22 +1818,22 @@ function computeFeedRows() {
 }
 
 // ═══════════════════════════════════════════════
-// BRANDED PRINT CHART (Kelsey layout, US units)
+// BRANDED PRINT CHART (brand layout in HTML, US units)
 // Renders a 2-page customer-ready feed chart that mirrors
-// the on-screen configuration. Header + mixing visual swap
-// on the Application toggle (Direct to Reservoir vs Stock).
-// Assets: assets/feed-chart/. Static reference content is
-// transcribed from DTR v5.5; live numbers come from the
-// same engine the on-screen table uses (computeFeedRows,
-// calcStockTanks, ecPerGram) so the printed chart can never
-// drift from the calculator.
+// the on-screen configuration. Headers, bands, and boxes are
+// coded in HTML/CSS (design system above); the only images
+// are the mixing illustrations (cropped to pure art), the QR,
+// and the logo. Static reference content is transcribed from
+// DTR v5.5; live numbers come from the same engine the
+// on-screen table uses (computeFeedRows, calcStockTanks,
+// ecPerGram) so the printed chart can never drift from the
+// calculator.
 // ═══════════════════════════════════════════════
 const BP_ASSETS = {
-  dtrHeader:   "assets/feed-chart/dtr-header.png",
-  stockHeader: "assets/feed-chart/stock-header.png",
-  dtrStep:     "assets/feed-chart/dtr-stepbystep.png",
-  stockStep:   "assets/feed-chart/stock-visualguide.png",
-  qr:          "assets/feed-chart/qr-moreinfo.png"
+  dtrArt:   "assets/feed-chart/dtr-step-art.png",
+  stockArt: "assets/feed-chart/stock-visual-art.png",
+  qr:       "assets/feed-chart/qr-moreinfo.png",
+  logo:     "assets/feed-chart/logo-dark.png"
 };
 
 const BP_DTR_NOTES = [
@@ -1824,23 +1872,38 @@ const BP_ADDITIVES = [
 const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
 
 function fcFoot() {
-  return `<div class="fc-foot"><img src="logo.png" alt="Front Row Ag">Front Row Ag &middot; order@solsticeag.com &middot; +1 844-420-6883 &middot; frontrowag.com</div>`;
+  return `<div class="fc-foot">Front Row Ag &middot; order@solsticeag.com &middot; +1 844-420-6883 &middot; frontrowag.com</div>`;
 }
 
-// Reference table that packs a two-column list into four columns
-// (two value-pairs per row) to keep tall lists compact.
-function fcPairTable(h1, h2, pairs) {
-  let body = "";
-  for (let i = 0; i < pairs.length; i += 2) {
-    const a = pairs[i], b = pairs[i + 1] || ["", ""];
-    body += `<tr><td>${a[0]}</td><td>${a[1]}</td><td>${b[0]}</td><td>${b[1]}</td></tr>`;
-  }
-  return `<table class="fc-table"><thead><tr><th>${h1}</th><th>${h2}</th><th>${h1}</th><th>${h2}</th></tr></thead><tbody>${body}</tbody></table>`;
+// Shared page header: logo left, display-type title lockup right,
+// optional QR block far right.
+function fcMasthead(main, sub, withQr) {
+  return `<div class="fc-masthead">`
+    + `<img class="fc-masthead__logo" src="${BP_ASSETS.logo}" alt="Front Row Ag">`
+    + `<div class="fc-masthead__titles"><div class="fc-masthead__main">${main}</div><div class="fc-masthead__sub">${sub}</div></div>`
+    + (withQr ? `<div class="fc-masthead__qr"><img src="${BP_ASSETS.qr}" alt="More info QR code"></div>` : "")
+    + `</div>`;
 }
 
-// Labelled section: a red band header above its content.
-function fcSection(title, body) {
-  return `<div><div class="fc-band">${title}</div>${body}</div>`;
+// Green unit band: configuration summary left, facility + date right.
+function fcUnitband(left, right) {
+  return `<div class="fc-unitband"><span>${left}</span><span>${right}</span></div>`;
+}
+
+// Deep-red section band, rounded right end.
+function fcBand(title) {
+  return `<div class="fc-band">${title}</div>`;
+}
+
+// Small red heading above content.
+function fcH(title, body) {
+  return `<div><div class="fc-h">${title}</div>${body}</div>`;
+}
+
+// Plain two-column pair table (one pair per row).
+function fcTwoColTable(h1, h2, pairs) {
+  const body = pairs.map(p => `<tr><td>${p[0]}</td><td>${p[1]}</td></tr>`).join("");
+  return `<table class="fc-table"><thead><tr><th>${h1}</th><th>${h2}</th></tr></thead><tbody>${body}</tbody></table>`;
 }
 
 function fcStockTable() {
@@ -1858,8 +1921,20 @@ function fcStockTable() {
     const tot = stock.rows.filter(r => t2.includes(r.key)).reduce((s, r) => s + r.valEC, 0).toFixed(2);
     rows += `<tr><td></td><td><b>Tank 2 Total</b></td><td></td><td></td><td></td><td></td><td></td><td><b>${tot}</b></td></tr>`;
   }
-  const table = `<table class="fc-table"><thead><tr><th>Tank</th><th>Part</th><th>${stock.volUnit}</th><th>${stock.wtUnit}</th><th>${stock.concUnit}</th><th>${stock.sampleUnit}</th><th>${stock.ecUnit}</th><th>Valid. EC</th></tr></thead><tbody>${rows}</tbody></table>`;
-  return fcSection(`${state.method}${is2Doser ? " &middot; 2-Doser" : ""} Stock Concentrate Rates`, table);
+  const table = `<table class="fc-table fc-table--rates"><thead><tr><th>Tank</th><th>Part</th><th>${stock.volUnit}</th><th>${stock.wtUnit}</th><th>${stock.concUnit}</th><th>${stock.sampleUnit}</th><th>${stock.ecUnit}</th><th>Valid. EC</th></tr></thead><tbody>${rows}</tbody></table>`;
+  // Validation procedure — cross-referenced from step 4 of the mixing
+  // instructions (per docs/technical-standards.md: US validation is always
+  // 250 mL of concentrate into 5 gal RO, compare to validation EC).
+  const valSteps = [
+    "Draw 250 mL of concentrate from the stock tank.",
+    "Mix the sample into 5 gallons of RO water.",
+    "Measure EC and compare to the Valid. EC column.",
+    "If the reading is off, adjust the tank and re-validate before use."
+  ];
+  const valBlock = fcH("Validation (Step 4)",
+    `<div class="fc-valsteps"><ol>${valSteps.map(s => `<li>${s}</li>`).join("")}</ol></div>`
+    + (usePhz ? `<div class="fc-caption">PhosZyme in the Part B tank raises that tank's validation EC.</div>` : ""));
+  return `<div class="fc-grid fc-grid--rates"><div>${fcBand(`${state.method}${is2Doser ? " &middot; 2-Doser" : ""} Stock Concentrate Rates`)}${table}</div>${valBlock}</div>`;
 }
 
 function renderBrandedPrint() {
@@ -1870,19 +1945,27 @@ function renderBrandedPrint() {
   const usePhz = state.usePhoszyme;
   const unit = state.unit;
   const facility = document.getElementById("facility-input").value.trim();
-  const headerImg = isStock ? BP_ASSETS.stockHeader : BP_ASSETS.dtrHeader;
-  const stepImg = isStock ? BP_ASSETS.stockStep : BP_ASSETS.dtrStep;
+  const artImg = isStock ? BP_ASSETS.stockArt : BP_ASSETS.dtrArt;
+  const artTitle = isStock ? "Visual Guide: How to Make Stock Concentrate" : "Visual Guide: Mixing Step-by-Step";
   const notes = isStock ? BP_STOCK_NOTES : BP_DTR_NOTES;
   const notesTitle = isStock ? "Stock Concentrate Notes" : "Direct to Reservoir Notes";
-  const chartTitle = isStock
-    ? `${state.method}${is2Doser ? " &middot; 2-Doser" : ""} Stock Concentrate Feed Chart`
-    : "Direct to Reservoir Feed Chart";
 
-  // Mixing steps — same source the on-screen instructions card uses
+  // Shared title lockup + unit band (identical system on both pages)
+  const mainTitle = isStock ? "Stock Concentrate" : "Direct to Reservoir";
+  const bandLeft = `USA &middot; ${unit}${isStock ? ` &middot; ${state.method}${is2Doser ? " &middot; 2-Doser" : ""}` : ""}`;
+  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const bandRight = facility ? `${facility} &middot; ${dateStr}` : dateStr;
+
+  // Mixing steps — same source the on-screen instructions card uses.
+  // Stock steps print from 0 so the numbers line up with the visual guide,
+  // and the validate step points at the Validation procedure below.
   let steps;
   if (isStock) {
     if (is2Doser) steps = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
     else steps = INSTRUCTIONS;
+    steps = steps.map(s => s.startsWith("Validate and adjust")
+      ? s.replace(/\.$/, "") + " (see Validation, below)."
+      : s);
   } else {
     steps = getReservoirInstructions(usePhz, state.showPhUp, isMetric(unit));
   }
@@ -1902,64 +1985,64 @@ function renderBrandedPrint() {
   }).join("");
 
   const chart =
-    `<table class="fc-chart">`
-    + `<tr><td class="fc-chart__label">Phase</td>${BP_PHASE_LABELS.map(l => `<td class="fc-chart__phase">${l}</td>`).join("")}</tr>`
+    `<div class="fc-chartwrap"><table class="fc-chart">`
+    + `<tr><td class="fc-chart__phase" style="text-align:right; padding-right:10px;">Phase</td>${BP_PHASE_LABELS.map(l => `<td class="fc-chart__phase">${l}</td>`).join("")}</tr>`
     + `<tr><td class="fc-chart__label">Recipe</td>${recipeNames.map(rn => `<td class="fc-chart__recipe">${rn}</td>`).join("")}</tr>`
     + `<tr><td class="fc-chart__label">Target EC</td>${PHASES.map(p => `<td class="fc-chart__ec">${state.targetEC[p]}</td>`).join("")}</tr>`
     + bodyRows
-    + `</table>`;
+    + `</table></div>`;
 
   const additiveTable =
     `<table class="fc-table"><thead><tr><th>Additive</th><th>Rate</th><th>Notes</th></tr></thead><tbody>`
     + BP_ADDITIVES.map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
     + `</tbody></table>`;
 
-  const partEcTable =
-    `<table class="fc-table"><tbody>`
-    + `<tr><td>Part A</td><td>${eg.partA.toFixed(3)}</td></tr>`
-    + `<tr><td>Part B</td><td>${eg.partB.toFixed(3)}</td></tr>`
-    + `<tr><td>Bloom</td><td>${eg.bloom.toFixed(3)}</td></tr>`
-    + `</tbody></table>`;
+  const ecContribRows = [
+    ["Part A", eg.partA.toFixed(3)],
+    ["Part B", eg.partB.toFixed(3)],
+    ["Bloom", eg.bloom.toFixed(3)]
+  ];
+  if (usePhz) ecContribRows.push(["PhosZyme", eg.phoszyme.toFixed(3)]);
 
-  // ── Page 1 — the feed program (chart + reference) ──
+  // ── Page 1 — the feed program (masthead, hero chart, EC reference) ──
   const p1 =
     `<div class="fc-page">`
-    + `<div class="fc-titlebar">`
-    +   `<img class="fc-titlebar__logo" src="logo.png" alt="Front Row Ag">`
-    +   `<div class="fc-titlebar__text"><div class="fc-titlebar__title">${chartTitle}</div>${facility ? `<div class="fc-titlebar__sub">${facility}</div>` : ""}</div>`
-    +   `<div class="fc-titlebar__meta"><div class="fc-pill">USA &middot; ${unit}</div><img class="fc-qr" src="${BP_ASSETS.qr}" alt="More info"></div>`
-    + `</div>`
+    + fcMasthead(mainTitle, "Feed Chart", true)
+    + fcUnitband(bandLeft, bandRight)
     + `<div>`
     +   chart
     +   `<div class="fc-caption">All part values in ${unit}. Sub-values are each part's EC contribution.</div>`
     +   `<div class="fc-caption fc-caption--italic">${BP_FEED_CHART_NOTES}</div>`
     + `</div>`
-    + `<div class="fc-reference">`
-    +   `<div class="fc-grid">`
-    +     `<div class="fc-stack">`
-    +       fcSection("Additive Usage Rates", additiveTable)
-    +       fcSection("Part EC Contribution (per g/gal)", partEcTable)
-    +     `</div>`
-    +     `<div class="fc-stack">`
-    +       `<div class="fc-prose"><h4>EC Considerations</h4><p>${BP_EC_CONSIDERATIONS}</p></div>`
-    +       fcSection("Si Rate by Feed EC", fcPairTable("Feed EC", "Si (mL/gal)", BP_SI_VS_EC))
-    +     `</div>`
+    // Reference zone: Higher/Lower table left, EC Considerations right.
+    // The EC Contribution mini-table joins the right column only on the DTR
+    // sheet — the stock sheet carries that data in the page-2 rates table.
+    + `<div class="fc-grid">`
+    +   fcH("Higher EC vs Lower EC", fcTwoColTable("Higher EC Conditions", "Lower EC Conditions", BP_HIGHER_LOWER))
+    +   `<div class="fc-stack">`
+    +     fcH("EC Considerations", `<div class="fc-prose"><p>${BP_EC_CONSIDERATIONS}</p></div>`)
+    +     (isStock ? "" : fcH("EC Contribution", fcTwoColTable("Part", "EC per g/gal", ecContribRows)))
     +   `</div>`
-    +   fcSection("Higher EC vs Lower EC", fcPairTable("Higher EC", "Lower EC", BP_HIGHER_LOWER))
     + `</div>`
+    + `<div class="fc-notesarea"><div class="fc-h">Notes</div><div class="fc-notesarea__lines"></div></div>`
     + fcFoot()
     + `</div>`;
 
   // ── Page 2 — the mixing procedure ──
   const p2 =
-    `<div class="fc-page">`
-    + `<img class="fc-imgband" src="${headerImg}" alt="Front Row Ag">`
+    `<div class="fc-page fc-page--mix">`
+    + fcMasthead(mainTitle, "Mixing Instructions", false)
+    + fcUnitband(bandLeft, bandRight)
     + `<div class="fc-cols">`
-    +   `<div class="fc-steps"><ol>${steps.map(s => `<li>${s}</li>`).join("")}</ol></div>`
-    +   `<div class="fc-notes"><h4>${notesTitle}</h4><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`
+    +   fcH("Mixing Instructions", `<div class="fc-steps"><ol${isStock ? ' start="0"' : ""}>${steps.map(s => `<li>${s}</li>`).join("")}</ol></div>`)
+    +   fcH(notesTitle, `<div class="fc-notes"><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`)
     + `</div>`
-    + `<img class="fc-imgband" src="${stepImg}" alt="Mixing steps">`
+    + `<div>${fcBand(artTitle)}<img class="fc-art" src="${artImg}" alt="Mixing steps illustration"></div>`
     + (isStock ? fcStockTable() : "")
+    + `<div class="fc-grid">`
+    +   fcH("Additive Usage Rates", additiveTable)
+    +   fcH("Si Rate by Feed EC", fcTwoColTable("Feed EC", "Si (mL/gal)", BP_SI_VS_EC))
+    + `</div>`
     + fcFoot()
     + `</div>`;
 
