@@ -928,6 +928,20 @@ const FRA_PRICING = {
   "Bloom":  { wholesale: 99.75, commercial: 118.25, msrp: 218.75 }
 };
 
+// FRA's standard flower comparison uses the Swell recipe. Derive each dose
+// from the recipe's EC contribution instead of maintaining rounded hardcodes.
+const FRA_SWELL_RECIPE = {
+  mixEC: 3.0,
+  ecPerGram: { "Part A": 0.306, "Part B": 0.255, "Bloom": 0.200 },
+  ecFraction: { "Part A": 0.441, "Part B": 0.234, "Bloom": 0.325 }
+};
+
+function getFRASwellDose(productName) {
+  return FRA_SWELL_RECIPE.mixEC
+    * FRA_SWELL_RECIPE.ecFraction[productName]
+    / FRA_SWELL_RECIPE.ecPerGram[productName];
+}
+
 // ═══════════════════════════════════════════════
 // MASTER RECIPE DATA
 // ═══════════════════════════════════════════════
@@ -935,13 +949,13 @@ const FRA_PRICING = {
 const MASTER_RECIPES = [
   // ── FRA — single entry, pricing controlled by tier selector ──
   {
-    name: "Front Row Ag",
+    name: "Front Row Ag · Swell",
     isFRA: true,
-    mixEC: 3.0,
+    mixEC: FRA_SWELL_RECIPE.mixEC,
     products: [
-      { name: "Part A", qty: 25, unit: "lbs", usage: 4.8, usageUnit: "g" },
-      { name: "Part B", qty: 25, unit: "lbs", usage: 3.2, usageUnit: "g" },
-      { name: "Bloom", qty: 25, unit: "lbs", usage: 3.2, usageUnit: "g" }
+      { name: "Part A", qty: 25, unit: "lbs", usage: getFRASwellDose("Part A"), usageUnit: "g" },
+      { name: "Part B", qty: 25, unit: "lbs", usage: getFRASwellDose("Part B"), usageUnit: "g" },
+      { name: "Bloom", qty: 25, unit: "lbs", usage: getFRASwellDose("Bloom"), usageUnit: "g" }
     ]
   },
   // ── Competitors (all at EC 3.0 for apples-to-apples) ──
@@ -1210,6 +1224,10 @@ function fmtMoney(n) {
   return "$" + n.toFixed(2);
 }
 
+function fmtUsage(n) {
+  return Number(n.toFixed(3)).toString();
+}
+
 function render() {
   const allRecipes = getAllRecipes();
   let calculated = allRecipes.map(calcRecipe);
@@ -1324,7 +1342,7 @@ function renderDetailRow(r, totalCols) {
 
   r.productCosts.forEach(p => {
     const pkgLabel = p.unit === "lbs" ? `${p.qty} lbs` : `${p.qty} gal`;
-    const usageLabel = p.usageUnit === "g" ? `${p.usage} g` : `${p.usage} mL`;
+    const usageLabel = p.usageUnit === "g" ? `${fmtUsage(p.usage)} g` : `${fmtUsage(p.usage)} mL`;
     html += `<tr>
       <td style="font-weight:600;">${esc(p.name)}</td>
       <td>${fmtMoney(p.price)}</td>

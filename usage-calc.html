@@ -327,6 +327,22 @@
   }
   .product-table tr.dimmed { opacity: 0.35; }
   .product-table tr.dimmed input:not(.additive-check) { pointer-events: none; }
+  .additive-detail td {
+    padding: 7px 10px 10px 28px;
+    text-align: left;
+    color: var(--text-dim);
+    font-size: 0.72rem;
+    line-height: 1.45;
+  }
+  .triologic-inputs {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .triologic-inputs label { white-space: nowrap; }
+  .product-table .triologic-inputs input { width: 82px; margin: 0 3px; }
 
   /* ── Reference ─────────────────────────── */
   .ref-toggle {
@@ -777,13 +793,11 @@ const BASE_CONFIG = {
   fra: {
     label: 'FRA',
     shortLabel: 'FRA',
-    ecPerGram: { 'Part A': 0.322, 'Part B': 0.255, Bloom: 0.200 },
+    ecPerGram: { 'Part A': 0.306, 'Part B': 0.255, Bloom: 0.200 },
     recipes: {
-      Veg:     { 'Part A': 0.654471544715447, 'Part B': 0.345528455284553, Bloom: 0 },
-      Stretch: { 'Part A': 0.55, 'Part B': 0.29, Bloom: 0.16 },
-      Stack:   { 'Part A': 0.51499, 'Part B': 0.2719123506099, Bloom: 0.2130976493901 },
+      Veg:     { 'Part A': 0.6428571428571, 'Part B': 0.3571428571429, Bloom: 0 },
+      Stack:   { 'Part A': 0.5021882, 'Part B': 0.2789934, Bloom: 0.2188184 },
       Swell:   { 'Part A': 0.441, 'Part B': 0.234, Bloom: 0.325 },
-      Ripen:   { 'Part A': 0.35, 'Part B': 0.30, Bloom: 0.35 }
     },
     recipeProducts: ['Part A', 'Part B', 'Bloom'],
     productColors: { 'Part A': '#8bb83a', 'Part B': '#4488dd', Bloom: '#d44040' },
@@ -798,7 +812,7 @@ const BASE_CONFIG = {
     },
     tierOrder: ['commercial', 'wholesale'],
     defaultTier: 'commercial',
-    flowerRecipe: 'Stack',
+    flowerRecipe: 'Swell',
     volumeDiscounts: {
       none:      { label: 'None',      discounts: { commercial: 0,    wholesale: 0    } },
       pallet:    { label: 'Pallet',    discounts: { commercial: 0.10, wholesale: 0.05 } },
@@ -834,11 +848,14 @@ const ADDITIVE_TIERS = {
 
 const ADDITIVE_TIER_ORDER = ['commercial', 'wholesale'];
 
+const PHOSZYME_RATE_G_PER_GAL = 0.40;
+const PHOSZYME_EC_PER_GRAM = 0.220;
+const TRIOLOGIC_ML_PER_TREATED_GAL = 1;
+
 const FLAT_RATES = {
-  PhosZyme:  { rate: 0.40, divBy: LBS_PER_GAL_DIVISOR },
+  PhosZyme:  { rate: PHOSZYME_RATE_G_PER_GAL, divBy: LBS_PER_GAL_DIVISOR },
   'Clean Up':{ rate: 0.20, divBy: LBS_PER_GAL_DIVISOR },
-  Si:        { rate: 0,    divBy: ML_PER_GAL, dynamic: true },
-  Triologic: { rate: 0.20, divBy: ML_PER_GAL }
+  Si:        { rate: 0,    divBy: ML_PER_GAL, dynamic: true }
 };
 
 // ═══════════════════════════════════════════════
@@ -847,8 +864,8 @@ const FLAT_RATES = {
 
 let state = {
   base: 'fra',
-  veg:    { feedEC: 3.0, weeks: 2, galPerWeek: 1000 },
-  flower: { feedEC: 3.0, weeks: 9, galPerWeek: 10000 },
+  veg:    { feedEC: 3.0, weeks: 2, galPerWeek: 1000, triologicGalPerWeek: 0 },
+  flower: { feedEC: 3.0, weeks: 9, galPerWeek: 10000, triologicGalPerWeek: 0 },
   cyclesPerYear: 5,
   priceTier: 'commercial',
   additiveTier: 'commercial',
@@ -911,13 +928,31 @@ function calcPhaseVolume(phase) {
   return phase.weeks * phase.galPerWeek;
 }
 
+function isAdditiveIncluded(productName) {
+  const product = state.products.find(p => p.name === productName);
+  return Boolean(product && product.included);
+}
+
+function getBaseFertilizerEC(feedEC) {
+  const phosZymeEC = isAdditiveIncluded('PhosZyme')
+    ? PHOSZYME_RATE_G_PER_GAL * PHOSZYME_EC_PER_GRAM
+    : 0;
+  return Math.max(0, feedEC - phosZymeEC);
+}
+
 function calcProductAmount(productName, phaseName, phaseVolume, feedEC) {
   const config = getConfig();
   if (config.ecPerGram[productName] !== undefined) {
     const recipe = phaseName === 'veg' ? config.recipes.Veg : config.recipes[config.flowerRecipe];
     const pct = recipe[productName] || 0;
     if (pct === 0) return 0;
-    return phaseVolume * feedEC * (pct / config.ecPerGram[productName]) / LBS_PER_GAL_DIVISOR;
+    const baseFertilizerEC = getBaseFertilizerEC(feedEC);
+    return phaseVolume * baseFertilizerEC * (pct / config.ecPerGram[productName]) / LBS_PER_GAL_DIVISOR;
+  }
+  if (productName === 'Triologic') {
+    const phase = state[phaseName];
+    const treatedVolume = phase.weeks * phase.triologicGalPerWeek;
+    return treatedVolume * TRIOLOGIC_ML_PER_TREATED_GAL / ML_PER_GAL;
   }
   const flat = FLAT_RATES[productName];
   if (!flat) return 0;
@@ -1042,6 +1077,22 @@ function renderProductRows(tbodyId, isBase) {
       <td><input type="number" class="size-input" step="1" min="0" value="${p.unitSize}" oninput="updateProduct(${i},'unitSize',this.value)"> <span class="unit-type">${p.unitType}</span></td>
       <td class="order-cell" id="order-${i}">\u2014</td>
     </tr>`;
+    if (p.name === 'PhosZyme' && p.included) {
+      html += `<tr class="additive-detail">
+        <td colspan="4">0.4 g/gal contributes 0.088 EC. Base fertilizer is automatically reduced so the selected feed EC remains the final target.</td>
+      </tr>`;
+    }
+    if (p.name === 'Triologic' && p.included) {
+      html += `<tr class="additive-detail">
+        <td colspan="4">
+          1 mL/gal once weekly, preferably as a hand-water drench. Enter only the gallons treated in that weekly application.
+          <div class="triologic-inputs">
+            <label>Veg <input type="text" aria-label="Veg Triologic treated gallons per week" value="${state.veg.triologicGalPerWeek.toLocaleString('en-US')}" oninput="updateTriologicVolume('veg',this.value)" onfocus="clearCommas(this)" onblur="addNonNegativeCommas(this)"> gal/wk</label>
+            <label>Flower <input type="text" aria-label="Flower Triologic treated gallons per week" value="${state.flower.triologicGalPerWeek.toLocaleString('en-US')}" oninput="updateTriologicVolume('flower',this.value)" onfocus="clearCommas(this)" onblur="addNonNegativeCommas(this)"> gal/wk</label>
+          </div>
+        </td>
+      </tr>`;
+    }
   });
   tbody.innerHTML = html;
 }
@@ -1123,8 +1174,11 @@ function render() {
   updateURL();
 
   // Print config
+  const triologicConfig = isAdditiveIncluded('Triologic')
+    ? `  |  Triologic ${fmtInt(state.veg.triologicGalPerWeek)} veg / ${fmtInt(state.flower.triologicGalPerWeek)} flower treated gal/wk`
+    : '';
   document.getElementById('print-config-line').textContent =
-    `Veg ${state.veg.feedEC} EC \u00d7 ${state.veg.weeks}wk \u00d7 ${fmtInt(state.veg.galPerWeek)} gal/wk  |  Flower ${state.flower.feedEC} EC \u00d7 ${state.flower.weeks}wk \u00d7 ${fmtInt(state.flower.galPerWeek)} gal/wk  |  ${cy} cycles/yr`;
+    `Veg ${state.veg.feedEC} EC \u00d7 ${state.veg.weeks}wk \u00d7 ${fmtInt(state.veg.galPerWeek)} gal/wk  |  Flower ${state.flower.feedEC} EC \u00d7 ${state.flower.weeks}wk \u00d7 ${fmtInt(state.flower.galPerWeek)} gal/wk  |  ${cy} cycles/yr${triologicConfig}`;
 }
 
 function renderCostBar(costProducts, totalCost) {
@@ -1152,8 +1206,13 @@ function renderCostBar(costProducts, totalCost) {
 // ═══════════════════════════════════════════════
 
 function parseNum(el) { return parseFloat(el.value.replace(/,/g, '')) || 0; }
+function parseNonNegative(value, fallback = 0) {
+  const parsed = parseFloat(String(value).replace(/,/g, ''));
+  return Number.isFinite(parsed) ? Math.max(0, parsed) : fallback;
+}
 function clearCommas(el) { el.value = el.value.replace(/,/g, ''); }
 function addCommas(el) { el.value = (parseFloat(el.value.replace(/,/g, '')) || 0).toLocaleString('en-US'); }
+function addNonNegativeCommas(el) { el.value = parseNonNegative(el.value).toLocaleString('en-US'); }
 
 function onInput() {
   state.veg.feedEC = parseFloat(document.getElementById('veg-ec').value) || 0;
@@ -1163,6 +1222,11 @@ function onInput() {
   state.flower.weeks = parseInt(document.getElementById('flower-weeks').value) || 0;
   state.flower.galPerWeek = parseNum(document.getElementById('flower-gpw'));
   state.cyclesPerYear = parseInt(document.getElementById('cycles-year').value) || 1;
+  render();
+}
+
+function updateTriologicVolume(phaseName, value) {
+  state[phaseName].triologicGalPerWeek = parseNonNegative(value);
   render();
 }
 
@@ -1327,13 +1391,15 @@ function updateURL() {
   p.set('fe', state.flower.feedEC);
   p.set('fw', state.flower.weeks);
   p.set('fg', state.flower.galPerWeek);
+  if (state.veg.triologicGalPerWeek > 0) p.set('tvg', state.veg.triologicGalPerWeek);
+  if (state.flower.triologicGalPerWeek > 0) p.set('tfg', state.flower.triologicGalPerWeek);
   p.set('cy', state.cyclesPerYear);
   p.set('t', state.priceTier);
   p.set('at', state.additiveTier);
   if (state.metric) p.set('m', '1');
   if (state.volumeDiscount !== 'none') p.set('vd', state.volumeDiscount);
   const inclStr = state.products.filter(p2 => !p2.isBase).map(p2 => p2.included ? '1' : '0').join('');
-  if (inclStr.includes('0')) p.set('ai', inclStr);
+  if (inclStr.includes('1')) p.set('ai', inclStr);
   state.products.forEach((prod, i) => {
     p.set(`p${i}p`, prod.price);
     p.set(`p${i}s`, prod.unitSize);
@@ -1358,6 +1424,8 @@ function loadFromURL() {
   state.flower.feedEC = f('fe', 3.5);
   state.flower.weeks = f('fw', 1);
   state.flower.galPerWeek = f('fg', 10000);
+  state.veg.triologicGalPerWeek = parseNonNegative(p.get('tvg'));
+  state.flower.triologicGalPerWeek = parseNonNegative(p.get('tfg'));
   state.cyclesPerYear = f('cy', 5);
 
   const tier = p.get('t');
@@ -1376,7 +1444,7 @@ function loadFromURL() {
     let addIdx = 0;
     state.products.forEach(prod => {
       if (!prod.isBase) {
-        prod.included = ai[addIdx] !== '0';
+        prod.included = ai[addIdx] === '1';
         addIdx++;
       }
     });
