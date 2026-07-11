@@ -1186,6 +1186,7 @@
     </div>
     </div>
     <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode locks every phase to the Swell recipe — the combined tank fixes the B-to-Bloom ratio — so the recipe schedule options are hidden.</p>
+    <p class="config-note" id="phz-target-warning" hidden style="color:#b03050"></p>
 
     <div class="config-spacer"></div>
     <div class="section-label-row">
@@ -1336,6 +1337,268 @@
 </div>
 
 <script>
+// BEGIN GENERATED: nutrition-core
+const FRA_NUTRITION_CORE = (() => {
+  "use strict";
+
+  function deepFreeze(value) {
+    if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+    Object.values(value).forEach(deepFreeze);
+    return Object.freeze(value);
+  }
+
+  const fieldUnits = deepFreeze({
+    gramsPerPound: 454,
+    millilitersPerGallon: 3785,
+    litersPerGallon: 3.785,
+  });
+
+  const feedUnitFactors = deepFreeze({
+    "g/gal": 1,
+    "mL/gal": fieldUnits.millilitersPerGallon / fieldUnits.gramsPerPound,
+    "injection %": 100 / fieldUnits.gramsPerPound,
+    ratio: null,
+    "g/L": 1 / fieldUnits.litersPerGallon,
+    "mL/L": (fieldUnits.millilitersPerGallon / fieldUnits.gramsPerPound) / fieldUnits.litersPerGallon,
+  });
+
+  const phoszymeInputs = {
+    ecPerGram: 0.220,
+    directGramsPerGallon: 0.4,
+    stockCarrierRatio: 0.10,
+  };
+  const phoszyme = deepFreeze({
+    ...phoszymeInputs,
+    directEc: Number((phoszymeInputs.directGramsPerGallon * phoszymeInputs.ecPerGram).toFixed(3)),
+  });
+
+  const lines = deepFreeze({
+    "3part": {
+      productsByRole: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
+      ecPerGram: { "Part A": 0.306, "Part B": 0.255, Bloom: 0.200 },
+      recipes: {
+        Veg: { "Part A": 0.6428571428571, "Part B": 0.3571428571429, Bloom: 0 },
+        Stretch: { "Part A": 0.55, "Part B": 0.29, Bloom: 0.16 },
+        Stack: { "Part A": 0.5021882, "Part B": 0.2789934, Bloom: 0.2188184 },
+        Swell: { "Part A": 0.441, "Part B": 0.234, Bloom: 0.325 },
+        Ripen: { "Part A": 0.35, "Part B": 0.30, Bloom: 0.35 },
+      },
+    },
+    cplus: {
+      productsByRole: { partA: "CaNO3", partB: "C+", bloom: "MKP" },
+      ecPerGram: { CaNO3: 0.317, "C+": 0.283, MKP: 0.195 },
+      recipes: {
+        Veg: { CaNO3: 0.60, "C+": 0.40, MKP: 0 },
+        Stack: { CaNO3: 0.496, "C+": 0.32, MKP: 0.184 },
+        Swell: { CaNO3: 0.3684, "C+": 0.3294, MKP: 0.3022 },
+        Ripen: { CaNO3: 0.315, "C+": 0.30, MKP: 0.385 },
+      },
+    },
+  });
+
+  const roleLineCache = {};
+
+  function getLine(lineId) {
+    const line = lines[lineId];
+    if (!line) throw new Error(`Unknown FRA nutrition line: ${lineId}`);
+    return line;
+  }
+
+  function getRecipe(lineId, recipeName) {
+    const recipe = getLine(lineId).recipes[recipeName];
+    if (!recipe) throw new Error(`Unknown ${lineId} recipe: ${recipeName}`);
+    return recipe;
+  }
+
+  function getRoleLine(lineId) {
+    if (roleLineCache[lineId]) return roleLineCache[lineId];
+    const line = getLine(lineId);
+    const roles = Object.keys(line.productsByRole);
+    const ecPerGram = Object.fromEntries(
+      roles.map(role => [role, line.ecPerGram[line.productsByRole[role]]]),
+    );
+    ecPerGram.phoszyme = phoszyme.ecPerGram;
+    const recipes = Object.fromEntries(
+      Object.entries(line.recipes).map(([recipeName, recipe]) => [
+        recipeName,
+        Object.fromEntries(roles.map(role => [role, recipe[line.productsByRole[role]]])),
+      ]),
+    );
+    roleLineCache[lineId] = deepFreeze({
+      productsByRole: line.productsByRole,
+      ecPerGram,
+      recipes,
+      recipeNames: Object.keys(line.recipes),
+    });
+    return roleLineCache[lineId];
+  }
+
+  function doseGramsPerGallon(lineId, recipeName, productName, targetEc) {
+    const line = getLine(lineId);
+    const recipe = getRecipe(lineId, recipeName);
+    if (!(productName in line.ecPerGram)) {
+      throw new Error(`Unknown ${lineId} product: ${productName}`);
+    }
+    const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+    return normalizedTarget * recipe[productName] / line.ecPerGram[productName];
+  }
+
+  function doseRoleGramsPerGallon(lineId, recipeName, role, targetEc) {
+    const productName = getLine(lineId).productsByRole[role];
+    if (!productName) throw new Error(`Unknown ${lineId} role: ${role}`);
+    return doseGramsPerGallon(lineId, recipeName, productName, targetEc);
+  }
+
+  function getPhoszymeAdjustment({ lineId, recipeName, targetEc, application, included = true }) {
+    const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+    if (!included) {
+      return { baseTargetEc: normalizedTarget, phoszymeEc: 0, achievable: true, minimumFinalEc: 0 };
+    }
+
+    if (application === "direct") {
+      return {
+        baseTargetEc: Math.max(0, normalizedTarget - phoszyme.directEc),
+        phoszymeEc: phoszyme.directEc,
+        achievable: normalizedTarget >= phoszyme.directEc,
+        minimumFinalEc: phoszyme.directEc,
+      };
+    }
+
+    if (application !== "stock") throw new Error(`Unknown PhosZyme application: ${application}`);
+    const line = getLine(lineId);
+    const recipe = getRecipe(lineId, recipeName);
+    const carrier = line.productsByRole.partB;
+    const overheadFraction = recipe[carrier]
+      * phoszyme.stockCarrierRatio
+      * (phoszyme.ecPerGram / line.ecPerGram[carrier]);
+    const baseTargetEc = normalizedTarget / (1 + overheadFraction);
+    return {
+      baseTargetEc,
+      phoszymeEc: baseTargetEc * overheadFraction,
+      achievable: true,
+      minimumFinalEc: 0,
+    };
+  }
+
+  function formatDirectPhoszymeWarning(phases) {
+    if (!phases.length) return "";
+    return `PhosZyme contributes ${phoszyme.directEc.toFixed(3)} EC by itself. ${phases.join(", ")} cannot reach the selected target at the fixed ${phoszyme.directGramsPerGallon.toFixed(1)} g/gal rate; minimum final EC is ${phoszyme.directEc.toFixed(3)}.`;
+  }
+
+  function getFeedUnitDecimals(unit) {
+    if (unit === "mL/gal") return 0;
+    if (unit === "mL/L" || unit === "g/gal" || unit === "g/L") return 1;
+    return 2;
+  }
+
+  function createFeedMathAdapter({
+    lineId,
+    getRecipeName,
+    getApplication,
+    isPhoszymeIncluded,
+    getStockConcentration,
+  }) {
+    function getPhoszymeAdjustmentForPhase(phase, targetEc) {
+      return getPhoszymeAdjustment({
+        lineId,
+        recipeName: getRecipeName(phase),
+        targetEc,
+        application: getApplication(),
+        included: isPhoszymeIncluded(),
+      });
+    }
+
+    function getAdjustedTargetEc(phase, targetEc) {
+      return getPhoszymeAdjustmentForPhase(phase, targetEc).baseTargetEc;
+    }
+
+    function getPhoszymeEc(phase, targetEc) {
+      return getPhoszymeAdjustmentForPhase(phase, targetEc).phoszymeEc;
+    }
+
+    function calculateEcContribution(phase, role, targetEc) {
+      const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+      return getRoleLine(lineId).recipes[getRecipeName(phase)][role] * normalizedTarget;
+    }
+
+    function calculateDosage(phase, role, method, unit, targetEc) {
+      const ec = calculateEcContribution(phase, role, targetEc);
+      if (ec === 0) return { dosage: 0, ec: 0, display: "–" };
+
+      const gramsPerGallon = doseRoleGramsPerGallon(
+        lineId,
+        getRecipeName(phase),
+        role,
+        targetEc,
+      );
+      const stockConcentration = getStockConcentration(method, role);
+      if (unit === "ratio") {
+        const injectionPercent = gramsPerGallon / stockConcentration
+          * (100 / fieldUnits.gramsPerPound);
+        if (!(injectionPercent > 0)) return { dosage: 0, ec: 0, display: "–" };
+        const ratio = Math.round(100 / injectionPercent);
+        return { dosage: ratio, ec, display: `1:${ratio}` };
+      }
+
+      const dosage = gramsPerGallon / stockConcentration * feedUnitFactors[unit];
+      const decimals = getFeedUnitDecimals(unit);
+      return { dosage: +dosage.toFixed(decimals), ec, display: dosage.toFixed(decimals) };
+    }
+
+    function calculatePhoszymeDosage(phase, method, unit, finalTargetEc) {
+      const adjustment = getPhoszymeAdjustmentForPhase(phase, finalTargetEc);
+      if (!isPhoszymeIncluded()) return { dosage: 0, ec: 0, display: "–" };
+
+      if (getApplication() === "direct" && (unit === "g/gal" || unit === "g/L")) {
+        const dosage = unit === "g/L"
+          ? phoszyme.directGramsPerGallon / fieldUnits.litersPerGallon
+          : phoszyme.directGramsPerGallon;
+        const decimals = unit === "g/L" ? 3 : 1;
+        return {
+          dosage: +dosage.toFixed(decimals),
+          ec: phoszyme.directEc,
+          display: dosage.toFixed(decimals),
+        };
+      }
+
+      const carrier = calculateDosage(
+        phase,
+        "partB",
+        method,
+        unit,
+        adjustment.baseTargetEc,
+      );
+      if (carrier.dosage === 0) return { dosage: 0, ec: 0, display: "–" };
+      return { dosage: carrier.dosage, ec: adjustment.phoszymeEc, display: carrier.display };
+    }
+
+    return deepFreeze({
+      getPhoszymeAdjustment: getPhoszymeAdjustmentForPhase,
+      getAdjustedTargetEc,
+      getPhoszymeEc,
+      calculateEcContribution,
+      calculateDosage,
+      calculatePhoszymeDosage,
+    });
+  }
+
+  return deepFreeze({
+    fieldUnits,
+    feedUnitFactors,
+    phoszyme,
+    lines,
+    getLine,
+    getRecipe,
+    getRoleLine,
+    doseGramsPerGallon,
+    doseRoleGramsPerGallon,
+    getPhoszymeAdjustment,
+    formatDirectPhoszymeWarning,
+    createFeedMathAdapter,
+  });
+})();
+// END GENERATED: nutrition-core
+
 // ═══════════════════════════════════════════════
 // DATA — extracted from Ref sheet
 // ═══════════════════════════════════════════════
@@ -1346,12 +1609,14 @@
 // additions, Tyler Jun 10) → worst case ~0.41 at high-strength Veg, a deliberate ~2%
 // allowance at that one brief phase; every other recipe lands well under 0.4. DTR mode
 // is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
+const NUTRITION_LINE_ID = "3part";
+const CORE_LINE = FRA_NUTRITION_CORE.getRoleLine(NUTRITION_LINE_ID);
 const CONSTANTS = {
-  g_per_lb: 454,
-  mL_per_gal: 3785,
+  g_per_lb: FRA_NUTRITION_CORE.fieldUnits.gramsPerPound,
+  mL_per_gal: FRA_NUTRITION_CORE.fieldUnits.millilitersPerGallon,
   pct_mult: 100,
-  phoszyme_ratio: 0.10,
-  L_per_gal: 3.785
+  phoszyme_ratio: FRA_NUTRITION_CORE.phoszyme.stockCarrierRatio,
+  L_per_gal: FRA_NUTRITION_CORE.fieldUnits.litersPerGallon
 };
 
 // AIDEV-NOTE: This public page is the 3-Part line only. The Component Plus line
@@ -1362,19 +1627,13 @@ const CONSTANTS = {
 const LINES = {
   "3part": {
     label: "3-Part",
-    names: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
+    names: CORE_LINE.productsByRole,
     stockNames: { partA: "A", partB: "B", bloom: "Bloom" },
     fullNames: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
     phzComboLabel: "B + PhosZyme",
-    ecPerGram: { partA: 0.306, partB: 0.255, bloom: 0.200, phoszyme: 0.220 },
-    recipes: {
-      Veg:     { partA: 0.6428571428571, partB: 0.3571428571429, bloom: 0 },
-      Stretch: { partA: 0.55, partB: 0.29, bloom: 0.16 },
-      Stack:   { partA: 0.5021882, partB: 0.2789934, bloom: 0.2188184 },
-      Swell:   { partA: 0.441, partB: 0.234, bloom: 0.325 },
-      Ripen:   { partA: 0.35, partB: 0.30, bloom: 0.35 }
-    },
-    recipeNames: ["Veg", "Stretch", "Stack", "Swell", "Ripen"],
+    ecPerGram: CORE_LINE.ecPerGram,
+    recipes: CORE_LINE.recipes,
+    recipeNames: CORE_LINE.recipeNames,
     stockRates: {
       "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
       "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
@@ -1423,16 +1682,7 @@ const EC_PRESETS = {
   standard: { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.4 }
 };
 
-const UNIT_FACTORS = {
-  "g/gal":       1,
-  "mL/gal":      CONSTANTS.mL_per_gal / CONSTANTS.g_per_lb,
-  "injection %": CONSTANTS.pct_mult / CONSTANTS.g_per_lb,
-  "ratio":       "ratio",
-  "g/L":         1 / CONSTANTS.L_per_gal,
-  "mL/L":        (CONSTANTS.mL_per_gal / CONSTANTS.g_per_lb) / CONSTANTS.L_per_gal
-};
-
-const PHOSZYME_FIXED_G_GAL = 0.4;
+const UNIT_FACTORS = FRA_NUTRITION_CORE.feedUnitFactors;
 
 // Front Row SI: rate (mL/gal) varies inversely with feed EC
 // Applied through day 21 of flower (phases: Veg, Stretch, Stack)
@@ -1530,18 +1780,6 @@ function isMetric(unit) {
   return unit === "g/L" || unit === "mL/L";
 }
 
-function getDecimals(unit) {
-  if (unit === "mL/gal") return 0;
-  if (unit === "mL/L") return 1;
-  if (unit === "g/gal" || unit === "g/L") return 1;
-  return 2;
-}
-
-function getUnitFactor(unit) {
-  if (unit === "ratio") return null;
-  return UNIT_FACTORS[unit];
-}
-
 function getStockConc(method, component) {
   if (state.application === "direct") return 1;
   return LINE().stockRates[method][component];
@@ -1608,54 +1846,19 @@ function restoreThreeDoserSchedule() {
   state.phaseRecipe = { ...state.lastThreeDoserSchedule.phaseRecipe };
 }
 
-// When PhosZyme is included, scale down A/B/Bloom so total (incl. PhZ) = target EC.
-// PhosZyme adds overhead proportional to Part B's EC contribution.
-function getPhzScaleFactor(phase) {
-  if (!state.usePhoszyme) return 1;
-  const recipe = getRecipe(phase);
-  const phzOverhead = recipe.partB * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
-  return 1 / (1 + phzOverhead);
-}
-
-function calcEcContribution(phase, component, targetEC) {
-  return getRecipe(phase)[component] * targetEC;
-}
-
-function calcDosage(phase, component, method, unit, targetEC) {
-  const ecContrib = calcEcContribution(phase, component, targetEC);
-  if (ecContrib === 0) return { dosage: 0, ec: 0, display: "–" };
-
-  const ecPerG = ecPerGram()[component];
-  const stockConc = getStockConc(method, component);
-
-  if (unit === "ratio") {
-    const gramsPerGal = ecContrib / ecPerG / stockConc;
-    const injPct = gramsPerGal * (CONSTANTS.pct_mult / CONSTANTS.g_per_lb);
-    const ratio = Math.round(CONSTANTS.pct_mult / injPct);
-    return { dosage: ratio, ec: ecContrib, display: `1:${ratio}` };
-  }
-
-  const factor = getUnitFactor(unit);
-  const dosage = ecContrib / ecPerG / stockConc * factor;
-  const dec = getDecimals(unit);
-
-  return { dosage: +dosage.toFixed(dec), ec: ecContrib, display: dosage.toFixed(dec) };
-}
-
-function calcPhoszymeDosage(phase, method, unit, targetEC) {
-  const partBResult = calcDosage(phase, "partB", method, unit, targetEC);
-  if (partBResult.dosage === 0) return { dosage: 0, ec: 0, display: "–" };
-
-  const partBEc = calcEcContribution(phase, "partB", targetEC);
-  const phzEc = partBEc * CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
-
-  if (unit === "g/gal" || unit === "g/L") {
-    const val = isMetric(unit) ? PHOSZYME_FIXED_G_GAL / CONSTANTS.L_per_gal : PHOSZYME_FIXED_G_GAL;
-    return { dosage: +val.toFixed(getDecimals(unit)), ec: phzEc, display: val.toFixed(getDecimals(unit)) };
-  }
-
-  return { dosage: partBResult.dosage, ec: phzEc, display: partBResult.display };
-}
+const FEED_MATH = FRA_NUTRITION_CORE.createFeedMathAdapter({
+  lineId: NUTRITION_LINE_ID,
+  getRecipeName: getPhaseRecipeName,
+  getApplication: () => state.application,
+  isPhoszymeIncluded: () => state.usePhoszyme,
+  getStockConcentration: getStockConc
+});
+const getPhzAdjustment = FEED_MATH.getPhoszymeAdjustment;
+const getPhzAdjustedTargetEC = FEED_MATH.getAdjustedTargetEc;
+const getPhzEcContribution = FEED_MATH.getPhoszymeEc;
+const calcEcContribution = FEED_MATH.calculateEcContribution;
+const calcDosage = FEED_MATH.calculateDosage;
+const calcPhoszymeDosage = FEED_MATH.calculatePhoszymeDosage;
 
 // Front Row SI: rate in mL/gal based on feed EC (varies inversely)
 function calcSiRate(ec) {
@@ -1763,7 +1966,6 @@ function computeFeedRows() {
   const is2Doser = state.doserMode === "2";
   const usePhz = state.usePhoszyme;
   const names = LINE().names;
-  const phzEcFactor = CONSTANTS.phoszyme_ratio * (ecPerGram().phoszyme / ecPerGram().partB);
   const rows = [];
 
   // Part A — always present
@@ -1771,7 +1973,7 @@ function computeFeedRows() {
     label: names.partA, dotCls: "dot-a", valCls: "val-a",
     cells: PHASES.map(phase => {
       if (is2Doser && phase === "Veg") return null;
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       const r = calcDosage(phase, "partA", method, unit, eEC);
       return { display: r.display, dosage: r.dosage, ec: r.ec };
     })
@@ -1782,21 +1984,21 @@ function computeFeedRows() {
       label: usePhz ? "B + Bloom + PhosZyme" : "B + Bloom", dotCls: "dot-bbloom", valCls: "val-bbloom",
       cells: PHASES.map(phase => {
         if (phase === "Veg") return null;
-        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+        const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
         const resultB = calcDosage(phase, "partB", method, unit, eEC);
         let combinedEc = resultB.ec + calcEcContribution(phase, "bloom", eEC);
-        if (usePhz) combinedEc += calcEcContribution(phase, "partB", eEC) * phzEcFactor;
+        if (usePhz) combinedEc += getPhzEcContribution(phase, targetEC[phase]);
         return { display: resultB.display, dosage: resultB.dosage, ec: combinedEc };
       })
     });
   } else {
-    if (usePhz) {
+    if (usePhz && state.application === "stock") {
       rows.push({
         label: LINE().phzComboLabel, dotCls: "dot-b", valCls: "val-b",
         cells: PHASES.map(phase => {
-          const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+          const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
           const resultB = calcDosage(phase, "partB", method, unit, eEC);
-          const phzEc = calcEcContribution(phase, "partB", eEC) * phzEcFactor;
+          const phzEc = getPhzEcContribution(phase, targetEC[phase]);
           return { display: resultB.display, dosage: resultB.dosage, ec: resultB.ec + phzEc };
         })
       });
@@ -1804,8 +2006,17 @@ function computeFeedRows() {
       rows.push({
         label: names.partB, dotCls: "dot-b", valCls: "val-b",
         cells: PHASES.map(phase => {
-          const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+          const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
           const r = calcDosage(phase, "partB", method, unit, eEC);
+          return { display: r.display, dosage: r.dosage, ec: r.ec };
+        })
+      });
+    }
+    if (usePhz && state.application === "direct") {
+      rows.push({
+        label: "PhosZyme", dotCls: "dot-phz", valCls: "val-phz",
+        cells: PHASES.map(phase => {
+          const r = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
           return { display: r.display, dosage: r.dosage, ec: r.ec };
         })
       });
@@ -1813,7 +2024,7 @@ function computeFeedRows() {
     rows.push({
       label: names.bloom, dotCls: "dot-bloom", valCls: "val-bloom",
       cells: PHASES.map(phase => {
-        const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+        const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
         const r = calcDosage(phase, "bloom", method, unit, eEC);
         return { display: r.display, dosage: r.dosage, ec: r.ec };
       })
@@ -2059,6 +2270,14 @@ function render() {
   const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
   const names = LINE().names;
+  const unreachablePhzPhases = PHASES.filter(phase =>
+    state.application === "direct"
+      && state.usePhoszyme
+      && !getPhzAdjustment(phase, targetEC[phase]).achievable
+  );
+  const phzTargetWarning = document.getElementById("phz-target-warning");
+  phzTargetWarning.hidden = unreachablePhzPhases.length === 0;
+  phzTargetWarning.textContent = FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachablePhzPhases);
 
   // Unit badge
   document.getElementById("unit-badge").textContent = unit === "ratio" ? "ratio" : unit;
@@ -2667,7 +2886,7 @@ function copySummary() {
   html += `<tr><td ${tl}>${names.partA}</td>`;
   PHASES.forEach(phase => {
     if (is2Doser && phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
-    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
     const r = calcDosage(phase, "partA", method, unit, eEC);
     html += `<td ${ts}>${r.display}</td>`;
   });
@@ -2679,26 +2898,34 @@ function copySummary() {
     html += `<tr><td ${tl}>${lbl}</td>`;
     PHASES.forEach(phase => {
       if (phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       const resultB = calcDosage(phase, "partB", method, unit, eEC);
       html += `<td ${ts}>${resultB.display}</td>`;
     });
     html += `</tr>`;
   } else {
     // Carrier row (or carrier + PhosZyme)
-    const bLbl = usePhz ? LINE().phzComboLabel : names.partB;
+    const bLbl = usePhz && isStock ? LINE().phzComboLabel : names.partB;
     html += `<tr><td ${tl}>${bLbl}</td>`;
     PHASES.forEach(phase => {
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       const resultB = calcDosage(phase, "partB", method, unit, eEC);
       html += `<td ${ts}>${resultB.display}</td>`;
     });
     html += `</tr>`;
 
+    if (usePhz && !isStock) {
+      html += `<tr><td ${tl}>PhosZyme</td>`;
+      PHASES.forEach(phase => {
+        html += `<td ${ts}>${calcPhoszymeDosage(phase, method, unit, targetEC[phase]).display}</td>`;
+      });
+      html += `</tr>`;
+    }
+
     // Bloom / MKP row
     html += `<tr><td ${tl}>${names.bloom}</td>`;
     PHASES.forEach(phase => {
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       const r = calcDosage(phase, "bloom", method, unit, eEC);
       html += `<td ${ts}>${r.display}</td>`;
     });
@@ -2706,6 +2933,12 @@ function copySummary() {
   }
 
   html += `</table>`;
+  const unreachablePhzPhases = PHASES.filter(phase =>
+    !isStock && usePhz && !getPhzAdjustment(phase, targetEC[phase]).achievable
+  );
+  if (unreachablePhzPhases.length) {
+    html += `<p style="color:#b03050;font-weight:600;">${FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachablePhzPhases)}</p>`;
+  }
 
   // Supplements section (copy summary)
   const anySupp = state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic;
@@ -2814,7 +3047,7 @@ function copySummary() {
   plain += "Target EC".padEnd(20) + PHASES.map(p => `${targetEC[p]}`.padEnd(12)).join("") + "\n\n";
   plain += names.partA.padEnd(20) + PHASES.map(phase => {
     if (is2Doser && phase === "Veg") return "–".padEnd(12);
-    const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
     return calcDosage(phase, "partA", method, unit, eEC).display.padEnd(12);
   }).join("") + "\n";
 
@@ -2822,19 +3055,31 @@ function copySummary() {
     const lbl = usePhz ? "B+Bloom+PhZ" : "B + Bloom";
     plain += lbl.padEnd(20) + PHASES.map(phase => {
       if (phase === "Veg") return "–".padEnd(12);
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
   } else {
-    const bLbl = usePhz ? LINE().phzComboLabel : names.partB;
+    const bLbl = usePhz && isStock ? LINE().phzComboLabel : names.partB;
     plain += bLbl.padEnd(20) + PHASES.map(phase => {
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
+    if (usePhz && !isStock) {
+      plain += "PhosZyme".padEnd(20) + PHASES.map(phase => {
+        return calcPhoszymeDosage(phase, method, unit, targetEC[phase]).display.padEnd(12);
+      }).join("") + "\n";
+    }
     plain += names.bloom.padEnd(20) + PHASES.map(phase => {
-      const eEC = targetEC[phase] * getPhzScaleFactor(phase);
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
     }).join("") + "\n";
+  }
+
+  if (!isStock && usePhz) {
+    const unreachable = PHASES.filter(phase => !getPhzAdjustment(phase, targetEC[phase]).achievable);
+    if (unreachable.length) {
+      plain += `\nWarning: ${FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachable)}\n`;
+    }
   }
 
   if (is2Doser) plain += "\nVeg / Moms: run a separate Part A + Part B feed — a combined B + Bloom tank can't make a zero-Bloom Veg recipe.\n";
