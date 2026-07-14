@@ -143,8 +143,9 @@ function createFeedRuntime(html: string) {
     CORE_LINE: any;
     handleApplicationChange: (application: string) => void;
     render: () => void;
+    formatTargetEC: (value: number) => string;
     FRA_NUTRITION_CORE: any;
-  }>(html, "{ state, getPhzAdjustedTargetEC, getPhzAdjustment, calcPhoszymeDosage, calcDosage, LINES, CORE_LINE, handleApplicationChange, render, FRA_NUTRITION_CORE }");
+  }>(html, "{ state, getPhzAdjustedTargetEC, getPhzAdjustment, calcPhoszymeDosage, calcDosage, LINES, CORE_LINE, handleApplicationChange, render, formatTargetEC, FRA_NUTRITION_CORE }");
 }
 
 describe("shared nutrition core contract", () => {
@@ -389,6 +390,39 @@ describe("shared nutrition core contract", () => {
     api.state.usePhoszyme = false;
     expect(api.calcDosage("Swell", "partA", api.state.method, "ratio", -1).display).toBe("–");
     expect(api.calcDosage("Swell", "partA", api.state.method, "ratio", Number.NaN).display).toBe("–");
+  });
+
+  test.each([
+    ["3-Part", feedCalculator],
+    ["Component Plus", cplusCalculator],
+  ])("%s target EC stays at one decimal on screen and in custom inputs", (_label, html) => {
+    const runtime = createFeedRuntime(html);
+    const { api } = runtime;
+
+    expect(api.formatTargetEC(3)).toBe("3.0");
+    expect(api.formatTargetEC(2.7)).toBe("2.7");
+    expect(api.formatTargetEC(2.2)).toBe("2.2");
+
+    api.state.targetEC = { Veg: 3, Stretch: 2.7, Stack: 2.2, Swell: 2, Ripen: 1.4 };
+    api.state.ecPreset = "high";
+    api.render();
+    expect(runtime.getElement("ec-veg").textContent).toBe("3.0 EC");
+    expect(runtime.getElement("ec-swell").textContent).toBe("2.0 EC");
+
+    api.state.ecPreset = "custom";
+    api.render();
+    expect(runtime.getElement("ec-veg").innerHTML).toContain('value="3.0"');
+    expect(runtime.getElement("ec-swell").innerHTML).toContain('value="2.0"');
+  });
+
+  test("3-Part branded print chart keeps target EC at one decimal", () => {
+    const runtime = createFeedRuntime(feedCalculator);
+    runtime.api.state.targetEC = { Veg: 3, Stretch: 2.7, Stack: 2.2, Swell: 2, Ripen: 1.4 };
+    runtime.api.render();
+
+    const printHtml = runtime.getElement("branded-print").innerHTML;
+    expect(printHtml).toContain('<td class="fc-chart__ec">3.0</td>');
+    expect(printHtml).toContain('<td class="fc-chart__ec">2.0</td>');
   });
 });
 

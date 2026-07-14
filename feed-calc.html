@@ -1657,6 +1657,7 @@ function LINE() { return LINES[state.line]; }
 function ecPerGram() { return LINE().ecPerGram; }
 
 const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
+function formatTargetEC(value) { return Number(value).toFixed(1); }
 
 // AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Stack Through
 // Flower" was removed the same day — replaced by "Swell Through Flower" as the
@@ -2204,7 +2205,7 @@ function renderBrandedPrint() {
     `<div class="fc-chartwrap"><table class="fc-chart">`
     + `<tr><td class="fc-chart__phase" style="text-align:right; padding-right:10px;">Phase</td>${BP_PHASE_LABELS.map(l => `<td class="fc-chart__phase">${l}</td>`).join("")}</tr>`
     + `<tr><td class="fc-chart__label">Recipe</td>${recipeNames.map(rn => `<td class="fc-chart__recipe">${rn}</td>`).join("")}</tr>`
-    + `<tr><td class="fc-chart__label">Target EC</td>${PHASES.map(p => `<td class="fc-chart__ec">${state.targetEC[p]}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Target EC</td>${PHASES.map(p => `<td class="fc-chart__ec">${formatTargetEC(state.targetEC[p])}</td>`).join("")}</tr>`
     + bodyRows
     + `</table></div>`;
 
@@ -2287,7 +2288,7 @@ function render() {
   // EC displays
   PHASES.forEach(p => {
     const el = document.getElementById(`ec-${p.toLowerCase()}`);
-    el.textContent = `${targetEC[p]} EC`;
+    el.textContent = `${formatTargetEC(targetEC[p])} EC`;
     el.classList.remove('editable');
   });
 
@@ -2694,7 +2695,7 @@ function renderECInputs() {
     const el = document.getElementById(`ec-${p.toLowerCase()}`);
     if (state.ecPreset === "custom") {
       el.classList.add('editable');
-      el.innerHTML = `<input type="number" class="ec-input" step="0.1" min="0" max="10" value="${state.targetEC[p]}"
+      el.innerHTML = `<input type="number" class="ec-input" step="0.1" min="0" max="10" value="${formatTargetEC(state.targetEC[p])}"
         onchange="state.targetEC['${p}']=parseFloat(this.value)||0; render();" /><span class="ec-label">EC</span>`;
     }
   });
@@ -2879,7 +2880,7 @@ function copySummary() {
 
   // Target EC row
   html += `<tr><td ${tl}>Target EC</td>`;
-  PHASES.forEach(p => html += `<td ${ts}><b>${targetEC[p]}</b></td>`);
+  PHASES.forEach(p => html += `<td ${ts}><b>${formatTargetEC(targetEC[p])}</b></td>`);
   html += `</tr>`;
 
   // Part A / CaNO3 row
@@ -3044,7 +3045,7 @@ function copySummary() {
   // ── Plain text fallback ──
   let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
   plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
-  plain += "Target EC".padEnd(20) + PHASES.map(p => `${targetEC[p]}`.padEnd(12)).join("") + "\n\n";
+  plain += "Target EC".padEnd(20) + PHASES.map(p => formatTargetEC(targetEC[p]).padEnd(12)).join("") + "\n\n";
   plain += names.partA.padEnd(20) + PHASES.map(phase => {
     if (is2Doser && phase === "Veg") return "–".padEnd(12);
     const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
