@@ -148,6 +148,16 @@ function createFeedRuntime(html: string) {
   }>(html, "{ state, getPhzAdjustedTargetEC, getPhzAdjustment, calcPhoszymeDosage, calcDosage, LINES, CORE_LINE, handleApplicationChange, render, formatTargetEC, FRA_NUTRITION_CORE }");
 }
 
+function createCplusFeedRuntime(search = "") {
+  return createRuntime<{
+    state: Record<string, any>;
+    handleStockTankVolumeInput: (value: unknown) => void;
+    handleStockTankVolumeChange: (value: unknown) => void;
+    calcStockTanks: (method: string, unit: string) => { rows: Array<Record<string, any>> };
+    loadFromURL: () => void;
+  }>(cplusCalculator, "{ state, handleStockTankVolumeInput, handleStockTankVolumeChange, calcStockTanks, loadFromURL }", search);
+}
+
 describe("shared nutrition core contract", () => {
   test("a canonical source and deterministic sync tool exist", () => {
     expect(existsSync(new URL("../src/nutrition-core.js", import.meta.url))).toBe(true);
@@ -423,6 +433,61 @@ describe("shared nutrition core contract", () => {
     const printHtml = runtime.getElement("branded-print").innerHTML;
     expect(printHtml).toContain('<td class="fc-chart__ec">3.0</td>');
     expect(printHtml).toContain('<td class="fc-chart__ec">2.0</td>');
+  });
+
+  test("Component Plus stock-tank volume scales stock weights and round-trips through share links", () => {
+    expect(cplusCalculator).toContain('oninput="handleStockTankVolumeInput(this.value)"');
+    const runtime = createCplusFeedRuntime();
+    const { api } = runtime;
+
+    api.handleStockTankVolumeChange(500);
+    expect(api.state.stockTankVolumeGal).toBe(500);
+    expect(runtime.getReplacedUrl()).toContain("tv=500");
+    expect(runtime.getElement("print-config-line").textContent).toContain("500 gal tanks");
+
+    api.handleStockTankVolumeInput(750);
+    expect(api.state.stockTankVolumeGal).toBe(750);
+    expect(runtime.getReplacedUrl()).toContain("tv=750");
+    api.handleStockTankVolumeChange(500);
+
+    const threeDoser = api.calcStockTanks("1-1-1", "mL/gal").rows;
+    expect(threeDoser.find(row => row.key === "partA")).toMatchObject({ vol: 500, wt: 500 });
+    expect(threeDoser.find(row => row.key === "partB")).toMatchObject({ vol: 500, wt: 500 });
+    expect(threeDoser.find(row => row.key === "bloom")).toMatchObject({ vol: 500, wt: 500 });
+
+    const threeDoserMetric = api.calcStockTanks("1-1-1", "mL/L").rows;
+    expect(threeDoserMetric.find(row => row.key === "partA")).toMatchObject({ vol: 1893, wt: 227 });
+    expect(threeDoserMetric.find(row => row.key === "partB")).toMatchObject({ vol: 1893, wt: 227 });
+    expect(threeDoserMetric.find(row => row.key === "bloom")).toMatchObject({ vol: 1893, wt: 227 });
+
+    api.state.doserMode = "2";
+    api.state.method = "2-doser";
+    api.handleStockTankVolumeChange(2000);
+    const twoDoser = api.calcStockTanks("2-doser", "mL/gal").rows;
+    expect(twoDoser.find(row => row.key === "partA")).toMatchObject({ vol: 2000, wt: 1500 });
+    expect(twoDoser.find(row => row.key === "partB")).toMatchObject({ vol: 2000, wt: 1500 });
+    expect(twoDoser.find(row => row.key === "bloom")).toMatchObject({ vol: 2000, wt: 2000 });
+
+    const twoDoserMetric = api.calcStockTanks("2-doser", "mL/L").rows;
+    expect(twoDoserMetric.find(row => row.key === "partA")).toMatchObject({ vol: 7570, wt: 681 });
+    expect(twoDoserMetric.find(row => row.key === "partB")).toMatchObject({ vol: 7570, wt: 681 });
+    expect(twoDoserMetric.find(row => row.key === "bloom")).toMatchObject({ vol: 7570, wt: 908 });
+
+    api.handleStockTankVolumeChange(12.34);
+    expect(api.state.stockTankVolumeGal).toBe(12.3);
+    expect(runtime.getReplacedUrl()).toContain("tv=12.3");
+
+    api.handleStockTankVolumeChange(0.5);
+    expect(api.state.stockTankVolumeGal).toBe(50);
+    expect(runtime.getReplacedUrl()).not.toContain("tv=");
+
+    api.handleStockTankVolumeChange(100001);
+    expect(api.state.stockTankVolumeGal).toBe(100000);
+
+    const restored = createCplusFeedRuntime("?tv=1000");
+    restored.api.loadFromURL();
+    expect(restored.api.state.stockTankVolumeGal).toBe(1000);
+    expect(restored.api.calcStockTanks("1-1-1", "mL/gal").rows[0].vol).toBe(1000);
   });
 
   test("iPhone printing reserves enough page-height slack to avoid footer-only pages", () => {

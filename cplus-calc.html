@@ -203,6 +203,14 @@
   }
   .facility-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
   .facility-input:focus { outline: none; border-color: var(--accent); }
+  .stock-volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+  .stock-volume-input { width: 120px; }
 
   /* ── Feed Schedule Table ──────────────── */
   .feed-table {
@@ -1076,6 +1084,14 @@
           <p><strong>2-Doser:</strong> Two stock tanks — CaNO3 alone in Tank 1 at 0.75 lb/gal, and C+ + MKP combined in Tank 2 at 0.75 + 1.00 lb/gal. Used in facilities with only two injectors. Calcium can never share a tank with phosphate or sulfate, so CaNO3 always stays alone. The combined tank fixes the C+-to-MKP ratio, which locks all flower phases to the Swell recipe, and the concentrations are balanced so both tanks run at the same injection rate — one doser setting, equal drawdown. Confirm with EC/PPM validation.</p>
         </div>
       </div>
+
+      <div class="config-spacer"></div>
+      <div class="section-label">Stock Tank Volume</div>
+      <div class="stock-volume-row">
+        <input type="number" class="facility-input stock-volume-input" id="stock-volume-input" min="1" max="100000" step="0.1" value="50" oninput="handleStockTankVolumeInput(this.value)" onchange="handleStockTankVolumeChange(this.value)">
+        <span>gal per stock tank</span>
+      </div>
+      <p class="config-note">Applied to each active stock tank. Choose a volume that can be used within 14 days.</p>
     </div>
     <p class="config-note" id="cplus-stock-note" style="display:none">Component Plus stock mixes at 1 lb per gallon in each of the three tanks (1-1-1). Injection rates differ between tanks — each product carries a different share of the total EC.</p>
 
@@ -1578,10 +1594,6 @@ const LINES = {
       "1-1-1":   { partA: 1.00, partB: 1.00, bloom: 1.00 },
       "2-doser": { partA: 0.75, partB: 0.75, bloom: 1.00 }
     },
-    tankVolumes: {
-      "1-1-1":   { tankA: 50, tankB: 50 },
-      "2-doser": { tankA: 50, tankB: 50 }
-    },
     defaultMethod: "1-1-1",
     // AIDEV-NOTE: "standard" (full craft progression) removed Jun 11 2026 — obsolete
     // on the C+ line. Old ?rs=standard links fall back to the commercial default.
@@ -1591,6 +1603,8 @@ const LINES = {
     }
   }
 };
+
+const DEFAULT_STOCK_TANK_VOLUME_GAL = 50;
 
 function LINE() { return LINES[state.line]; }
 function ecPerGram() { return LINE().ecPerGram; }
@@ -1695,6 +1709,7 @@ let state = {
   application: "stock",
   method: "1-1-1",
   doserMode: "3",
+  stockTankVolumeGal: DEFAULT_STOCK_TANK_VOLUME_GAL,
   usePhoszyme: false,
   showSi: false,
   showPhUp: false,
@@ -1717,6 +1732,17 @@ let state = {
 
 function isMetric(unit) {
   return unit === "g/L" || unit === "mL/L";
+}
+
+function normalizeStockTankVolume(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1) return DEFAULT_STOCK_TANK_VOLUME_GAL;
+  return Math.round(Math.min(parsed, 100000) * 10) / 10;
+}
+
+function formatStockTankVolume(value) {
+  const normalized = normalizeStockTankVolume(value);
+  return Number.isInteger(normalized) ? String(normalized) : normalized.toFixed(1);
 }
 
 function getStockConc(method, component) {
@@ -1810,17 +1836,17 @@ function calcSiRate(ec) {
 
 function calcStockTanks(method, unit) {
   const met = isMetric(unit);
-  const vols = LINE().tankVolumes[method];
+  const stockVolumeGal = normalizeStockTankVolume(state.stockTankVolumeGal);
   const rates = LINE().stockRates[method];
   const names = LINE().stockNames;
 
-  const volA = met ? Math.round(vols.tankA * CONSTANTS.L_per_gal) : vols.tankA;
-  const volB = met ? Math.round(vols.tankB * CONSTANTS.L_per_gal) : vols.tankB;
+  const volA = met ? Math.round(stockVolumeGal * CONSTANTS.L_per_gal) : stockVolumeGal;
+  const volB = met ? Math.round(stockVolumeGal * CONSTANTS.L_per_gal) : stockVolumeGal;
 
-  const wtA = met ? +(volA * getStockConcDisplay(method, "partA", unit) / 1000).toFixed(1) : +(vols.tankA * rates.partA).toFixed(1);
-  const wtB = met ? +(volB * getStockConcDisplay(method, "partB", unit) / 1000).toFixed(1) : +(vols.tankB * rates.partB).toFixed(1);
+  const wtA = met ? +(stockVolumeGal * rates.partA * CONSTANTS.g_per_lb / 1000).toFixed(1) : +(stockVolumeGal * rates.partA).toFixed(1);
+  const wtB = met ? +(stockVolumeGal * rates.partB * CONSTANTS.g_per_lb / 1000).toFixed(1) : +(stockVolumeGal * rates.partB).toFixed(1);
   const wtPhz = +(wtB * CONSTANTS.phoszyme_ratio).toFixed(1);
-  const wtBloom = met ? +(volB * getStockConcDisplay(method, "bloom", unit) / 1000).toFixed(1) : +(vols.tankB * rates.bloom).toFixed(1);
+  const wtBloom = met ? +(stockVolumeGal * rates.bloom * CONSTANTS.g_per_lb / 1000).toFixed(1) : +(stockVolumeGal * rates.bloom).toFixed(1);
 
   const sampleVol = met ? 400 : 250;
 
@@ -2137,6 +2163,7 @@ function render() {
   const printParts = [LINE().label];
   if (isStock) {
     printParts.push(is2Doser ? "2-Doser Stock Concentrate (CaNO3 | C+ + MKP)" : "1-1-1 Stock Concentrate · 3-Doser");
+    printParts.push(`${formatStockTankVolume(state.stockTankVolumeGal)} gal tanks`);
   } else {
     printParts.push("Direct to Reservoir");
   }
@@ -2350,6 +2377,19 @@ function handleDoserChange(val) {
   render();
 }
 
+function handleStockTankVolumeInput(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < 1 || parsed > 100000) return;
+  state.stockTankVolumeGal = Math.round(parsed * 10) / 10;
+  render();
+}
+
+function handleStockTankVolumeChange(value) {
+  state.stockTankVolumeGal = normalizeStockTankVolume(value);
+  document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
+  render();
+}
+
 function updateFacility() {
   const val = document.getElementById("facility-input").value.trim();
   document.getElementById("print-facility").textContent = val;
@@ -2411,6 +2451,9 @@ function updateURL() {
   // Only write params that differ from defaults
   if (state.application !== "stock") p.set("a", state.application);
   if (state.application === "stock" && state.doserMode === "2") p.set("d", "2");
+  if (state.stockTankVolumeGal !== DEFAULT_STOCK_TANK_VOLUME_GAL) {
+    p.set("tv", formatStockTankVolume(state.stockTankVolumeGal));
+  }
   if (state.usePhoszyme) p.set("phz", "yes");
   if (state.showSi) p.set("si", "yes");
   if (state.showPhUp) p.set("phup", "yes");
@@ -2444,6 +2487,7 @@ function loadFromURL() {
     state.doserMode = p.get("d");
     state.method = state.doserMode === "2" ? "2-doser" : "1-1-1";
   }
+  if (p.has("tv")) state.stockTankVolumeGal = normalizeStockTankVolume(p.get("tv"));
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") === "yes");
   }
@@ -2492,6 +2536,7 @@ function syncToggleButtons() {
   document.querySelectorAll("#doser-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.doserMode);
   });
+  document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
   document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
   document.getElementById("si-btn").classList.toggle("active", state.showSi);
   document.getElementById("phup-btn").classList.toggle("active", state.showPhUp);
@@ -2538,6 +2583,7 @@ function copySummary() {
   let configParts = [LINE().label];
   if (isStock) {
     configParts.push(is2Doser ? "2-Doser stock concentrate (CaNO3 | C+ + MKP)" : "1-1-1 stock concentrate · 3-Doser");
+    configParts.push(`${formatStockTankVolume(state.stockTankVolumeGal)} gal tanks`);
   } else {
     configParts.push("Direct to reservoir");
   }
