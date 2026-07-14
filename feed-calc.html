@@ -953,10 +953,18 @@
     /* ── Page + vertical rhythm ── */
     /* Fixed page height (letter minus @page margins, with rounding slack)
        + flex column so the footer pins to the bottom of every sheet. */
-    .fc-page { box-sizing: border-box; width: 100%; height: 10.1in; display: flex; flex-direction: column; page-break-after: always; break-after: page; }
+    .fc-page { box-sizing: border-box; width: 100%; height: var(--print-page-height, 10.1in); display: flex; flex-direction: column; page-break-after: always; break-after: page; }
     .fc-page:last-child { page-break-after: auto; break-after: auto; }
     .fc-page > * + * { margin-top: var(--s4); }      /* space major sections */
     .fc-stack > * + * { margin-top: var(--s3); }     /* space items in a column */
+
+    /* iOS AirPrint scales the declared @page box differently from desktop
+       Chromium. The full 10.1in flex page then fragments its auto-pushed footer
+       onto a footer-only continuation page. Keep the desktop height unchanged
+       and reserve additional vertical slack only in WebKit's iOS print path. */
+    @supports (-webkit-touch-callout: none) {
+      #branded-print { --print-page-height: 9.6in; }
+    }
 
     /* ── Masthead (shared page header — brand lockup in HTML) ── */
     .fc-masthead { display: flex; align-items: center; gap: var(--s4); }
@@ -1053,7 +1061,7 @@
 
     /* ── Facility notes (flexes to absorb leftover page-1 height as ruled lines) ── */
     .fc-notesarea { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
-    .fc-notesarea__lines { flex: 1; background: repeating-linear-gradient(to bottom, transparent, transparent 27px, var(--hair) 27px, var(--hair) 28px); }
+    .fc-notesarea__lines { flex: 1; background: repeating-linear-gradient(to bottom, #fff 0, #fff 27px, var(--hair) 27px, var(--hair) 28px); }
 
     /* ── Footer (margin-top:auto pins it to the sheet bottom) ── */
     .fc-foot { text-align: center; margin-top: auto; padding-top: var(--s2); border-top: 1px solid var(--hair); font-family: var(--label); font-weight: 600; font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }

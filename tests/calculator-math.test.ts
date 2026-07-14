@@ -424,6 +424,16 @@ describe("shared nutrition core contract", () => {
     expect(printHtml).toContain('<td class="fc-chart__ec">3.0</td>');
     expect(printHtml).toContain('<td class="fc-chart__ec">2.0</td>');
   });
+
+  test("iPhone printing reserves enough page-height slack to avoid footer-only pages", () => {
+    expect(feedCalculator).toContain("@supports (-webkit-touch-callout: none)");
+    expect(feedCalculator).toContain("--print-page-height: 9.6in");
+  });
+
+  test("printed Notes lines use an opaque white background", () => {
+    expect(feedCalculator).toContain("#fff 0, #fff 27px");
+    expect(feedCalculator).not.toContain("transparent, transparent 27px");
+  });
 });
 
 describe("FRA Swell recipe math", () => {
