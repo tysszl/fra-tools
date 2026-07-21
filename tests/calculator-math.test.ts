@@ -638,6 +638,11 @@ describe("shared nutrition core contract", () => {
     expect(feedCalculator).toContain("--print-page-height: 9.6in");
   });
 
+  test("Component Plus printing reserves footer-safe height in desktop PDF exports", () => {
+    expect(cplusCalculator).toContain("--print-page-height, 9.5in");
+    expect(cplusCalculator).not.toContain("--print-page-height, 10.1in");
+  });
+
   test("printed Notes lines use an opaque white background", () => {
     expect(feedCalculator).toContain("#fff 0, #fff 27px");
     expect(feedCalculator).not.toContain("transparent, transparent 27px");

@@ -1043,7 +1043,10 @@
     .fc-page {
       box-sizing: border-box;
       width: 100%;
-      height: var(--print-page-height, 10.1in);
+      /* Desktop WebKit print dialogs reserve extra space when browser headers
+         and footers are enabled. Keep each designed sheet inside that smaller
+         printable box so its FRA footer cannot fragment onto a third page. */
+      height: var(--print-page-height, 9.5in);
       display: flex;
       flex-direction: column;
       page-break-after: always;
@@ -1052,10 +1055,6 @@
     .fc-page:last-child { page-break-after: auto; break-after: auto; }
     .fc-page > * + * { margin-top: var(--s4); }
     .fc-stack > * + * { margin-top: var(--s3); }
-
-    @supports (-webkit-touch-callout: none) {
-      #branded-print { --print-page-height: 9.6in; }
-    }
 
     .fc-masthead { display: flex; align-items: center; gap: var(--s4); }
     .fc-masthead__logo { height: 56px; width: auto; flex: none; }
