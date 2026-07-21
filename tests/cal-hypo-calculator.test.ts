@@ -148,7 +148,7 @@ describe("calcium hypochlorite calculation contract", () => {
 
   test("builds the direct-dose reference table from the shared powder calculation", () => {
     const rows = api.buildDirectDoseReferenceRows("us");
-    expect(rows.map(row => row.ppm)).toEqual([0.5, 1, 2, 3, 5, 8, 10, 15, 20]);
+    expect(rows.map(row => row.ppm)).toEqual([0.5, 1, 2, 3, 5, 10, 8, 15, 20]);
     const twoPpm = expectValid(rows.find(row => row.ppm === 2)!.calculation);
     const eightPpm = expectValid(rows.find(row => row.ppm === 8)!.calculation);
     const fifteenPpm = expectValid(rows.find(row => row.ppm === 15)!.calculation);
@@ -234,8 +234,22 @@ describe("sales-team workflow", () => {
   test("includes the direct-dose quick table and elevated-rate caution", () => {
     expect(calculator).toContain("Direct-dose quick table");
     expect(calculator).toContain("DryTec / 100 US gal");
+    expect(calculator).toContain('label: "Continuous use"');
+    expect(calculator).toContain('label: "Elevated applied dose"');
+    expect(calculator).toContain('label: "Cleaning protocols"');
     expect(calculator).toContain("Elevated cleaning references are not continuous-use plant targets");
     expect(calculator).toContain("Fusarium cleaning reference");
+  });
+
+  test("keeps elevated applied doses together before cleaning protocols", () => {
+    expect(api.buildDirectDoseReferenceRows("us").map(row => row.ppm)).toEqual([0.5, 1, 2, 3, 5, 10, 8, 15, 20]);
+  });
+
+  test("rounds generated unit-conversion values for editable fields", () => {
+    expect(api.editableFieldValue(2.9058925759)).toBe(2.91);
+    expect(api.editableFieldValue(18.92705892)).toBe(18.93);
+    expect(api.editableFieldValue(378.5411784)).toBe(378.54);
+    expect(api.editableFieldValue("2.905")).toBe("2.905");
   });
 
   test("classifies measured residuals against the current FRA range", () => {

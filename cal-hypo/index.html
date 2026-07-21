@@ -133,14 +133,19 @@
     .quick-reference-header p { margin: 3px 0 0; color: var(--text-muted); font-size: 0.74rem; }
     .quick-reference-badge { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--chlorine); color: var(--chlorine); font: 750 0.64rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
     .quick-table-wrap { overflow-x: auto; border: 1px solid var(--line); }
-    .quick-table { width: 100%; border-collapse: collapse; font-size: 0.74rem; }
+    .quick-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.74rem; }
     .quick-table th { padding: 9px 10px; border-bottom: 1px solid var(--line-strong); background: var(--bg); color: var(--text-muted); font-size: 0.67rem; font-weight: 750; letter-spacing: 0.04em; text-align: left; text-transform: uppercase; }
     .quick-table th:nth-child(1), .quick-table th:nth-child(2), .quick-table td:nth-child(1), .quick-table td:nth-child(2) { text-align: right; white-space: nowrap; }
     .quick-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--text-soft); vertical-align: top; }
     .quick-table tr:last-child td { border-bottom: 0; }
     .quick-table td:nth-child(1), .quick-table td:nth-child(2) { color: var(--text); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 740; }
-    .quick-table tr.recommended { background: color-mix(in srgb, var(--mint) 7%, transparent); }
-    .quick-table tr.cleaning { background: color-mix(in srgb, var(--amber) 7%, transparent); }
+    .quick-table .quick-table-group-heading { padding: 8px 10px; border-bottom: 1px solid var(--line-strong); text-align: left; white-space: normal; }
+    .quick-table tbody + tbody .quick-table-group-heading { border-top: 5px solid var(--panel); }
+    .quick-table-group.recommended .quick-table-group-heading { background: color-mix(in srgb, var(--mint) 12%, var(--bg)); }
+    .quick-table-group.demand .quick-table-group-heading { background: color-mix(in srgb, var(--chlorine) 10%, var(--bg)); }
+    .quick-table-group.cleaning .quick-table-group-heading { background: color-mix(in srgb, var(--amber) 12%, var(--bg)); }
+    .quick-table-group-label { margin-right: 8px; color: var(--text); font: 760 0.66rem/1.2 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+    .quick-table-group-note { color: var(--text-muted); font-size: 0.67rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
     .quick-reference-note { margin: 10px 0 0; color: var(--text-muted); font-size: 0.7rem; }
     .field-check { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--mint); background: var(--panel); }
     .field-check h3 { margin: 0 0 6px; font-size: 0.9rem; }
@@ -166,6 +171,7 @@
       .readout { grid-template-columns: 1fr; gap: 8px; padding: 15px 14px; }
       .readout-value { white-space: normal; }
       .readout-action { grid-column: auto; }
+      .quick-table-group-note { display: block; margin-top: 3px; }
       .safety ul { grid-template-columns: 1fr; }
     }
     @media (max-width: 320px) {
@@ -318,11 +324,10 @@
             <span class="quick-reference-badge">Quick ref</span>
           </div>
           <div class="quick-table-wrap">
-            <table class="quick-table">
+            <table class="quick-table" id="direct-reference-table">
               <thead>
                 <tr><th scope="col">Applied chlorine</th><th scope="col" id="direct-reference-mass-heading">DryTec / 100 US gal</th><th scope="col">Operational reference</th></tr>
               </thead>
-              <tbody id="direct-reference-body"></tbody>
             </table>
           </div>
           <p class="quick-reference-note">The 0.5–2 ppm rows are FRA's continuous-use residual range at the farthest dripper. Elevated cleaning references are not continuous-use plant targets. Verify the measured residual after system demand.</p>
@@ -625,10 +630,16 @@ const DIRECT_REFERENCE_LEVELS = deepFreeze([
   { ppm: 2, label: "Upper end of FRA residual range", category: "recommended" },
   { ppm: 3, label: "Higher applied dose / system demand", category: "demand" },
   { ppm: 5, label: "Higher applied dose / system demand", category: "demand" },
-  { ppm: 8, label: "Fusarium cleaning reference · ≥5 min contact", category: "cleaning" },
   { ppm: 10, label: "Higher applied dose / system demand", category: "demand" },
+  { ppm: 8, label: "Fusarium cleaning reference · ≥5 min contact", category: "cleaning" },
   { ppm: 15, label: "Between-cycle cleaning · flush with RO after", category: "cleaning" },
   { ppm: 20, label: "Heavy treatment · technical protocol only", category: "cleaning" },
+]);
+
+const DIRECT_REFERENCE_GROUPS = deepFreeze([
+  { id: "recommended", label: "Continuous use", note: "Target residual at the farthest dripper" },
+  { id: "demand", label: "Elevated applied dose", note: "Offsets system demand; verify the resulting residual" },
+  { id: "cleaning", label: "Cleaning protocols", note: "Elevated contact treatments; not plant targets" },
 ]);
 
 function buildDirectDoseReferenceRows(unitSystem) {
@@ -748,23 +759,43 @@ let activeUiState = createUiState();
 
 function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
 function setError(id, calculation) { setText(id, calculation.valid ? "" : calculation.message); }
+function editableFieldValue(value) { return typeof value === "number" ? rounded(value, 2) : value; }
 
 function renderDirectReferenceTable(unitSystem) {
-  const tableBody = document.getElementById("direct-reference-body");
+  const table = document.getElementById("direct-reference-table");
   const rows = buildDirectDoseReferenceRows(unitSystem);
   setText("direct-reference-mass-heading", unitSystem === "us" ? "DryTec / 100 US gal" : "DryTec / 1,000 L");
-  tableBody.replaceChildren(...rows.map(row => {
-    const tableRow = document.createElement("tr");
-    tableRow.className = row.category;
-    const ppmCell = document.createElement("td");
-    ppmCell.textContent = `${row.ppm} ppm`;
-    const massCell = document.createElement("td");
-    massCell.textContent = row.calculation.valid ? formatMass(row.calculation.productMassGrams).text : "—";
-    const labelCell = document.createElement("td");
-    labelCell.textContent = row.label;
-    tableRow.append(ppmCell, massCell, labelCell);
-    return tableRow;
-  }));
+  const groups = DIRECT_REFERENCE_GROUPS.map(group => {
+    const tableBody = document.createElement("tbody");
+    tableBody.className = `quick-table-group ${group.id}`;
+    const headingRow = document.createElement("tr");
+    const headingCell = document.createElement("th");
+    headingCell.className = "quick-table-group-heading";
+    headingCell.colSpan = 3;
+    headingCell.scope = "rowgroup";
+    const label = document.createElement("span");
+    label.className = "quick-table-group-label";
+    label.textContent = group.label;
+    const note = document.createElement("span");
+    note.className = "quick-table-group-note";
+    note.textContent = group.note;
+    headingCell.append(label, note);
+    headingRow.append(headingCell);
+    tableBody.append(headingRow, ...rows.filter(row => row.category === group.id).map(row => {
+      const tableRow = document.createElement("tr");
+      const ppmCell = document.createElement("td");
+      ppmCell.textContent = `${row.ppm} ppm`;
+      const massCell = document.createElement("td");
+      massCell.textContent = row.calculation.valid ? formatMass(row.calculation.productMassGrams).text : "—";
+      const labelCell = document.createElement("td");
+      labelCell.textContent = row.label;
+      tableRow.append(ppmCell, massCell, labelCell);
+      return tableRow;
+    }));
+    return tableBody;
+  });
+  table.querySelectorAll("tbody").forEach(tableBody => tableBody.remove());
+  table.append(...groups);
 }
 
 function renderUi() {
@@ -781,7 +812,8 @@ function renderUi() {
   document.querySelectorAll("[data-panel] [data-field]").forEach(control => {
     const mode = control.closest("[data-panel]").dataset.panel;
     const value = activeUiState.values[mode][control.dataset.field];
-    if (String(control.value) !== String(value)) control.value = value;
+    const displayValue = editableFieldValue(value);
+    if (String(control.value) !== String(displayValue)) control.value = displayValue;
   });
   document.getElementById("stock-preset").value = stockValues.preset;
   setText("stock-preset-mz3000", activeUiState.unitSystem === "us" ? "11 g/gal · 0.03–0.3% injection range" : "2.91 g/L · 0.03–0.3% injection range");
@@ -960,6 +992,7 @@ const CAL_HYPO_API = deepFreeze({
   formatLiquidVolume,
   formatMilliliters,
   formatPpm,
+  editableFieldValue,
   CAL_HYPO_UI,
 });
 
