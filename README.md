@@ -9,6 +9,7 @@ Internal repo for Front Row Ag customer-facing calculator tools. Hosted via GitH
 - **ph-down-calc.html** — pH Down dosing calculator
 - **cost-calc.html** — Cost comparison calculator (internal, not yet customer-facing)
 - **usage-calc.html** — Usage/consumption calculator (internal, not yet customer-facing)
+- **cal-hypo/** — Unlisted internal calcium hypochlorite stock and direct-dose calculator
 
 ## Hosting
 

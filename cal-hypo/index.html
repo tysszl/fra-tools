@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="canonical" href="https://tools.frontrowag.com/cal-hypo/">
+  <title>Front Row Ag · Calcium Hypochlorite Reference</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0c0f11;
+      --housing: #14191c;
+      --panel: #1a2024;
+      --panel-strong: #20282d;
+      --line: #303a40;
+      --line-strong: #46535b;
+      --text: #edf2f0;
+      --text-soft: #b7c1be;
+      --text-muted: #84908d;
+      --mint: #48dfb2;
+      --mint-soft: #173b32;
+      --chlorine: #61b8dc;
+      --chlorine-soft: #173442;
+      --amber: #e1ad5c;
+      --danger: #ff8a7c;
+      --shadow: rgba(0, 0, 0, 0.35);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body.light {
+      color-scheme: light;
+      --bg: #eef2f1;
+      --housing: #fbfcfc;
+      --panel: #f3f6f5;
+      --panel-strong: #e8eeec;
+      --line: #d0d9d6;
+      --line-strong: #aab7b3;
+      --text: #18201e;
+      --text-soft: #485652;
+      --text-muted: #687670;
+      --mint: #087c5d;
+      --mint-soft: #d9eee8;
+      --chlorine: #126f96;
+      --chlorine-soft: #dcecf3;
+      --amber: #8a5a0d;
+      --danger: #a43428;
+      --shadow: rgba(37, 58, 51, 0.12);
+    }
+    * { box-sizing: border-box; }
+    html, body { max-width: 100%; overflow-x: hidden; }
+    html { background: var(--bg); }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); line-height: 1.45; }
+    button, input, select { font: inherit; }
+    button, select, summary { cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--chlorine); outline-offset: 2px; }
+    [hidden] { display: none !important; }
+    .shell { width: min(100% - 24px, 680px); margin: 0 auto; padding: 22px 0 48px; }
+    .masthead { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 16px; align-items: start; margin-bottom: 18px; }
+    .eyebrow, .instrument-label, .readout-kicker, .micro-label {
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: 0.7rem;
+      font-weight: 750;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+    }
+    .eyebrow { margin: 0 0 6px; color: var(--mint); }
+    h1 { margin: 0; max-width: 15ch; font-size: clamp(1.55rem, 5vw, 2.1rem); line-height: 1.03; letter-spacing: -0.035em; }
+    .basis { margin: 10px 0 0; max-width: 58ch; color: var(--text-muted); font-size: 0.84rem; }
+    .theme-toggle { width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: var(--housing); color: var(--text-soft); box-shadow: 0 5px 18px var(--shadow); }
+    .instrument { overflow: hidden; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--housing); box-shadow: 0 18px 54px var(--shadow); }
+    .instrument-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
+    .instrument-label { color: var(--text-muted); }
+    .unit-toggle { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+    .unit-button { min-width: 54px; min-height: 36px; padding: 4px 10px; border: 0; border-radius: 5px; background: transparent; color: var(--text-muted); font-size: 0.78rem; font-weight: 750; }
+    .unit-button[aria-pressed="true"] { background: var(--mint-soft); color: var(--mint); }
+    .mode-tabs { display: grid; grid-template-columns: repeat(2, 1fr); border-bottom: 1px solid var(--line); }
+    .mode-tab { position: relative; min-height: 52px; padding: 9px 14px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--text-muted); font-size: 0.8rem; font-weight: 720; text-align: left; }
+    .mode-tab:last-child { border-right: 0; }
+    .mode-tab[aria-selected="true"] { background: var(--panel-strong); color: var(--text); }
+    .mode-tab[aria-selected="true"]::after { content: ""; position: absolute; right: 12px; bottom: 0; left: 12px; height: 3px; background: var(--mint); }
+    .workbench { padding: clamp(16px, 4vw, 24px); }
+    .mode-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+    .mode-heading h2 { margin: 0; font-size: 1.08rem; letter-spacing: -0.015em; }
+    .mode-heading p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.81rem; }
+    .mode-mark { color: var(--chlorine); font: 700 0.75rem/1 ui-monospace, "SFMono-Regular", monospace; }
+    .workflow-stack { display: grid; gap: 18px; }
+    .workflow-section { padding: 16px; border: 1px solid var(--line); background: var(--panel); }
+    .workflow-section + .workflow-section { border-top: 4px solid var(--line-strong); }
+    .workflow-heading { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; margin-bottom: 15px; }
+    .workflow-number { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--mint); border-radius: 50%; color: var(--mint); font: 760 0.78rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .workflow-heading h3 { margin: 0; font-size: 0.98rem; letter-spacing: -0.01em; }
+    .workflow-heading p { margin: 3px 0 0; color: var(--text-muted); font-size: 0.76rem; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .field { min-width: 0; }
+    .field.wide { grid-column: 1 / -1; }
+    label { display: block; margin-bottom: 6px; color: var(--text-soft); font-size: 0.78rem; font-weight: 680; }
+    .control-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+    input, select { width: 100%; min-height: 44px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-variant-numeric: tabular-nums; }
+    input { min-width: 0; padding: 9px 11px; border-radius: 8px; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 700; }
+    select { padding: 8px 30px 8px 10px; border-radius: 8px; }
+    .control-pair input { border-radius: 8px 0 0 8px; }
+    .control-pair select, .control-pair .fixed-unit { width: auto; min-width: 98px; margin-left: -1px; border-radius: 0 8px 8px 0; }
+    .fixed-unit { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text-muted); font: 700 0.74rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    input:hover, select:hover { border-color: var(--line-strong); }
+    input[aria-invalid="true"] { border-color: var(--danger); }
+    .field-note, .field-error { min-height: 1.05em; margin: 5px 0 0; font-size: 0.71rem; }
+    .field-note { color: var(--text-muted); }
+    .field-error { color: var(--danger); }
+    .readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; margin-top: 20px; padding: 17px 18px 16px; border: 1px solid var(--chlorine); border-left-width: 5px; background: var(--chlorine-soft); }
+    .readout-kicker { display: block; margin-bottom: 7px; color: var(--chlorine); }
+    .readout-label { display: block; color: var(--text-soft); font-size: 0.76rem; }
+    .readout-value { color: var(--text); font: 760 clamp(1.7rem, 8vw, 2.65rem)/1 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: -0.05em; white-space: nowrap; }
+    .readout-action { grid-column: 1 / -1; margin: 0; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--chlorine) 35%, transparent); color: var(--text-soft); font-size: 0.83rem; }
+    .secondary-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .secondary-result { padding: 12px 13px; border: 1px solid var(--line); background: var(--panel); }
+    .secondary-result span { display: block; color: var(--text-muted); font-size: 0.72rem; }
+    .secondary-result strong { display: block; margin-top: 4px; color: var(--text); font: 740 1rem/1.2 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .equipment-note { margin: 10px 0 0; padding: 10px 12px; border-left: 3px solid var(--mint); background: var(--mint-soft); color: var(--text-soft); font-size: 0.76rem; }
+    .equipment-note.warning { border-left-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, transparent); }
+    details.tool-detail { margin-top: 14px; border: 1px solid var(--line); background: var(--panel); }
+    details.tool-detail summary { min-height: 44px; padding: 12px 14px; color: var(--text-soft); font-size: 0.8rem; font-weight: 720; }
+    .detail-body { padding: 2px 14px 14px; }
+    .recipe-result { margin: 12px 0 0; padding: 11px 12px; border-left: 3px solid var(--mint); background: var(--mint-soft); color: var(--text-soft); font-size: 0.8rem; }
+    .recipe-result strong { color: var(--text); }
+    .prep-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .prep-result { padding: 13px; border: 1px solid var(--line); background: var(--bg); }
+    .prep-result span { display: block; color: var(--text-muted); font-size: 0.71rem; }
+    .prep-result strong { display: block; margin-top: 5px; color: var(--text); font: 760 1.15rem/1.15 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .solubility-note { margin: 9px 0 0; color: var(--text-muted); font-size: 0.71rem; }
+    .quick-reference { margin-top: 18px; padding: 16px; border: 1px solid var(--line-strong); background: var(--panel); }
+    .quick-reference-header { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+    .quick-reference h3 { margin: 0; font-size: 0.96rem; letter-spacing: -0.01em; }
+    .quick-reference-header p { margin: 3px 0 0; color: var(--text-muted); font-size: 0.74rem; }
+    .quick-reference-badge { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--chlorine); color: var(--chlorine); font: 750 0.64rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+    .quick-table-wrap { overflow-x: auto; border: 1px solid var(--line); }
+    .quick-table { width: 100%; border-collapse: collapse; font-size: 0.74rem; }
+    .quick-table th { padding: 9px 10px; border-bottom: 1px solid var(--line-strong); background: var(--bg); color: var(--text-muted); font-size: 0.67rem; font-weight: 750; letter-spacing: 0.04em; text-align: left; text-transform: uppercase; }
+    .quick-table th:nth-child(1), .quick-table th:nth-child(2), .quick-table td:nth-child(1), .quick-table td:nth-child(2) { text-align: right; white-space: nowrap; }
+    .quick-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--text-soft); vertical-align: top; }
+    .quick-table tr:last-child td { border-bottom: 0; }
+    .quick-table td:nth-child(1), .quick-table td:nth-child(2) { color: var(--text); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 740; }
+    .quick-table tr.recommended { background: color-mix(in srgb, var(--mint) 7%, transparent); }
+    .quick-table tr.cleaning { background: color-mix(in srgb, var(--amber) 7%, transparent); }
+    .quick-reference-note { margin: 10px 0 0; color: var(--text-muted); font-size: 0.7rem; }
+    .field-check { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--mint); background: var(--panel); }
+    .field-check h3 { margin: 0 0 6px; font-size: 0.9rem; }
+    .field-check p { margin: 0; color: var(--text-soft); font-size: 0.79rem; }
+    .verification-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
+    .verification-message { margin: 10px 0 0; padding: 9px 11px; border-left: 3px solid var(--chlorine); background: var(--chlorine-soft); color: var(--text-soft); font-size: 0.76rem; }
+    .verification-message.invalid { border-left-color: var(--danger); color: var(--danger); }
+    .advanced-copy { margin: 0 0 12px; color: var(--text-muted); font-size: 0.76rem; }
+    .restricted-state { margin-top: 18px; padding: 16px; border: 2px solid var(--amber); background: color-mix(in srgb, var(--amber) 9%, var(--panel)); }
+    .restricted-state h3 { margin: 0 0 7px; color: var(--amber); font-size: 0.96rem; }
+    .restricted-state p { margin: 0; color: var(--text-soft); font-size: 0.79rem; }
+    .safety { margin-top: 18px; border: 1px solid var(--line); background: var(--panel); }
+    .safety summary { min-height: 44px; padding: 12px 14px; color: var(--text-soft); font-size: 0.8rem; font-weight: 720; }
+    .safety ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin: 0; padding: 0 32px 14px; color: var(--text-soft); font-size: 0.75rem; }
+    .safety li::marker { color: var(--amber); }
+    .footer-note { margin: 13px 2px 0; color: var(--text-muted); font-size: 0.72rem; }
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 16px, 680px); padding-top: 14px; }
+      .masthead { margin: 0 6px 14px; }
+      .workbench { padding: 16px 14px 18px; }
+      .field-grid, .secondary-results, .prep-results { grid-template-columns: 1fr; gap: 12px; }
+      .field.wide { grid-column: auto; }
+      .readout { grid-template-columns: 1fr; gap: 8px; padding: 15px 14px; }
+      .readout-value { white-space: normal; }
+      .readout-action { grid-column: auto; }
+      .safety ul { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 320px) {
+      .shell { width: 100%; padding-top: 10px; }
+      .masthead { margin-right: 10px; margin-left: 10px; }
+      .instrument { border-right: 0; border-left: 0; border-radius: 0; }
+      .workbench { padding-right: 12px; padding-left: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">Front Row Ag · Team reference</p>
+        <h1>Calcium hypochlorite calculator</h1>
+        <p class="basis">Select the stock recipe, enter the target, and use the calculated rate. Calculations use DryTec's guaranteed minimum 65% available chlorine.</p>
+      </div>
+      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Toggle light and dark theme">◐</button>
+    </header>
+
+    <section class="instrument" aria-label="Calcium hypochlorite calculator">
+      <div class="instrument-topbar">
+        <span class="instrument-label">DryTec · 65% available chlorine</span>
+        <div class="unit-toggle" aria-label="Unit system">
+          <button class="unit-button" type="button" data-unit-system="us" aria-pressed="true">US</button>
+          <button class="unit-button" type="button" data-unit-system="metric" aria-pressed="false">Metric</button>
+        </div>
+      </div>
+
+      <div class="mode-tabs" role="tablist" aria-label="Calculator mode">
+        <button class="mode-tab" id="tab-stock-solution" type="button" role="tab" aria-selected="true" aria-controls="panel-stock-solution" tabindex="0" data-mode="stock-solution">Use a stock solution</button>
+        <button class="mode-tab" id="tab-direct-powder" type="button" role="tab" aria-selected="false" aria-controls="panel-direct-powder" tabindex="-1" data-mode="direct-powder">Add powder directly</button>
+      </div>
+
+      <div class="workbench">
+        <section id="panel-stock-solution" role="tabpanel" aria-labelledby="tab-stock-solution" data-panel="stock-solution">
+          <div class="mode-heading">
+            <div><h2>Stock solution workflow</h2><p>Prepare the stock first, then calculate how much to use.</p></div>
+            <span class="mode-mark">STK</span>
+          </div>
+          <div class="workflow-stack">
+            <section class="workflow-section" aria-labelledby="mix-stock-heading">
+              <div class="workflow-heading">
+                <span class="workflow-number" aria-hidden="true">1</span>
+                <div><h3 id="mix-stock-heading">Mix the stock solution</h3><p>Choose the concentration and final stock-tank volume.</p></div>
+              </div>
+              <div class="field-grid">
+                <div class="field wide">
+                  <label for="stock-preset">Stock recipe</label>
+                  <select id="stock-preset" data-field="preset">
+                    <option value="mz3000" id="stock-preset-mz3000">11 g/gal · 0.03–0.3% injection range</option>
+                    <option value="mz2" id="stock-preset-mz2">3 g/gal · 0.2–2% injection range</option>
+                    <option value="custom">Custom stock rate</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="stock-rate">Stock concentration</label>
+                  <div class="control-pair">
+                    <input id="stock-rate" inputmode="decimal" data-field="stockRate" aria-describedby="stock-rate-note stock-rate-error">
+                    <span class="fixed-unit" id="stock-rate-unit">g/gal</span>
+                  </div>
+                  <p class="field-note" id="stock-rate-note">Edit this value to use a custom stock rate.</p>
+                  <p class="field-error" id="stock-rate-error"></p>
+                </div>
+                <div class="field">
+                  <label for="prep-volume">Final stock volume</label>
+                  <div class="control-pair"><input id="prep-volume" inputmode="decimal" min="5" max="50" data-field="prepVolume" aria-describedby="prep-volume-note prep-volume-error"><span class="fixed-unit" id="prep-volume-unit">US gal</span></div>
+                  <p class="field-note" id="prep-volume-note">Normal range: 5–50 US gal.</p>
+                  <p class="field-error" id="prep-volume-error"></p>
+                </div>
+              </div>
+              <div class="prep-results" id="prep-results" aria-live="polite">
+                <div class="prep-result"><span>Stock concentration</span><strong id="prep-rate-result">11 g/gal</strong></div>
+                <div class="prep-result"><span>Total DryTec required</span><strong id="prep-mass-result">55 g</strong></div>
+              </div>
+              <p class="recipe-result" id="stock-recipe-result">Add <strong>55 g DryTec</strong> to water, then bring the final volume to 5 US gal.</p>
+              <p class="solubility-note" id="solubility-note">11 g/gal is FRA's standard concentration. Higher concentrations may dissolve more slowly or leave sediment.</p>
+            </section>
+
+            <section class="workflow-section" aria-labelledby="use-stock-heading">
+              <div class="workflow-heading">
+                <span class="workflow-number" aria-hidden="true">2</span>
+                <div><h3 id="use-stock-heading">Determine how much stock to use</h3><p>Set the chlorine target and the volume of water being treated.</p></div>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="stock-target">Target applied chlorine</label>
+                  <div class="control-pair"><input id="stock-target" inputmode="decimal" data-field="targetPpm"><span class="fixed-unit">ppm</span></div>
+                  <p class="field-error" id="stock-target-error"></p>
+                </div>
+                <div class="field">
+                  <label for="stock-treated-volume">Treated water volume</label>
+                  <div class="control-pair"><input id="stock-treated-volume" inputmode="decimal" data-field="treatedVolume"><span class="fixed-unit" id="stock-volume-unit">US gal</span></div>
+                  <p class="field-error" id="stock-treated-volume-error"></p>
+                </div>
+                <div class="field wide">
+                  <label for="stock-output-unit">Show usage rate as</label>
+                  <select id="stock-output-unit" data-field="outputUnit">
+                    <option value="volume-rate">mL per gallon</option>
+                    <option value="injection-percent">Injection percent</option>
+                  </select>
+                </div>
+              </div>
+
+              <section class="readout" id="stock-readout" aria-live="polite">
+                <div><span class="readout-kicker">Usage rate</span><span class="readout-label" id="stock-primary-label">Prepared stock per treated water</span></div>
+                <strong class="readout-value" id="stock-primary-result">4.01 mL/gal</strong>
+                <p class="readout-action" id="stock-action">Inject 4.01 mL of prepared stock per gallon of irrigation water.</p>
+              </section>
+              <div class="secondary-results" id="stock-secondary-results">
+                <div class="secondary-result"><span id="stock-alternate-label">Equivalent injection setting</span><strong id="stock-alternate-result">0.106%</strong></div>
+                <div class="secondary-result"><span id="stock-batch-label">Total stock for 100 US gal</span><strong id="stock-batch-total">400.82 mL</strong></div>
+              </div>
+              <p class="equipment-note" id="equipment-note">The calculated 0.106% setting is within the MZ3000's 0.03–0.3% range.</p>
+            </section>
+          </div>
+        </section>
+
+        <section id="panel-direct-powder" role="tabpanel" aria-labelledby="tab-direct-powder" data-panel="direct-powder" hidden>
+          <div class="mode-heading">
+            <div><h2>Add powder directly</h2><p>Enter the treated volume and target applied chlorine.</p></div>
+            <span class="mode-mark">DIR</span>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label for="direct-volume">Treated volume</label>
+              <div class="control-pair"><input id="direct-volume" inputmode="decimal" data-field="treatedVolume"><span class="fixed-unit" id="direct-volume-unit">US gal</span></div>
+              <p class="field-error" id="direct-volume-error"></p>
+            </div>
+            <div class="field">
+              <label for="direct-target">Target applied chlorine</label>
+              <div class="control-pair"><input id="direct-target" inputmode="decimal" data-field="targetPpm"><span class="fixed-unit">ppm</span></div>
+              <p class="field-error" id="direct-target-error"></p>
+            </div>
+          </div>
+          <section class="readout" id="direct-readout" aria-live="polite">
+            <div><span class="readout-kicker">DryTec required</span><span class="readout-label" id="direct-result-label">For 100 US gal at 2 ppm</span></div>
+            <strong class="readout-value" id="direct-result">1.16 g</strong>
+            <p class="readout-action" id="direct-action">Add 1.16 g DryTec to 100 US gal of treated water.</p>
+          </section>
+        </section>
+
+        <section class="quick-reference" aria-labelledby="direct-reference-heading">
+          <div class="quick-reference-header">
+            <div>
+              <h3 id="direct-reference-heading">Direct-dose quick table</h3>
+              <p>Theoretical applied chlorine using DryTec at 65% available chlorine.</p>
+            </div>
+            <span class="quick-reference-badge">Quick ref</span>
+          </div>
+          <div class="quick-table-wrap">
+            <table class="quick-table">
+              <thead>
+                <tr><th scope="col">Applied chlorine</th><th scope="col" id="direct-reference-mass-heading">DryTec / 100 US gal</th><th scope="col">Operational reference</th></tr>
+              </thead>
+              <tbody id="direct-reference-body"></tbody>
+            </table>
+          </div>
+          <p class="quick-reference-note">The 0.5–2 ppm rows are FRA's continuous-use residual range at the farthest dripper. Elevated cleaning references are not continuous-use plant targets. Verify the measured residual after system demand.</p>
+        </section>
+
+        <article class="field-check">
+          <h3>Verify at the dripper</h3>
+          <p>The calculation is the applied dose. Measure free chlorine at the farthest dripper and maintain the current FRA target of 0.5–2 ppm.</p>
+        </article>
+
+        <details class="tool-detail" id="field-options">
+          <summary>Field verification and other application points</summary>
+          <div class="detail-body">
+            <p class="advanced-copy">System demand can consume chlorine before it reaches the dripper. Use the measured residual to adjust the applied rate.</p>
+            <div class="field-grid">
+              <div class="field">
+                <label for="measured-residual">Measured residual at farthest dripper</label>
+                <div class="control-pair"><input id="measured-residual" inputmode="decimal"><span class="fixed-unit">ppm</span></div>
+              </div>
+              <div class="field">
+                <label for="treatment-point">Application point</label>
+                <select id="treatment-point"><option value="irrigation-water">Irrigation water / reservoir</option><option value="fertilizer-concentrate">Fertilizer stock concentrate</option></select>
+              </div>
+            </div>
+            <p class="verification-message" id="verification-message">Enter a measured residual to compare it with the 0.5–2 ppm range.</p>
+            <section class="restricted-state" id="restricted-state" hidden>
+              <h3>FRA technical approval required</h3>
+              <p>Using calcium hypochlorite in a fertilizer stock concentrate is case-specific. Confirm the product, concentration, injection order, and operating conditions with FRA technical before use.</p>
+            </section>
+          </div>
+        </details>
+
+        <details class="safety">
+          <summary>DryTec handling and mixing</summary>
+          <ul>
+            <li>Use clean, dry tools.</li>
+            <li>Add DryTec to water. Never add water to DryTec.</li>
+            <li>Wear chemical-resistant gloves and eye protection.</li>
+            <li>Avoid breathing dust and use adequate ventilation.</li>
+            <li>Store DryTec cool and dry in its original container.</li>
+            <li>Keep DryTec away from acids, organic material, and other incompatible products.</li>
+          </ul>
+        </details>
+      </div>
+    </section>
+    <p class="footer-note">Calculated chlorine values are theoretical applied doses. Field decisions use measured free chlorine at the applicable endpoint.</p>
+  </main>
+
+<script>
+// AIDEV-NOTE: Product composition is 68% calcium hypochlorite. Dose calculations use the guaranteed-minimum 65% available chlorine.
+function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  Object.values(value).forEach(deepFreeze);
+  return Object.freeze(value);
+}
+
+const CAL_HYPO_CONTRACT = deepFreeze({
+  product: { calciumHypochloriteFraction: 0.68, availableChlorineFraction: 0.65 },
+  units: {
+    litersPerUsGallon: 3.785411784,
+    gramsPerOunce: 28.349523125,
+    millilitersPerUsGallon: 3785.411784,
+  },
+  domains: {
+    stockRateGPerLiter: { min: 0.001, max: 30 },
+    stockPreparationGallons: { min: 5, max: 50 },
+    targetPpm: { min: 0.01, max: 100 },
+    volumeLiters: { min: 0.001, max: 1000000 },
+    customInjectionPercent: { min: 0.001, max: 100 },
+  },
+  stockPresets: {
+    mz3000: { label: "11 g/gal · 0.03–0.3% injection range", gramsPerUsGallon: 11, injector: "mz3000" },
+    mz2: { label: "3 g/gal · 0.2–2% injection range", gramsPerUsGallon: 3, injector: "mz2" },
+    custom: { label: "Custom stock rate", gramsPerUsGallon: null, injector: null },
+  },
+  injectors: {
+    mz3000: { label: "MZ3000", minPercent: 0.03, maxPercent: 0.3 },
+    mz2: { label: "MZ2", minPercent: 0.2, maxPercent: 2 },
+    custom: null,
+  },
+});
+
+function invalid(code, message) { return { valid: false, code, message }; }
+function valid(values) { return { valid: true, ...values }; }
+function finiteNumber(raw) {
+  if (typeof raw === "string" && raw.trim() === "") return null;
+  if (raw === null || raw === undefined || typeof raw === "boolean") return null;
+  const value = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+function positiveNumber(raw, label) {
+  const value = finiteNumber(raw);
+  return value !== null && value > 0 ? valid({ value }) : invalid("invalid-input", `${label} must be greater than zero.`);
+}
+function reviewedRange(value, range, label) {
+  return value >= range.min && value <= range.max
+    ? valid({ value })
+    : invalid("reviewed-domain", `${label} must be between ${range.min} and ${range.max}.`);
+}
+function rounded(value, decimals) { return Number(value.toFixed(decimals)); }
+
+function volumeToLiters(rawValue, unit) {
+  const parsed = positiveNumber(rawValue, "Volume");
+  if (!parsed.valid) return parsed;
+  let liters;
+  if (unit === "l") liters = parsed.value;
+  else if (unit === "ml") liters = parsed.value / 1000;
+  else if (unit === "us-gal") liters = parsed.value * CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+  else return invalid("unsupported-unit", "Use liters, milliliters, or US gallons.");
+  const range = reviewedRange(liters, CAL_HYPO_CONTRACT.domains.volumeLiters, "Volume");
+  return range.valid ? valid({ liters }) : range;
+}
+
+function massToGrams(rawValue, unit) {
+  const parsed = positiveNumber(rawValue, "Mass");
+  if (!parsed.valid) return parsed;
+  if (unit === "g") return valid({ grams: parsed.value });
+  if (unit === "mg") return valid({ grams: parsed.value / 1000 });
+  if (unit === "oz") return valid({ grams: parsed.value * CAL_HYPO_CONTRACT.units.gramsPerOunce });
+  return invalid("unsupported-unit", "Use grams, milligrams, or ounces.");
+}
+
+function stockRateToGPerLiter(rawValue, unit) {
+  const parsed = positiveNumber(rawValue, "Stock rate");
+  if (!parsed.valid) return parsed;
+  let gramsPerLiter;
+  if (unit === "g-per-l") gramsPerLiter = parsed.value;
+  else if (unit === "g-per-us-gal") gramsPerLiter = parsed.value / CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+  else return invalid("unsupported-unit", "Use grams per US gallon or grams per liter.");
+  const range = reviewedRange(gramsPerLiter, CAL_HYPO_CONTRACT.domains.stockRateGPerLiter, "Stock rate");
+  return range.valid ? valid({ gramsPerLiter }) : range;
+}
+
+function stockPreparationVolume(rawValue, unit) {
+  const volume = volumeToLiters(rawValue, unit);
+  if (!volume.valid) return volume;
+  const gallons = volume.liters / CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+  const range = CAL_HYPO_CONTRACT.domains.stockPreparationGallons;
+  return gallons >= range.min && gallons <= range.max
+    ? valid({ liters: volume.liters, gallons })
+    : invalid("stock-preparation-range", `Final stock volume must be between ${range.min} and ${range.max} US gallons.`);
+}
+
+function stockStrengthToMgL(rawValue, unit) {
+  const parsed = positiveNumber(rawValue, "Stock available chlorine");
+  if (!parsed.valid) return parsed;
+  if (unit === "mg-l") return valid({ stockAvailableChlorineMgL: parsed.value });
+  if (unit === "percent-wv") return valid({ stockAvailableChlorineMgL: parsed.value * 10000 });
+  return invalid("unsupported-unit", "Use mg/L or percent w/v.");
+}
+
+function targetPpmValue(rawValue) {
+  const parsed = positiveNumber(rawValue, "Target applied chlorine");
+  if (!parsed.valid) return parsed;
+  return reviewedRange(parsed.value, CAL_HYPO_CONTRACT.domains.targetPpm, "Target applied chlorine");
+}
+
+function injectionSettingToFraction(rawValue, unit) {
+  const parsed = positiveNumber(rawValue, "Injection setting");
+  if (!parsed.valid) return parsed;
+  let fraction;
+  if (unit === "percent") fraction = parsed.value / 100;
+  else if (unit === "fraction") fraction = parsed.value;
+  else if (unit === "ml-per-us-gal") fraction = parsed.value / CAL_HYPO_CONTRACT.units.millilitersPerUsGallon;
+  else return invalid("unsupported-unit", "Use percent, a decimal fraction, or mL per US gallon.");
+  const percent = fraction * 100;
+  const range = reviewedRange(percent, CAL_HYPO_CONTRACT.domains.customInjectionPercent, "Injection setting");
+  return range.valid ? valid({ fraction, percent }) : range;
+}
+
+function calculateStockStrengthFromDrytec(input) {
+  const mass = massToGrams(input.productMass, input.productMassUnit);
+  if (!mass.valid) return mass;
+  const volume = volumeToLiters(input.stockVolume, input.stockVolumeUnit);
+  if (!volume.valid) return volume;
+  return valid({
+    stockAvailableChlorineMgL: mass.grams * 1000 * CAL_HYPO_CONTRACT.product.availableChlorineFraction / volume.liters,
+  });
+}
+
+function calculateStockPreparation(input) {
+  if ("stockRate" in input) {
+    const rate = stockRateToGPerLiter(input.stockRate, input.stockRateUnit);
+    if (!rate.valid) return rate;
+    const volume = volumeToLiters(input.finalStockVolume, input.stockVolumeUnit);
+    if (!volume.valid) return volume;
+    return valid({ productMassGrams: rate.gramsPerLiter * volume.liters, gramsPerLiter: rate.gramsPerLiter });
+  }
+  const strength = stockStrengthToMgL(input.desiredAvailableChlorine, input.stockStrengthUnit);
+  if (!strength.valid) return strength;
+  const volume = volumeToLiters(input.finalStockVolume, input.stockVolumeUnit);
+  if (!volume.valid) return volume;
+  return valid({
+    productMassGrams: strength.stockAvailableChlorineMgL * volume.liters / 1000 / CAL_HYPO_CONTRACT.product.availableChlorineFraction,
+    stockAvailableChlorineMgL: strength.stockAvailableChlorineMgL,
+  });
+}
+
+function calculateDirectPowder(input) {
+  const volume = volumeToLiters(input.treatedVolume, input.treatedVolumeUnit);
+  if (!volume.valid) return volume;
+  const target = targetPpmValue(input.targetPpm);
+  if (!target.valid) return target;
+  return valid({
+    productMassGrams: target.value * volume.liters / 1000 / CAL_HYPO_CONTRACT.product.availableChlorineFraction,
+    treatedVolumeLiters: volume.liters,
+    theoreticalAppliedChlorinePpm: target.value,
+  });
+}
+
+function calculateDoseFromStock(input) {
+  const strength = stockStrengthToMgL(input.stockAvailableChlorine, input.stockStrengthUnit);
+  if (!strength.valid) return strength;
+  const volume = volumeToLiters(input.treatedVolume, input.treatedVolumeUnit);
+  if (!volume.valid) return volume;
+  const target = targetPpmValue(input.targetPpm);
+  if (!target.valid) return target;
+  return valid({
+    stockVolumeMilliliters: target.value * volume.liters * 1000 / strength.stockAvailableChlorineMgL,
+    theoreticalAppliedChlorinePpm: target.value,
+    stockAvailableChlorineMgL: strength.stockAvailableChlorineMgL,
+  });
+}
+
+function calculateStockUsage(input) {
+  const rate = stockRateToGPerLiter(input.stockRate, input.stockRateUnit);
+  if (!rate.valid) return rate;
+  const target = targetPpmValue(input.targetPpm);
+  if (!target.valid) return target;
+  const volume = volumeToLiters(input.treatedVolume, input.treatedVolumeUnit);
+  if (!volume.valid) return volume;
+  const stockAvailableChlorineMgL = rate.gramsPerLiter * 1000 * CAL_HYPO_CONTRACT.product.availableChlorineFraction;
+  const injectionFraction = target.value / stockAvailableChlorineMgL;
+  return valid({
+    gramsPerLiter: rate.gramsPerLiter,
+    stockAvailableChlorineMgL,
+    theoreticalAppliedChlorinePpm: target.value,
+    injectionFraction,
+    injectionPercent: injectionFraction * 100,
+    millilitersPerUsGallon: injectionFraction * CAL_HYPO_CONTRACT.units.millilitersPerUsGallon,
+    millilitersPerLiter: injectionFraction * 1000,
+    totalStockMilliliters: injectionFraction * volume.liters * 1000,
+    treatedVolumeLiters: volume.liters,
+  });
+}
+
+function calculateInjectorOutput(input) {
+  const strength = stockStrengthToMgL(input.stockAvailableChlorine, input.stockStrengthUnit);
+  if (!strength.valid) return strength;
+  const setting = injectionSettingToFraction(input.injectionSetting, input.injectionSettingUnit);
+  if (!setting.valid) return setting;
+  const equipment = CAL_HYPO_CONTRACT.injectors[input.preset];
+  if (equipment === undefined) return invalid("unsupported-preset", "Choose MZ3000, MZ2, or custom.");
+  if (equipment && (setting.percent < equipment.minPercent || setting.percent > equipment.maxPercent)) {
+    return invalid("equipment-range", `${equipment.label} accepts settings from ${equipment.minPercent}% to ${equipment.maxPercent}%.`);
+  }
+  return valid({
+    theoreticalAppliedChlorinePpm: strength.stockAvailableChlorineMgL * setting.fraction,
+    injectionFraction: setting.fraction,
+    injectionPercent: setting.percent,
+  });
+}
+
+function buildQuickReferenceRows(input) {
+  if (!Array.isArray(input.volumes)) return [];
+  if (input.mode === "direct-powder") return input.volumes.map(treatedVolume => calculateDirectPowder({ treatedVolume, treatedVolumeUnit: input.volumeUnit, targetPpm: input.targetPpm }));
+  if (input.mode === "stock-solution") return input.volumes.map(treatedVolume => calculateStockUsage({ stockRate: input.stockRate, stockRateUnit: input.stockRateUnit, treatedVolume, treatedVolumeUnit: input.volumeUnit, targetPpm: input.targetPpm }));
+  if (input.mode === "dose-from-stock") return input.volumes.map(treatedVolume => calculateDoseFromStock({ stockAvailableChlorine: input.stockAvailableChlorine, stockStrengthUnit: input.stockStrengthUnit, treatedVolume, treatedVolumeUnit: input.volumeUnit, targetPpm: input.targetPpm }));
+  return input.volumes.map(() => invalid("unsupported-mode", "Choose a supported calculator mode."));
+}
+
+function formatMass(grams) {
+  if (!Number.isFinite(grams) || grams <= 0) return { text: "—", belowResolution: false };
+  if (grams < 0.001) return { text: "<1 mg", belowResolution: true };
+  if (grams < 1) return { text: `${rounded(grams * 1000, 2)} mg`, belowResolution: false };
+  if (grams >= 1000) return { text: `${rounded(grams / 1000, 2)} kg`, belowResolution: false };
+  return { text: `${rounded(grams, 2)} g`, belowResolution: false };
+}
+function formatLiquidVolume(milliliters) {
+  if (!Number.isFinite(milliliters) || milliliters <= 0) return "—";
+  if (milliliters < 0.01) return "<0.01 mL";
+  if (milliliters >= 1000) return `${rounded(milliliters / 1000, 2)} L`;
+  return `${rounded(milliliters, 2)} mL`;
+}
+function formatMilliliters(milliliters) {
+  if (!Number.isFinite(milliliters) || milliliters <= 0) return "—";
+  if (milliliters < 0.01) return "<0.01 mL";
+  return `${rounded(milliliters, 2).toLocaleString("en-US")} mL`;
+}
+function formatPpm(ppm) { return Number.isFinite(ppm) ? `${ppm.toFixed(2)} ppm theoretical applied chlorine` : "—"; }
+
+const UI_MODES = deepFreeze([
+  { id: "stock-solution", label: "Use a stock solution" },
+  { id: "direct-powder", label: "Add powder directly" },
+]);
+
+const DIRECT_REFERENCE_LEVELS = deepFreeze([
+  { ppm: 0.5, label: "Low end of FRA residual range", category: "recommended" },
+  { ppm: 1, label: "Routine residual reference", category: "recommended" },
+  { ppm: 2, label: "Upper end of FRA residual range", category: "recommended" },
+  { ppm: 3, label: "Higher applied dose / system demand", category: "demand" },
+  { ppm: 5, label: "Higher applied dose / system demand", category: "demand" },
+  { ppm: 8, label: "Fusarium cleaning reference · ≥5 min contact", category: "cleaning" },
+  { ppm: 10, label: "Higher applied dose / system demand", category: "demand" },
+  { ppm: 15, label: "Between-cycle cleaning · flush with RO after", category: "cleaning" },
+  { ppm: 20, label: "Heavy treatment · technical protocol only", category: "cleaning" },
+]);
+
+function buildDirectDoseReferenceRows(unitSystem) {
+  const treatedVolume = unitSystem === "metric" ? 1000 : 100;
+  const treatedVolumeUnit = unitSystem === "metric" ? "l" : "us-gal";
+  return DIRECT_REFERENCE_LEVELS.map(level => ({
+    ...level,
+    calculation: calculateDirectPowder({ treatedVolume, treatedVolumeUnit, targetPpm: level.ppm }),
+  }));
+}
+
+function presetRate(preset, unitSystem) {
+  const gramsPerUsGallon = CAL_HYPO_CONTRACT.stockPresets[preset]?.gramsPerUsGallon;
+  if (gramsPerUsGallon === null || gramsPerUsGallon === undefined) return null;
+  return unitSystem === "us" ? gramsPerUsGallon : gramsPerUsGallon / CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+}
+
+function createUiState() {
+  return {
+    mode: "stock-solution",
+    unitSystem: "us",
+    treatmentPoint: "irrigation-water",
+    measuredResidual: "",
+    values: {
+      "stock-solution": { preset: "mz3000", stockRate: 11, stockRateUnit: "g-per-us-gal", targetPpm: 2, treatedVolume: 100, treatedVolumeUnit: "us-gal", prepVolume: 5, prepVolumeUnit: "us-gal", outputUnit: "volume-rate" },
+      "direct-powder": { treatedVolume: 100, treatedVolumeUnit: "us-gal", targetPpm: 2 },
+    },
+  };
+}
+
+function copyUiState(state) {
+  return { ...state, values: Object.fromEntries(Object.entries(state.values).map(([mode, values]) => [mode, { ...values }])) };
+}
+
+function selectUiMode(state, mode) {
+  return UI_MODES.some(item => item.id === mode) ? { ...state, mode } : state;
+}
+
+function selectStockPreset(state, preset) {
+  if (!CAL_HYPO_CONTRACT.stockPresets[preset]) return state;
+  const next = copyUiState(state);
+  next.values["stock-solution"].preset = preset;
+  const rate = presetRate(preset, state.unitSystem);
+  if (rate !== null) next.values["stock-solution"].stockRate = rounded(rate, 10);
+  return next;
+}
+
+function setUiField(state, mode, field, value) {
+  if (!state.values[mode] || !(field in state.values[mode])) return state;
+  const next = copyUiState(state);
+  next.values[mode][field] = value;
+  if (mode === "stock-solution" && field === "stockRate") next.values[mode].preset = "custom";
+  return next;
+}
+
+function convertVolumeValue(value, fromUnit, toUnit) {
+  const parsed = finiteNumber(value);
+  if (parsed === null || fromUnit === toUnit) return value;
+  const liters = fromUnit === "us-gal" ? parsed * CAL_HYPO_CONTRACT.units.litersPerUsGallon : parsed;
+  return rounded(toUnit === "us-gal" ? liters / CAL_HYPO_CONTRACT.units.litersPerUsGallon : liters, 10);
+}
+
+function changeUiUnitSystem(state, unitSystem) {
+  if (!["us", "metric"].includes(unitSystem) || state.unitSystem === unitSystem) return state;
+  const next = copyUiState(state);
+  const stock = next.values["stock-solution"];
+  const direct = next.values["direct-powder"];
+  const nextVolumeUnit = unitSystem === "us" ? "us-gal" : "l";
+  stock.treatedVolume = convertVolumeValue(stock.treatedVolume, stock.treatedVolumeUnit, nextVolumeUnit);
+  stock.prepVolume = convertVolumeValue(stock.prepVolume, stock.prepVolumeUnit, nextVolumeUnit);
+  direct.treatedVolume = convertVolumeValue(direct.treatedVolume, direct.treatedVolumeUnit, nextVolumeUnit);
+  stock.treatedVolumeUnit = nextVolumeUnit;
+  stock.prepVolumeUnit = nextVolumeUnit;
+  direct.treatedVolumeUnit = nextVolumeUnit;
+  if (stock.preset === "custom") {
+    const rate = finiteNumber(stock.stockRate);
+    if (rate !== null) stock.stockRate = rounded(unitSystem === "us" ? rate * CAL_HYPO_CONTRACT.units.litersPerUsGallon : rate / CAL_HYPO_CONTRACT.units.litersPerUsGallon, 10);
+  } else {
+    stock.stockRate = rounded(presetRate(stock.preset, unitSystem), 10);
+  }
+  stock.stockRateUnit = unitSystem === "us" ? "g-per-us-gal" : "g-per-l";
+  next.unitSystem = unitSystem;
+  return next;
+}
+
+function compareMeasuredResidual(rawValue) {
+  if (rawValue === "" || rawValue === null || rawValue === undefined) return { status: "blank", message: "Enter a measured residual to compare it with the 0.5–2 ppm range." };
+  const value = finiteNumber(rawValue);
+  if (value === null || value < 0 || value > 100) return { status: "invalid", message: "Enter a measured free-chlorine residual from 0 to 100 ppm." };
+  if (value < 0.5) return { status: "below", message: "The measured residual is below the current 0.5–2 ppm FRA range. Check system demand before increasing the applied rate." };
+  if (value > 2) return { status: "above", message: "The measured residual is above the current 0.5–2 ppm FRA range. Reduce the applied rate and recheck the farthest dripper." };
+  return { status: "within", message: "The measured residual is within the current 0.5–2 ppm FRA range." };
+}
+
+function evaluateUiState(state) {
+  const stockValues = state.values["stock-solution"];
+  const directValues = state.values["direct-powder"];
+  const stock = calculateStockUsage(stockValues);
+  const preparationVolume = stockPreparationVolume(stockValues.prepVolume, stockValues.prepVolumeUnit);
+  const preparation = preparationVolume.valid
+    ? calculateStockPreparation({ stockRate: stockValues.stockRate, stockRateUnit: stockValues.stockRateUnit, finalStockVolume: stockValues.prepVolume, stockVolumeUnit: stockValues.prepVolumeUnit })
+    : preparationVolume;
+  const direct = calculateDirectPowder(directValues);
+  const preset = CAL_HYPO_CONTRACT.stockPresets[stockValues.preset];
+  const injector = preset?.injector ? CAL_HYPO_CONTRACT.injectors[preset.injector] : null;
+  let equipmentStatus = null;
+  if (stock.valid && injector) {
+    const within = stock.injectionPercent >= injector.minPercent && stock.injectionPercent <= injector.maxPercent;
+    equipmentStatus = { within, injector, injectionPercent: stock.injectionPercent };
+  }
+  return { stock, preparation, direct, equipmentStatus, residual: compareMeasuredResidual(state.measuredResidual) };
+}
+
+function formatVolume(value, unit) { return `${rounded(Number(value), 2)} ${unit === "us-gal" ? "US gal" : "L"}`; }
+
+let activeUiState = createUiState();
+
+function setText(id, value) { const element = document.getElementById(id); if (element) element.textContent = value; }
+function setError(id, calculation) { setText(id, calculation.valid ? "" : calculation.message); }
+
+function renderDirectReferenceTable(unitSystem) {
+  const tableBody = document.getElementById("direct-reference-body");
+  const rows = buildDirectDoseReferenceRows(unitSystem);
+  setText("direct-reference-mass-heading", unitSystem === "us" ? "DryTec / 100 US gal" : "DryTec / 1,000 L");
+  tableBody.replaceChildren(...rows.map(row => {
+    const tableRow = document.createElement("tr");
+    tableRow.className = row.category;
+    const ppmCell = document.createElement("td");
+    ppmCell.textContent = `${row.ppm} ppm`;
+    const massCell = document.createElement("td");
+    massCell.textContent = row.calculation.valid ? formatMass(row.calculation.productMassGrams).text : "—";
+    const labelCell = document.createElement("td");
+    labelCell.textContent = row.label;
+    tableRow.append(ppmCell, massCell, labelCell);
+    return tableRow;
+  }));
+}
+
+function renderUi() {
+  const view = evaluateUiState(activeUiState);
+  const stockValues = activeUiState.values["stock-solution"];
+  const directValues = activeUiState.values["direct-powder"];
+  document.querySelectorAll("[data-unit-system]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.unitSystem === activeUiState.unitSystem)));
+  document.querySelectorAll("[role='tab']").forEach(tab => {
+    const selected = tab.dataset.mode === activeUiState.mode;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+  });
+  document.querySelectorAll("[data-panel]").forEach(panel => { panel.hidden = panel.dataset.panel !== activeUiState.mode; });
+  document.querySelectorAll("[data-panel] [data-field]").forEach(control => {
+    const mode = control.closest("[data-panel]").dataset.panel;
+    const value = activeUiState.values[mode][control.dataset.field];
+    if (String(control.value) !== String(value)) control.value = value;
+  });
+  document.getElementById("stock-preset").value = stockValues.preset;
+  setText("stock-preset-mz3000", activeUiState.unitSystem === "us" ? "11 g/gal · 0.03–0.3% injection range" : "2.91 g/L · 0.03–0.3% injection range");
+  setText("stock-preset-mz2", activeUiState.unitSystem === "us" ? "3 g/gal · 0.2–2% injection range" : "0.79 g/L · 0.2–2% injection range");
+  setText("stock-rate-unit", activeUiState.unitSystem === "us" ? "g/gal" : "g/L");
+  setText("stock-volume-unit", activeUiState.unitSystem === "us" ? "US gal" : "L");
+  setText("prep-volume-unit", activeUiState.unitSystem === "us" ? "US gal" : "L");
+  setText("direct-volume-unit", activeUiState.unitSystem === "us" ? "US gal" : "L");
+  setText("stock-rate-note", stockValues.preset === "custom" ? "Custom stock rate." : "Edit this value to use a custom stock rate.");
+  const prepVolume = document.getElementById("prep-volume");
+  const minPrepVolume = activeUiState.unitSystem === "us" ? 5 : 5 * CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+  const maxPrepVolume = activeUiState.unitSystem === "us" ? 50 : 50 * CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+  prepVolume.min = String(rounded(minPrepVolume, 2));
+  prepVolume.max = String(rounded(maxPrepVolume, 2));
+  setText("prep-volume-note", activeUiState.unitSystem === "us" ? "Normal range: 5–50 US gal." : "Normal range: 18.93–189.27 L.");
+  const outputSelect = document.getElementById("stock-output-unit");
+  outputSelect.options[0].textContent = activeUiState.unitSystem === "us" ? "mL per gallon" : "mL per liter";
+
+  setError("stock-rate-error", stockRateToGPerLiter(stockValues.stockRate, stockValues.stockRateUnit));
+  setError("stock-target-error", targetPpmValue(stockValues.targetPpm));
+  setError("stock-treated-volume-error", volumeToLiters(stockValues.treatedVolume, stockValues.treatedVolumeUnit));
+  setError("prep-volume-error", stockPreparationVolume(stockValues.prepVolume, stockValues.prepVolumeUnit));
+  setError("direct-volume-error", volumeToLiters(directValues.treatedVolume, directValues.treatedVolumeUnit));
+  setError("direct-target-error", targetPpmValue(directValues.targetPpm));
+
+  document.getElementById("stock-readout").hidden = !view.stock.valid;
+  document.getElementById("stock-secondary-results").hidden = !view.stock.valid;
+  document.getElementById("equipment-note").hidden = !view.stock.valid;
+  if (view.stock.valid) {
+    const perUnit = activeUiState.unitSystem === "us" ? view.stock.millilitersPerUsGallon : view.stock.millilitersPerLiter;
+    const unit = activeUiState.unitSystem === "us" ? "mL/gal" : "mL/L";
+    const showPercent = stockValues.outputUnit === "injection-percent";
+    setText("stock-primary-label", showPercent ? "Injector setting" : "Prepared stock per treated water");
+    setText("stock-primary-result", showPercent ? `${rounded(view.stock.injectionPercent, 3)}%` : `${rounded(perUnit, 2)} ${unit}`);
+    setText("stock-action", showPercent
+      ? `Set the injector to ${rounded(view.stock.injectionPercent, 3)}% to deliver ${rounded(Number(stockValues.targetPpm), 2)} ppm applied chlorine.`
+      : `Use ${rounded(perUnit, 2)} mL of prepared stock per ${activeUiState.unitSystem === "us" ? "gallon" : "liter"} of treated water.`);
+    setText("stock-alternate-label", showPercent ? `Equivalent ${unit} rate` : "Equivalent injection setting");
+    setText("stock-alternate-result", showPercent ? `${rounded(perUnit, 2)} ${unit}` : `${rounded(view.stock.injectionPercent, 3)}%`);
+    setText("stock-batch-label", `Total stock for ${formatVolume(stockValues.treatedVolume, stockValues.treatedVolumeUnit)}`);
+    setText("stock-batch-total", formatMilliliters(view.stock.totalStockMilliliters));
+    const note = document.getElementById("equipment-note");
+    note.classList.toggle("warning", Boolean(view.equipmentStatus && !view.equipmentStatus.within));
+    if (view.equipmentStatus) {
+      const status = view.equipmentStatus.within ? "is within" : "is outside";
+      note.textContent = `The calculated ${rounded(view.stock.injectionPercent, 3)}% setting ${status} the ${view.equipmentStatus.injector.label}'s ${view.equipmentStatus.injector.minPercent}–${view.equipmentStatus.injector.maxPercent}% range.`;
+    } else {
+      note.textContent = "Custom stock rate selected. Confirm the calculated setting is within the injector's operating range.";
+    }
+  }
+
+  if (view.preparation.valid) {
+    const mass = formatMass(view.preparation.productMassGrams).text;
+    const displayRate = `${rounded(Number(stockValues.stockRate), 2)} ${activeUiState.unitSystem === "us" ? "g/gal" : "g/L"}`;
+    setText("prep-rate-result", displayRate);
+    setText("prep-mass-result", mass);
+    document.getElementById("prep-results").hidden = false;
+    document.getElementById("stock-recipe-result").innerHTML = `Add <strong>${mass} DryTec</strong> to water, then bring the final volume to ${formatVolume(stockValues.prepVolume, stockValues.prepVolumeUnit)}.`;
+  } else {
+    document.getElementById("prep-results").hidden = true;
+    document.getElementById("stock-recipe-result").textContent = "Enter a valid stock rate and final volume.";
+  }
+  const rateGallons = stockRateToGPerLiter(stockValues.stockRate, stockValues.stockRateUnit);
+  if (rateGallons.valid) {
+    const gramsPerGallon = rateGallons.gramsPerLiter * CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+    setText("solubility-note", gramsPerGallon <= 11
+      ? "11 g/gal is FRA's standard concentration for reliable mixing and clean injection math."
+      : gramsPerGallon <= 12
+        ? "This concentration is generally workable, but some facilities have reported settling near 12 g/gal."
+        : "Above 12 g/gal, slower dissolution and sediment become increasingly likely. Use agitation and keep the suction pickup above the tank bottom.");
+  }
+
+  document.getElementById("direct-readout").hidden = !view.direct.valid;
+  if (view.direct.valid) {
+    const mass = formatMass(view.direct.productMassGrams).text;
+    const volume = formatVolume(directValues.treatedVolume, directValues.treatedVolumeUnit);
+    setText("direct-result", mass);
+    setText("direct-result-label", `For ${volume} at ${rounded(Number(directValues.targetPpm), 2)} ppm`);
+    setText("direct-action", `Add ${mass} DryTec to ${volume} of treated water.`);
+  }
+  renderDirectReferenceTable(activeUiState.unitSystem);
+
+  const verification = document.getElementById("verification-message");
+  verification.textContent = view.residual.message;
+  verification.classList.toggle("invalid", view.residual.status === "invalid");
+  document.getElementById("measured-residual").value = activeUiState.measuredResidual;
+  document.getElementById("treatment-point").value = activeUiState.treatmentPoint;
+  document.getElementById("restricted-state").hidden = activeUiState.treatmentPoint !== "fertilizer-concentrate";
+}
+
+function activateUiMode(mode, focus = false) {
+  activeUiState = selectUiMode(activeUiState, mode);
+  renderUi();
+  if (focus) document.getElementById(`tab-${mode}`).focus();
+}
+
+function initCalHypoCalculator() {
+  const savedTheme = localStorage.getItem("fra-cal-hypo-theme");
+  const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
+  document.body.classList.toggle("light", savedTheme ? savedTheme === "light" : prefersLight);
+  document.getElementById("theme-toggle").addEventListener("click", () => {
+    const light = !document.body.classList.contains("light");
+    document.body.classList.toggle("light", light);
+    localStorage.setItem("fra-cal-hypo-theme", light ? "light" : "dark");
+  });
+  document.querySelectorAll("[data-unit-system]").forEach(button => button.addEventListener("click", () => {
+    activeUiState = changeUiUnitSystem(activeUiState, button.dataset.unitSystem);
+    renderUi();
+  }));
+  const tabs = Array.from(document.querySelectorAll("[role='tab']"));
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => activateUiMode(tab.dataset.mode));
+    tab.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      let nextIndex = index;
+      if (event.key === "ArrowLeft") nextIndex = index === 0 ? tabs.length - 1 : index - 1;
+      if (event.key === "ArrowRight") nextIndex = index === tabs.length - 1 ? 0 : index + 1;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = tabs.length - 1;
+      activateUiMode(tabs[nextIndex].dataset.mode, true);
+    });
+  });
+  document.getElementById("stock-preset").addEventListener("change", event => {
+    activeUiState = selectStockPreset(activeUiState, event.currentTarget.value);
+    renderUi();
+  });
+  document.querySelectorAll("[data-panel] [data-field]").forEach(control => {
+    if (control.id === "stock-preset") return;
+    control.addEventListener(control.tagName === "INPUT" ? "input" : "change", () => {
+      const mode = control.closest("[data-panel]").dataset.panel;
+      activeUiState = setUiField(activeUiState, mode, control.dataset.field, control.value);
+      renderUi();
+    });
+  });
+  document.getElementById("measured-residual").addEventListener("input", event => {
+    activeUiState = { ...activeUiState, measuredResidual: event.currentTarget.value };
+    renderUi();
+  });
+  document.getElementById("treatment-point").addEventListener("change", event => {
+    activeUiState = { ...activeUiState, treatmentPoint: event.currentTarget.value };
+    renderUi();
+  });
+  renderUi();
+}
+
+const CAL_HYPO_UI = deepFreeze({
+  modes: UI_MODES,
+  createState: createUiState,
+  setField: setUiField,
+  selectMode: selectUiMode,
+  selectStockPreset,
+  changeUnitSystem: changeUiUnitSystem,
+  compareResidual: compareMeasuredResidual,
+  evaluate: evaluateUiState,
+  init: initCalHypoCalculator,
+});
+
+const CAL_HYPO_API = deepFreeze({
+  CAL_HYPO_CONTRACT,
+  volumeToLiters,
+  massToGrams,
+  stockRateToGPerLiter,
+  stockPreparationVolume,
+  stockStrengthToMgL,
+  injectionSettingToFraction,
+  calculateStockStrengthFromDrytec,
+  calculateStockPreparation,
+  calculateDirectPowder,
+  calculateDoseFromStock,
+  calculateStockUsage,
+  calculateInjectorOutput,
+  buildQuickReferenceRows,
+  buildDirectDoseReferenceRows,
+  formatMass,
+  formatLiquidVolume,
+  formatMilliliters,
+  formatPpm,
+  CAL_HYPO_UI,
+});
+
+if (typeof document !== "undefined") {
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initCalHypoCalculator);
+  else initCalHypoCalculator();
+}
+</script>
+</body>
+</html>
