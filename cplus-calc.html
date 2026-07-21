@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Front Row Ag · Component Plus Calculator</title>
+<!-- FRA print-chart typography. The interactive calculator keeps its system UI
+     font; these faces are used by the customer-ready PDF layout. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="preload" href="assets/feed-chart/logo-dark.png" as="image">
+<link rel="preload" href="assets/feed-chart/qr-moreinfo.png" as="image">
 <style>
   :root {
     --bg: #0d0d0d;
@@ -989,6 +996,174 @@
   @media print {
     #gate-overlay { display: none !important; }
   }
+
+  /* ══════════════════════════════════════════════════════════
+     COMPONENT PLUS — customer-ready two-page print system.
+     The layout mirrors the FRA 3-Part feed chart, while the
+     values, product lanes, validation state, and visual guides
+     are generated from the live C+ calculator configuration.
+     ══════════════════════════════════════════════════════════ */
+  #branded-print { display: none; }
+
+  @media print {
+    .container > *:not(#branded-print) { display: none !important; }
+    #branded-print { display: block !important; }
+
+    #branded-print {
+      --red: #ab3431;
+      --red-deep: #832a27;
+      --green: #4e703f;
+      --ink: #1c1c1c;
+      --muted: #676767;
+      --hair: #d6d2cc;
+      --grid: #bdb9b2;
+      --tint: #f4f2ee;
+      --ec-tint: #edf1e8;
+      --a: #4a8a00;
+      --b: #2266bb;
+      --bloom: #bb2020;
+      --phz: #b03050;
+      --bbloom: #6644aa;
+      --s1: 4px;
+      --s2: 8px;
+      --s3: 12px;
+      --s4: 18px;
+      --disp: "Oswald", "Arial Narrow", "Helvetica Neue", sans-serif;
+      --label: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+      font-family: "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      line-height: 1.35;
+    }
+    #branded-print * {
+      box-shadow: none !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .fc-page {
+      box-sizing: border-box;
+      width: 100%;
+      height: var(--print-page-height, 10.1in);
+      display: flex;
+      flex-direction: column;
+      page-break-after: always;
+      break-after: page;
+    }
+    .fc-page:last-child { page-break-after: auto; break-after: auto; }
+    .fc-page > * + * { margin-top: var(--s4); }
+    .fc-stack > * + * { margin-top: var(--s3); }
+
+    @supports (-webkit-touch-callout: none) {
+      #branded-print { --print-page-height: 9.6in; }
+    }
+
+    .fc-masthead { display: flex; align-items: center; gap: var(--s4); }
+    .fc-masthead__logo { height: 56px; width: auto; flex: none; }
+    .fc-masthead__titles { flex: 1; text-align: right; line-height: 1.04; }
+    .fc-masthead__main { font-family: var(--disp); font-weight: 700; font-size: 30px; color: var(--red); text-transform: uppercase; letter-spacing: 0.01em; }
+    .fc-masthead__sub { font-family: var(--disp); font-weight: 600; font-size: 16px; color: var(--ink); text-transform: uppercase; letter-spacing: 0.16em; margin-top: 2px; }
+    .fc-masthead__qr { flex: none; }
+    .fc-masthead__qr img { height: 58px; width: auto; display: block; }
+
+    .fc-unitband { display: flex; justify-content: space-between; align-items: center; background: var(--green); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.09em; padding: 5px 14px; border-radius: 3px; margin-top: var(--s2) !important; }
+    .fc-band { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 5px 14px; font-size: 10px; border-radius: 3px 14px 14px 3px; margin-bottom: var(--s2); }
+    .fc-h { color: var(--red); font-family: var(--label); font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 var(--s1); }
+
+    .fc-chartwrap { border: 1.5px solid #3a3a3a; border-radius: 6px; overflow: hidden; }
+    .fc-chart { border-collapse: collapse; width: 100%; }
+    .fc-chart td { border: 1px solid var(--grid); padding: 13px 6px; text-align: center; vertical-align: middle; }
+    .fc-chart tr td:first-child { border-left: none; }
+    .fc-chart tr td:last-child { border-right: none; }
+    .fc-chart tr:first-child td { border-top: none; }
+    .fc-chart tr:last-child td { border-bottom: none; }
+    .fc-chart__label { text-align: right !important; font-family: var(--label); font-weight: 700; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #575757; background: var(--tint); white-space: nowrap; padding-right: 10px !important; }
+    .fc-chart__label--a { color: var(--a); font-size: 11px; }
+    .fc-chart__label--b { color: var(--b); font-size: 11px; }
+    .fc-chart__label--bloom { color: var(--bloom); font-size: 11px; }
+    .fc-chart__label--phz { color: var(--phz); font-size: 11px; }
+    .fc-chart__label--bbloom { color: var(--bbloom); font-size: 11px; }
+    .fc-chart__phase { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 6px; border-color: var(--red-deep) !important; }
+    .fc-chart__recipe { font-family: var(--disp); font-weight: 600; font-size: 18px; }
+    .fc-chart__ec { font-family: var(--disp); font-weight: 600; font-size: 19px; background: var(--ec-tint); }
+    .fc-chart__val { font-family: var(--disp); font-weight: 600; font-size: 21px; }
+    .fc-chart__val--a { color: var(--a); }
+    .fc-chart__val--b { color: var(--b); }
+    .fc-chart__val--bloom { color: var(--bloom); }
+    .fc-chart__val--phz { color: var(--phz); }
+    .fc-chart__val--bbloom { color: var(--bbloom); }
+    .fc-sub { font-size: 8.5px; color: var(--muted); margin-top: 2px; }
+
+    .fc-caption { font-size: 9.5px; color: var(--muted); margin-top: 5px; }
+    .fc-caption--italic { font-style: italic; }
+    .fc-caption--warning { color: var(--phz); font-weight: 700; }
+    .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+    .fc-table { border-collapse: collapse; width: 100%; font-size: 10px; }
+    .fc-table th, .fc-table td { border: 1px solid var(--hair); padding: 4.5px 8px; text-align: left; vertical-align: top; }
+    .fc-table thead th { background: var(--tint); color: #3f3f3f; font-family: var(--label); font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: 0.05em; }
+    .fc-table tbody tr:nth-child(even) { background: #faf9f7; }
+    .fc-table .nowrap { white-space: nowrap; }
+    .fc-prose p { font-size: 10px; line-height: 1.5; margin: 0; }
+
+    .fc-table--rates { table-layout: fixed; }
+    .fc-table--rates th { white-space: nowrap; padding-left: 5px; padding-right: 5px; }
+    .fc-table--rates th, .fc-table--rates td { text-align: center; }
+    .fc-table--rates th:nth-child(2), .fc-table--rates td:nth-child(2) { text-align: left; }
+    .fc-table--rates th:nth-child(1) { width: 8%; }
+    .fc-table--rates th:nth-child(2) { width: 17%; }
+    .fc-table--rates th:nth-child(3) { width: 8%; }
+    .fc-table--rates th:nth-child(4) { width: 8%; }
+    .fc-table--rates th:nth-child(5) { width: 14%; }
+    .fc-table--rates th:nth-child(6) { width: 15%; }
+    .fc-table--rates th:nth-child(7) { width: 15%; }
+    .fc-table--rates th:nth-child(8) { width: 15%; }
+    .fc-table--rates .fc-pending { color: var(--red); font-weight: 700; font-size: 8px; text-transform: uppercase; }
+    .fc-valsteps ol { margin: 0; padding-left: 16px; }
+    .fc-valsteps li { font-size: 9.5px; line-height: 1.4; margin-bottom: 4px; }
+    .fc-valsteps li::marker { color: var(--red); font-weight: 700; font-family: var(--label); }
+
+    .fc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+    .fc-steps { border: 2px solid var(--red); border-radius: 10px; padding: var(--s3) var(--s4); }
+    .fc-steps ol { margin: 0; padding-left: 20px; }
+    .fc-steps li { font-size: 10.5px; margin-bottom: var(--s2); line-height: 1.4; }
+    .fc-steps li::marker { color: var(--red); font-weight: 700; font-family: var(--label); }
+    .fc-notes ul { margin: 0; padding-left: 16px; }
+    .fc-notes li { font-size: 10.5px; margin-bottom: var(--s2); line-height: 1.4; }
+
+    /* Code-native visual guide: no unit-specific copy is baked into an image. */
+    .fc-guide { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .fc-guide--stock { grid-template-columns: 0.85fr 1.3fr 0.85fr; }
+    .fc-guide__step { border: 1px solid var(--hair); border-top: 4px solid var(--red); border-radius: 5px; padding: 8px 9px; min-height: 112px; position: relative; background: #fff; }
+    .fc-guide__num { width: 22px; height: 22px; border-radius: 50%; background: var(--red); color: #fff; font-family: var(--disp); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+    .fc-guide__title { font-family: var(--label); color: var(--red-deep); text-transform: uppercase; font-weight: 800; font-size: 9px; letter-spacing: 0.04em; margin: 6px 0 3px; }
+    .fc-guide__copy { font-size: 9px; line-height: 1.35; color: #333; }
+    .fc-guide__tanks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 6px; }
+    .fc-guide__tanks--two { grid-template-columns: repeat(2, 1fr); }
+    .fc-tank { border: 1.5px solid #555; border-radius: 4px 4px 9px 9px; padding: 15px 4px 5px; min-height: 55px; text-align: center; position: relative; background: linear-gradient(to top, #e8f4f7 0 45%, #fff 45% 100%); }
+    .fc-tank::before { content: ""; position: absolute; top: -3px; left: 10%; right: 10%; height: 5px; border: 1.5px solid #555; border-radius: 50%; background: #fff; }
+    .fc-tank__name { font-family: var(--label); font-size: 7px; font-weight: 800; text-transform: uppercase; }
+    .fc-tank__mix { font-size: 7.5px; line-height: 1.25; margin-top: 2px; }
+    .fc-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 3px; }
+    .fc-dot--a { background: var(--a); }
+    .fc-dot--b { background: var(--b); }
+    .fc-dot--bloom { background: var(--bloom); }
+    .fc-dot--phz { background: var(--phz); }
+    .fc-arrow { color: var(--red); font-family: var(--disp); font-size: 18px; font-weight: 700; line-height: 1; margin: 2px 0; }
+
+    .fc-page--mix { --s4: 14px; page-break-before: always; break-before: page; }
+    .fc-page--mix .fc-grid { grid-template-columns: 2fr 1fr; }
+    .fc-page--mix .fc-steps li, .fc-page--mix .fc-notes li { margin-bottom: 5px; }
+    .fc-page--dense { --s4: 9px; }
+    .fc-page--dense .fc-steps { padding: 9px 14px; }
+    .fc-page--dense .fc-steps li,
+    .fc-page--dense .fc-notes li { font-size: 10px; margin-bottom: 4px; }
+    .fc-page--dense .fc-guide__step { min-height: 104px; padding-top: 7px; padding-bottom: 7px; }
+    .fc-page--dense .fc-table { font-size: 9px; }
+    .fc-page--dense .fc-table th,
+    .fc-page--dense .fc-table td { padding-top: 3px; padding-bottom: 3px; }
+    .fc-notesarea { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+    .fc-notesarea__lines { flex: 1; background: repeating-linear-gradient(to bottom, #fff 0, #fff 27px, var(--hair) 27px, var(--hair) 28px); }
+    .fc-foot { text-align: center; margin-top: auto; padding-top: var(--s2); border-top: 1px solid var(--hair); font-family: var(--label); font-weight: 600; font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  }
 </style>
 </head>
 <body class="gate-locked">
@@ -1212,7 +1387,7 @@
         Print / Save PDF
       </button>
     </div>
-    <p class="screen-only" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px; text-align:center;">Tip: Choose "Save as PDF" in the print dialog to download a clean one-page PDF.</p>
+    <p class="screen-only" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px; text-align:center;">Tip: Choose "Save as PDF" in the print dialog to download a clean two-page PDF.</p>
   </div>
 
   <!-- Supplemental Products Reference (collapsible) -->
@@ -1279,6 +1454,10 @@
   <div class="print-footer" style="display:none;">
     frontrowag.com · Generated by Front Row Ag Component Plus Calculator
   </div>
+
+  <!-- Dedicated customer-ready print output. Rebuilt from live calculator
+       state on every render and substituted for the interactive UI at print. -->
+  <div id="branded-print" aria-hidden="true"></div>
 
 </div>
 
@@ -1700,6 +1879,12 @@ const INSTRUCTIONS_2DOSER = [
   "Set both dosers to the same injection rate; confirm final solution EC/PPM."
 ];
 
+function getStockInstructions(is2Doser, usePhz) {
+  if (!is2Doser) return INSTRUCTIONS;
+  if (usePhz) return INSTRUCTIONS_2DOSER;
+  return INSTRUCTIONS_2DOSER.map(step => step.replace(", then PhosZyme", ""));
+}
+
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
@@ -1919,11 +2104,404 @@ function copyRichText(html, plain) {
   return copyToClipboard(plain);
 }
 
+// ═══════════════════════════════════════════════
+// SHARED FEED-ROW MODEL
+// Single source of truth for the on-screen table, copy summary,
+// and branded print chart. Keeping the dosage and EC objects
+// together prevents a print-only calculation path from drifting.
+// ═══════════════════════════════════════════════
+function computeFeedRows() {
+  const { method, unit, targetEC } = state;
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const names = LINE().names;
+  const rows = [];
+
+  rows.push({
+    label: names.partA, dotCls: "dot-a", valCls: "val-a",
+    cells: PHASES.map(phase => {
+      if (is2Doser && phase === "Veg") return null;
+      const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+      return calcDosage(phase, "partA", method, unit, effectiveEC);
+    })
+  });
+
+  if (is2Doser) {
+    rows.push({
+      label: usePhz ? "C+ + MKP + PhosZyme" : "C+ + MKP",
+      dotCls: "dot-bbloom",
+      valCls: "val-bbloom",
+      cells: PHASES.map(phase => {
+        if (phase === "Veg") return null;
+        const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+        const carrier = calcDosage(phase, "partB", method, unit, effectiveEC);
+        const phzEC = usePhz ? getPhzEcContribution(phase, targetEC[phase]) : 0;
+        return {
+          display: carrier.display,
+          dosage: carrier.dosage,
+          ec: carrier.ec + calcEcContribution(phase, "bloom", effectiveEC) + phzEC
+        };
+      })
+    });
+    return rows;
+  }
+
+  if (usePhz && state.application === "stock") {
+    rows.push({
+      label: LINE().phzComboLabel, dotCls: "dot-b", valCls: "val-b",
+      cells: PHASES.map(phase => {
+        const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+        const carrier = calcDosage(phase, "partB", method, unit, effectiveEC);
+        return {
+          display: carrier.display,
+          dosage: carrier.dosage,
+          ec: carrier.ec + getPhzEcContribution(phase, targetEC[phase])
+        };
+      })
+    });
+  } else {
+    rows.push({
+      label: names.partB, dotCls: "dot-b", valCls: "val-b",
+      cells: PHASES.map(phase => {
+        const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+        return calcDosage(phase, "partB", method, unit, effectiveEC);
+      })
+    });
+  }
+
+  if (usePhz && state.application === "direct") {
+    rows.push({
+      label: "PhosZyme", dotCls: "dot-phz", valCls: "val-phz",
+      cells: PHASES.map(phase => calcPhoszymeDosage(phase, method, unit, targetEC[phase]))
+    });
+  }
+
+  rows.push({
+    label: names.bloom, dotCls: "dot-bloom", valCls: "val-bloom",
+    cells: PHASES.map(phase => {
+      const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+      return calcDosage(phase, "bloom", method, unit, effectiveEC);
+    })
+  });
+  return rows;
+}
+
+// ═══════════════════════════════════════════════
+// BRANDED PRINT CHART
+// Customer-ready Component Plus output. The PDF uses the same
+// row model, stock calculations, and instructions as the live UI.
+// Its visual guides are HTML/CSS so units and doser modes remain
+// accurate instead of being baked into a static illustration.
+// ═══════════════════════════════════════════════
+const BP_ASSETS = {
+  qr: "assets/feed-chart/qr-moreinfo.png",
+  logo: "assets/feed-chart/logo-dark.png"
+};
+
+const BP_EC_CONSIDERATIONS = "Given the variance in facility infrastructure, cultivation methods, and cultivars, it's impossible to give a specific EC prescription that applies to all scenarios. Most facilities feed at 2.0–3.0 EC with Front Row Ag, and the Standard and High Strength feed charts reflect effective strategies in this range.";
+const BP_FEED_CHART_NOTES = "These feed charts are not a prescription, but examples of the general ranges and relationships among EC and recipes. Each facility and cultivation methodology will require customization. See EC Considerations.";
+const BP_HIGHER_LOWER = [
+  ["Smaller pots", "Larger pots"],
+  ["Frequent irrigation", "Infrequent irrigation"],
+  ["Consistent runoff", "Less runoff"],
+  ["Substrate monitoring", "No substrate monitoring"],
+  ["Higher PPFD", "Lower PPFD"],
+  ["Heavy-feeding cultivars", "Lower-feeding cultivars"],
+  ["Higher CO₂", "Lower CO₂"],
+  ["Tight environmental control", "Less environmental control"]
+];
+const BP_SI_VS_EC = [["< 2.3", 0.5], ["2.3–2.7", 0.375], ["2.7–3.1", 0.25], ["3.1–3.5", 0.125], ["> 3.5", 0]];
+const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
+
+function getSupplementRows(metric) {
+  const siRate = metric ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+  const phUpRate = `${metric ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2"} ${metric ? "g/L" : "g/gal"}`;
+  const bioFloHeavyRate = metric ? "8 mL/L" : "30 mL/gal";
+  const bioFloMaintenanceRate = metric ? "4 mL/L" : "15 mL/gal";
+  const triologicWeeklyRate = metric ? "0.25 mL/L" : "1 mL/gal";
+  const triologicTransplantRate = metric ? "0.5 mL/L" : "2 mL/gal";
+  return [
+    {
+      stateKey: "showSi", name: "Si", printName: "Front Row Si", color: "si", rate: siRate,
+      detail: `Foliar: ${siRate}, once weekly, veg through week 3 of flower.`,
+      notes: "Foliar, 1×/week, Veg through Wk 3 of flower."
+    },
+    {
+      stateKey: "showPhUp", name: "pH Up", printName: "Front Row pH Up", color: "phup", rate: phUpRate,
+      detail: `Target pH 5.5–6.0. As needed, ${phUpRate} max total. Always add last.`,
+      notes: "Target pH 5.5–6.0. Mix 5–15 minutes; always add last."
+    },
+    {
+      stateKey: "showBioFlo", name: "BioFlo", printName: "BioFlo", color: "bioflo", rate: `Heavy: ${bioFloHeavyRate}; Maint.: ${bioFloMaintenanceRate}`,
+      detail: `Line cleaner for biofilm removal. Heavy clean: ${bioFloHeavyRate}, soak 8–24 hrs. Maintenance: ${bioFloMaintenanceRate} every 1–2 weeks.`,
+      notes: "Line cleaner for biofilm removal. Heavy clean soak: 8–24 hrs; maintenance every 1–2 weeks."
+    },
+    {
+      stateKey: "showTriologic", name: "Triologic", printName: "Triologic", color: "triologic", rate: `Weekly: ${triologicWeeklyRate}; Transplant: ${triologicTransplantRate}`,
+      detail: `Microbial inoculant — amplifies mycorrhizal colonization. ${triologicWeeklyRate} weekly hand drench. Transplant: ${triologicTransplantRate}.`,
+      notes: "Microbial inoculant — amplifies mycorrhizal colonization."
+    }
+  ];
+}
+
+function getBrandedSiRateRows(metric) {
+  return BP_SI_VS_EC.map(([range, rate]) => [
+    range,
+    metric && rate ? (rate / CONSTANTS.L_per_gal).toFixed(2) : String(rate)
+  ]);
+}
+
+function getBrandedEcContributions(metric, usePhz) {
+  const scale = metric ? CONSTANTS.L_per_gal : 1;
+  const contributions = [
+    ["CaNO3", (ecPerGram().partA * scale).toFixed(3)],
+    ["Component Plus", (ecPerGram().partB * scale).toFixed(3)],
+    ["MKP", (ecPerGram().bloom * scale).toFixed(3)]
+  ];
+  if (usePhz) contributions.push(["PhosZyme", (ecPerGram().phoszyme * scale).toFixed(3)]);
+  return { header: `EC per ${metric ? "g/L" : "g/gal"}`, contributions };
+}
+
+function fcEscape(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[char]);
+}
+
+function fcFoot() {
+  return `<div class="fc-foot">Front Row Ag &middot; order@solsticeag.com &middot; +1 844-420-6883 &middot; frontrowag.com</div>`;
+}
+
+function fcMasthead(subtitle, withQr) {
+  return `<div class="fc-masthead">`
+    + `<img class="fc-masthead__logo" src="${BP_ASSETS.logo}" alt="Front Row Ag">`
+    + `<div class="fc-masthead__titles"><div class="fc-masthead__main">Component Plus</div><div class="fc-masthead__sub">${subtitle}</div></div>`
+    + (withQr ? `<div class="fc-masthead__qr"><img src="${BP_ASSETS.qr}" alt="More feed-chart information"></div>` : "")
+    + `</div>`;
+}
+
+function fcUnitband(left, right) {
+  return `<div class="fc-unitband"><span>${left}</span><span>${right}</span></div>`;
+}
+
+function fcBand(title) {
+  return `<div class="fc-band">${title}</div>`;
+}
+
+function fcH(title, body) {
+  return `<div><div class="fc-h">${title}</div>${body}</div>`;
+}
+
+function fcTwoColTable(h1, h2, pairs) {
+  const body = pairs.map(pair => `<tr><td>${pair[0]}</td><td>${pair[1]}</td></tr>`).join("");
+  return `<table class="fc-table"><thead><tr><th>${h1}</th><th>${h2}</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function fcStockNotes(is2Doser, usePhz) {
+  const notes = [
+    "Use C+ stock concentrates within 14 days of mixing. Store in opaque containers at room temperature, off the ground, and away from direct or artificial light.",
+    is2Doser
+      ? "Keep CaNO3 alone in Tank 1. In Tank 2, dissolve Component Plus fully before adding MKP."
+      : "Keep CaNO3, Component Plus, and MKP in separate stock tanks.",
+    "Prepare stocks with RO water and validate each tank before use.",
+    "Avoid mixing strong oxidizers, especially peroxides, into stock tanks.",
+    "Set injectors to the listed rates, then confirm final solution EC/PPM at the emitter."
+  ];
+  if (usePhz) {
+    notes.splice(2, 0, is2Doser
+      ? "Add PhosZyme after Component Plus and before MKP in Tank 2—never to the CaNO3 tank."
+      : "Add PhosZyme to the Component Plus tank—never to the CaNO3 tank.");
+  }
+  return notes;
+}
+
+function fcDtrNotes(usePhz) {
+  const notes = [
+    "When using Front Row Si, reservoirs should be fully used within 48 hours.",
+    "Without Front Row Si, reservoirs should be used within 5–7 days.",
+    "Avoid strong oxidizers, especially peroxides, in reservoirs. If running sterile, use the current FRA calcium-hypochlorite protocol.",
+    "All feed charts assume RO water. Account for any starting-water EC in the total EC."
+  ];
+  if (usePhz) notes.push("Add PhosZyme with Component Plus, after CaNO3 and before MKP.");
+  return notes;
+}
+
+function fcTank(name, contents) {
+  return `<div class="fc-tank"><div class="fc-tank__name">${name}</div><div class="fc-tank__mix">${contents}</div></div>`;
+}
+
+function fcStockVisual(stock) {
+  const usePhz = state.usePhoszyme;
+  const is2Doser = state.doserMode === "2";
+  const rows = Object.fromEntries(stock.rows.map(row => [row.key, row]));
+  const product = (row, dot) => `<span class="fc-dot fc-dot--${dot}"></span>${row.part} ${row.conc} ${stock.concUnit}`;
+  let tanks;
+  if (is2Doser) {
+    const tank2 = [
+      product(rows.partB, "b"),
+      usePhz ? `<span class="fc-dot fc-dot--phz"></span>PhosZyme ${rows.phz.conc} ${stock.concUnit}` : "",
+      product(rows.bloom, "bloom")
+    ].filter(Boolean).join(`<div class="fc-arrow">↓</div>`);
+    tanks = `<div class="fc-guide__tanks fc-guide__tanks--two">`
+      + fcTank("Tank 1", product(rows.partA, "a"))
+      + fcTank("Tank 2", tank2)
+      + `</div>`;
+  } else {
+    const cplus = product(rows.partB, "b")
+      + (usePhz ? `<div class="fc-arrow">+</div><span class="fc-dot fc-dot--phz"></span>PhosZyme ${rows.phz.conc} ${stock.concUnit}` : "");
+    tanks = `<div class="fc-guide__tanks">`
+      + fcTank("Tank 1", product(rows.partA, "a"))
+      + fcTank("Tank 2", cplus)
+      + fcTank("Tank 3", product(rows.bloom, "bloom"))
+      + `</div>`;
+  }
+
+  return `<div class="fc-guide fc-guide--stock">`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">1</span><div class="fc-guide__title">Fill halfway</div><div class="fc-guide__copy">Add RO water to 50% of the final stock-tank volume and begin agitation.</div></div>`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">2</span><div class="fc-guide__title">Add products in order</div>${tanks}</div>`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">3</span><div class="fc-guide__title">Top off and mix</div><div class="fc-guide__copy">Bring each tank to final volume while agitating, then mix for 10 more minutes and validate.</div></div>`
+    + `</div>`;
+}
+
+function fcDtrVisual() {
+  const usePhz = state.usePhoszyme;
+  const order = [
+    "pH Down, if needed",
+    `<span class="fc-dot fc-dot--a"></span>CaNO3`,
+    `<span class="fc-dot fc-dot--b"></span>Component Plus${usePhz ? ` + <span class="fc-dot fc-dot--phz"></span>PhosZyme` : ""}`,
+    `<span class="fc-dot fc-dot--bloom"></span>MKP`
+  ].join(`<div class="fc-arrow">↓</div>`);
+  const finalPh = state.showPhUp ? "Add pH Up last, if needed. Validate pH and EC/PPM." : "Make the final pH adjustment, then validate pH and EC/PPM.";
+  return `<div class="fc-guide">`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">1</span><div class="fc-guide__title">Fill to 90%</div><div class="fc-guide__copy">Start with RO water at about 90% of the intended final volume. Begin agitation.</div></div>`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">2</span><div class="fc-guide__title">Add in order</div><div class="fc-guide__copy">${order}</div></div>`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">3</span><div class="fc-guide__title">Top off to target</div><div class="fc-guide__copy">After everything dissolves, slowly top off with water until the target EC/PPM is reached.</div></div>`
+    + `<div class="fc-guide__step"><span class="fc-guide__num">4</span><div class="fc-guide__title">Finish and validate</div><div class="fc-guide__copy">${finalPh}</div></div>`
+    + `</div>`;
+}
+
+function fcStockTable(stock) {
+  const usePhz = state.usePhoszyme;
+  const is2Doser = state.doserMode === "2";
+  const tank2Keys = ["partB", ...(usePhz ? ["phz"] : []), "bloom"];
+  let rows = "";
+
+  stock.rows.forEach(row => {
+    if (!usePhz && row.key === "phz") return;
+    const subItem = row.key === "phz" || (is2Doser && row.key === "bloom");
+    const tank = subItem ? "" : row.tank;
+    const part = subItem ? `+ ${row.part}` : row.part;
+    let validation = `<b>${row.valEC}</b>`;
+    if (usePhz && !is2Doser && row.key === "partB") validation = `<span class="fc-pending">Pending</span>`;
+    if (usePhz && !is2Doser && row.key === "phz") validation = "–";
+    rows += `<tr><td>${tank}</td><td>${part}</td><td>${row.vol}</td><td>${row.wt}</td><td>${row.conc}</td><td>${row.sample}</td><td>${row.ecG}</td><td>${validation}</td></tr>`;
+  });
+
+  if (is2Doser) {
+    const total = stock.rows.filter(row => tank2Keys.includes(row.key)).reduce((sum, row) => sum + row.valEC, 0).toFixed(2);
+    const validation = usePhz ? `<span class="fc-pending">Pending</span>` : `<b>${total}</b>`;
+    rows += `<tr><td></td><td><b>Tank 2 Total</b></td><td></td><td></td><td></td><td></td><td></td><td>${validation}</td></tr>`;
+  }
+
+  const table = `<table class="fc-table fc-table--rates"><thead><tr><th>Tank</th><th>Product</th><th>${stock.volUnit}</th><th>${stock.wtUnit}</th><th>${stock.concUnit}</th><th>${stock.sampleUnit}</th><th>${stock.ecUnit}</th><th>Valid. EC</th></tr></thead><tbody>${rows}</tbody></table>`;
+  const metric = isMetric(state.unit);
+  const validationSteps = metric
+    ? ["Draw 400 mL from the stock tank.", "Mix the sample into 20 L of RO water.", "Measure EC and compare with the table.", "Adjust and revalidate before use."]
+    : ["Draw 250 mL from the stock tank.", "Mix the sample into 5 gal of RO water.", "Measure EC and compare with the table.", "Adjust and revalidate before use."];
+  const pending = usePhz
+    ? `<div class="fc-caption fc-caption--italic">The PhosZyme-containing tank validation target is calculated but pending physical confirmation. Confirm final solution EC/PPM at the emitter.</div>`
+    : "";
+  const validation = fcH("Validation", `<div class="fc-valsteps"><ol>${validationSteps.map(step => `<li>${step}</li>`).join("")}</ol></div>${pending}`);
+  const title = is2Doser ? "2-Doser Stock Concentrate Rates" : "1-1-1 · 3-Doser Stock Concentrate Rates";
+  return `<div class="fc-grid"><div>${fcBand(title)}${table}</div>${validation}</div>`;
+}
+
+function renderBrandedPrint() {
+  const target = document.getElementById("branded-print");
+  if (!target) return;
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const unit = state.unit;
+  const facility = fcEscape(document.getElementById("facility-input").value.trim());
+  const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const stockConfig = is2Doser ? "2-Doser Stock Concentrate" : "1-1-1 · 3-Doser Stock Concentrate";
+  const leftConfig = isStock
+    ? `${stockConfig} &middot; ${formatStockTankVolume(state.stockTankVolumeGal)} gal tanks &middot; ${unit}`
+    : `Direct to Reservoir &middot; ${unit}`;
+  const rightConfig = facility ? `${facility} &middot; ${date}` : date;
+  const stock = isStock ? calcStockTanks(state.method, state.unit) : null;
+
+  const bodyRows = computeFeedRows().map(row => {
+    const suffix = row.valCls.replace("val-", "");
+    const cells = row.cells.map(cell => {
+      if (!cell || cell.dosage === 0 || cell.display === "–") return `<td>–</td>`;
+      return `<td><span class="fc-chart__val fc-chart__val--${suffix}">${cell.display}</span><div class="fc-sub">${cell.ec.toFixed(2)} EC</div></td>`;
+    }).join("");
+    return `<tr><td class="fc-chart__label fc-chart__label--${suffix}">${row.label}</td>${cells}</tr>`;
+  }).join("");
+
+  const recipes = PHASES.map(phase => is2Doser && phase === "Veg" ? "Veg" : getPhaseRecipeName(phase));
+  const chart = `<div class="fc-chartwrap"><table class="fc-chart">`
+    + `<tr><td class="fc-chart__phase" style="text-align:right;padding-right:10px;">Phase</td>${BP_PHASE_LABELS.map(label => `<td class="fc-chart__phase">${label}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Recipe</td>${recipes.map(recipe => `<td class="fc-chart__recipe">${recipe}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Target EC</td>${PHASES.map(phase => `<td class="fc-chart__ec">${formatTargetEC(state.targetEC[phase])}</td>`).join("")}</tr>`
+    + bodyRows
+    + `</table></div>`;
+
+  const twoDoserNote = is2Doser
+    ? `<div class="fc-caption fc-caption--italic">Veg / Moms requires a separate CaNO3 + C+ feed; the combined C+ + MKP tank cannot make a zero-MKP Veg recipe.</div>`
+    : "";
+  const metric = isMetric(unit);
+  const { header: ecContributionHeader, contributions: ecContributions } = getBrandedEcContributions(metric, usePhz);
+  const unreachablePhzPhases = PHASES.filter(phase =>
+    !isStock && usePhz && !getPhzAdjustment(phase, state.targetEC[phase]).achievable
+  );
+  const phzTargetWarning = unreachablePhzPhases.length
+    ? `<div class="fc-caption fc-caption--warning">${FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachablePhzPhases)}</div>`
+    : "";
+
+  const pageOne = `<div class="fc-page">`
+    + fcMasthead("Feed Chart", true)
+    + fcUnitband(leftConfig, rightConfig)
+    + `<div>${chart}${phzTargetWarning}<div class="fc-caption">All product values in ${unit}. Sub-values show each product's EC contribution.</div>${twoDoserNote}<div class="fc-caption fc-caption--italic">${BP_FEED_CHART_NOTES}</div></div>`
+    + `<div class="fc-grid">`
+    + fcH("Higher EC vs Lower EC", fcTwoColTable("Higher EC Conditions", "Lower EC Conditions", BP_HIGHER_LOWER))
+    + `<div class="fc-stack">${fcH("EC Considerations", `<div class="fc-prose"><p>${BP_EC_CONSIDERATIONS}</p></div>`)}${isStock ? "" : fcH("EC Contribution", fcTwoColTable("Product", ecContributionHeader, ecContributions))}</div>`
+    + `</div>`
+    + `<div class="fc-notesarea"><div class="fc-h">Notes</div><div class="fc-notesarea__lines"></div></div>`
+    + fcFoot()
+    + `</div>`;
+
+  let steps;
+  if (isStock) {
+    steps = getStockInstructions(is2Doser, usePhz);
+    steps = steps.map(step => step.startsWith("Validate and adjust") ? step.replace(/\.$/, "") + " (see Validation, below)." : step);
+  } else {
+    steps = getReservoirInstructions(usePhz, state.showPhUp, isMetric(unit));
+  }
+  const notes = isStock ? fcStockNotes(is2Doser, usePhz) : fcDtrNotes(usePhz);
+  const guide = isStock ? fcStockVisual(stock) : fcDtrVisual();
+  const additives = `<table class="fc-table"><thead><tr><th>Additive</th><th>Rate</th><th>Notes</th></tr></thead><tbody>${getSupplementRows(metric).map(item => `<tr><td class="nowrap">${item.printName}</td><td class="nowrap">${item.rate}</td><td>${item.notes}</td></tr>`).join("")}</tbody></table>`;
+
+  const densePage = !isStock || (is2Doser && usePhz) ? " fc-page--dense" : "";
+  const pageTwo = `<div class="fc-page fc-page--mix${densePage}">`
+    + fcMasthead("Mixing Instructions", false)
+    + fcUnitband(leftConfig, rightConfig)
+    + `<div class="fc-cols">${fcH("Mixing Instructions", `<div class="fc-steps"><ol>${steps.map(step => `<li>${step}</li>`).join("")}</ol></div>`)}${fcH(isStock ? "Stock Concentrate Notes" : "Direct to Reservoir Notes", `<div class="fc-notes"><ul>${notes.map(note => `<li>${note}</li>`).join("")}</ul></div>`)}</div>`
+    + `<div>${fcBand(isStock ? "Visual Guide: Prepare the Stock Concentrate" : "Visual Guide: Direct to Reservoir")}${guide}</div>`
+    + (isStock ? fcStockTable(stock) : "")
+    + `<div class="fc-grid">${fcH("Additive Usage Rates", additives)}${fcH("Si Rate by Feed EC", fcTwoColTable("Feed EC", `Si (${metric ? "mL/L" : "mL/gal"})`, getBrandedSiRateRows(metric)))}</div>`
+    + fcFoot()
+    + `</div>`;
+
+  target.innerHTML = pageOne + pageTwo;
+}
+
 function render() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
-  const names = LINE().names;
   const unreachablePhzPhases = PHASES.filter(phase =>
     state.application === "direct"
       && state.usePhoszyme
@@ -1959,85 +2537,20 @@ function render() {
     }
   });
 
-  // Feed table body
-  let html = "";
+  // Feed table body — generated from the same row model as the branded PDF.
   const usePhz = state.usePhoszyme;
-
-  // Helper: render a single feed cell
-  function feedCell(display, dosage, ec, cls) {
-    if (dosage === 0 || display === "–") return `<td><span class="dash">–</span></td>`;
-    return `<td><div class="val ${cls}">${display}</div><div class="ec-sub">${ec.toFixed(2)} EC</div></td>`;
-  }
-
-  // Part A / CaNO3 row (always present)
-  html += `<tr><td><span class="component-dot dot-a"></span>${names.partA}</td>`;
-  PHASES.forEach(phase => {
-    if (is2Doser && phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
-    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-    const r = calcDosage(phase, "partA", method, unit, eEC);
-    html += feedCell(r.display, r.dosage, r.ec, "val-a");
-  });
-  html += "</tr>";
-
-  if (is2Doser) {
-    // ── 2-Doser: combined C+ + MKP row (+ PhosZyme if included) ──
-    const label = usePhz ? "C+ + MKP + PhosZyme" : "C+ + MKP";
-    html += `<tr><td><span class="component-dot dot-bbloom"></span>${label}</td>`;
-    PHASES.forEach(phase => {
-      if (phase === "Veg") { html += `<td><span class="dash">–</span></td>`; return; }
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const resultB = calcDosage(phase, "partB", method, unit, eEC);
-      const bloomEc = calcEcContribution(phase, "bloom", eEC);
-      let combinedEc = resultB.ec + bloomEc;
-      if (usePhz) {
-        combinedEc += getPhzEcContribution(phase, targetEC[phase]);
+  let html = "";
+  computeFeedRows().forEach(row => {
+    html += `<tr><td><span class="component-dot ${row.dotCls}"></span>${row.label}</td>`;
+    row.cells.forEach(cell => {
+      if (!cell || cell.dosage === 0 || cell.display === "–") {
+        html += `<td><span class="dash">–</span></td>`;
+      } else {
+        html += `<td><div class="val ${row.valCls}">${cell.display}</div><div class="ec-sub">${cell.ec.toFixed(2)} EC</div></td>`;
       }
-      html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-bbloom");
     });
     html += "</tr>";
-
-  } else {
-    // ── 3-Doser ──
-    if (usePhz && state.application === "stock") {
-      // Carrier + PhosZyme combined row (B + PhZ / C+ + PhZ)
-      html += `<tr><td><span class="component-dot dot-b"></span>${LINE().phzComboLabel}</td>`;
-      PHASES.forEach(phase => {
-        const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-        const resultB = calcDosage(phase, "partB", method, unit, eEC);
-        const phzEc = getPhzEcContribution(phase, targetEC[phase]);
-        const combinedEc = resultB.ec + phzEc;
-        html += feedCell(resultB.display, resultB.dosage, combinedEc, "val-b");
-      });
-      html += "</tr>";
-    } else {
-      // Standard carrier row (no PhosZyme)
-      html += `<tr><td><span class="component-dot dot-b"></span>${names.partB}</td>`;
-      PHASES.forEach(phase => {
-        const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-        const r = calcDosage(phase, "partB", method, unit, eEC);
-        html += feedCell(r.display, r.dosage, r.ec, "val-b");
-      });
-      html += "</tr>";
-    }
-
-    if (usePhz && state.application === "direct") {
-      html += `<tr><td><span class="component-dot dot-phz"></span>PhosZyme</td>`;
-      PHASES.forEach(phase => {
-        const r = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
-        html += feedCell(r.display, r.dosage, r.ec, "val-phz");
-      });
-      html += "</tr>";
-    }
-
-    // Bloom / MKP row (always in 3-doser)
-    html += `<tr><td><span class="component-dot dot-bloom"></span>${names.bloom}</td>`;
-    PHASES.forEach(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const r = calcDosage(phase, "bloom", method, unit, eEC);
-      html += feedCell(r.display, r.dosage, r.ec, "val-bloom");
-    });
-    html += "</tr>";
-  }
+  });
 
   document.getElementById("feed-body").innerHTML = html;
   document.getElementById("twodoser-veg-note").hidden = !is2Doser;
@@ -2144,12 +2657,7 @@ function render() {
 
     // Mixing instructions (stock mode)
     const instrList = document.getElementById("instructions-list");
-    let instrSet;
-    if (is2Doser) {
-      instrSet = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
-    } else {
-      instrSet = INSTRUCTIONS;
-    }
+    const instrSet = getStockInstructions(is2Doser, usePhz);
     instrList.innerHTML = instrSet.map(s => `<li>${s}</li>`).join("");
   } else {
     // Mixing instructions (reservoir mode) — updates on every render for toggle/unit changes
@@ -2291,48 +2799,13 @@ function toggleSupplements() {
 }
 
 function renderSupplements() {
-  const met = isMetric(state.unit);
-  let html = "";
-
-  // Si — shown when toggled on
-  if (state.showSi) {
-    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
-    html += `<div class="supp-item">
-      <div class="supp-name" style="color:var(--si)">Si</div>
-      <div class="supp-detail">Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.</div>
-    </div>`;
-  }
-
-  // pH Up — shown when toggled on
-  if (state.showPhUp) {
-    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
-    const phupUnit = met ? "g/L" : "g/gal";
-    html += `<div class="supp-item">
-      <div class="supp-name" style="color:var(--phup)">pH Up</div>
-      <div class="supp-detail">Target pH 5.5–6.0. As needed, ${maxRate} ${phupUnit} max total. Always add last.</div>
-    </div>`;
-  }
-
-  // BioFlo — shown when toggled on
-  if (state.showBioFlo) {
-    const heavyRate = met ? "8 mL/L" : "30 mL/gal";
-    const maintRate = met ? "4 mL/L" : "15 mL/gal";
-    html += `<div class="supp-item">
-      <div class="supp-name" style="color:var(--bioflo)">BioFlo</div>
-      <div class="supp-detail">Line cleaner for biofilm removal. Heavy clean: ${heavyRate}, soak 8–24 hrs. Maintenance: ${maintRate} every 1–2 weeks.</div>
-    </div>`;
-  }
-
-  // Triologic — shown when toggled on
-  if (state.showTriologic) {
-    const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
-    const txRate = met ? "0.5 mL/L" : "2 mL/gal";
-    html += `<div class="supp-item">
-      <div class="supp-name" style="color:var(--triologic)">Triologic</div>
-      <div class="supp-detail">Microbial inoculant — amplifies mycorrhizal colonization. ${stdRate} weekly hand drench. Transplant: ${txRate}.</div>
-    </div>`;
-  }
-
+  const html = getSupplementRows(isMetric(state.unit))
+    .filter(item => state[item.stateKey])
+    .map(item => `<div class="supp-item">
+      <div class="supp-name" style="color:var(--${item.color})">${item.name}</div>
+      <div class="supp-detail">${item.detail}</div>
+    </div>`)
+    .join("");
   document.getElementById("supp-list").innerHTML = html;
 }
 
@@ -2564,8 +3037,11 @@ function shareLink() {
 }
 
 function printPage() {
+  renderBrandedPrint();
   window.print();
 }
+
+window.addEventListener("beforeprint", renderBrandedPrint);
 
 function copySummary() {
   const { method, unit, targetEC } = state;
@@ -2760,12 +3236,7 @@ function copySummary() {
     html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">Component Plus stock concentrate: use within 14 days of mixing. Store in opaque containers at room temperature, away from direct or artificial light.</p>`;
 
     // ── Mixing Instructions ──
-    let instrSet;
-    if (is2Doser) {
-      instrSet = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
-    } else {
-      instrSet = INSTRUCTIONS;
-    }
+    const instrSet = getStockInstructions(is2Doser, usePhz);
     html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
     html += `<ol style="font-size:14px;padding-left:20px;">`;
     instrSet.forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);

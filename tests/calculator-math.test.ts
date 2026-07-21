@@ -72,6 +72,8 @@ function createElementStub(id = "") {
 
 function createRuntime<T>(html: string, exportsExpression: string, search = "", includeInit = false) {
   let replacedUrl = "";
+  const windowListeners = new Map<string, Array<() => void>>();
+  const printSnapshots: string[] = [];
   const elements = new Map<string, Record<string, any>>();
   const body = createElementStub("body");
   const documentStub = {
@@ -88,7 +90,12 @@ function createRuntime<T>(html: string, exportsExpression: string, search = "", 
   const windowStub = {
     location: { search, pathname: "/", href: `https://tools.frontrowag.com/${search}` },
     isSecureContext: false,
-    print() {},
+    print() { printSnapshots.push(documentStub.getElementById("branded-print").innerHTML); },
+    addEventListener(type: string, listener: () => void) {
+      const listeners = windowListeners.get(type) || [];
+      listeners.push(listener);
+      windowListeners.set(type, listeners);
+    },
   };
   const historyStub = {
     replaceState(_state: unknown, _title: string, url: string) { replacedUrl = url; },
@@ -107,6 +114,8 @@ function createRuntime<T>(html: string, exportsExpression: string, search = "", 
     api: factory(windowStub, historyStub, documentStub, localStorageStub, {}),
     getReplacedUrl: () => replacedUrl,
     getElement: (id: string) => documentStub.getElementById(id),
+    dispatchWindowEvent: (type: string) => windowListeners.get(type)?.forEach(listener => listener()),
+    getPrintSnapshots: () => printSnapshots,
   };
 }
 
@@ -143,9 +152,11 @@ function createFeedRuntime(html: string) {
     CORE_LINE: any;
     handleApplicationChange: (application: string) => void;
     render: () => void;
+    renderBrandedPrint: () => void;
+    printPage: () => void;
     formatTargetEC: (value: number) => string;
     FRA_NUTRITION_CORE: any;
-  }>(html, "{ state, getPhzAdjustedTargetEC, getPhzAdjustment, calcPhoszymeDosage, calcDosage, LINES, CORE_LINE, handleApplicationChange, render, formatTargetEC, FRA_NUTRITION_CORE }");
+  }>(html, "{ state, getPhzAdjustedTargetEC, getPhzAdjustment, calcPhoszymeDosage, calcDosage, LINES, CORE_LINE, handleApplicationChange, render, renderBrandedPrint, printPage, formatTargetEC, FRA_NUTRITION_CORE }");
 }
 
 function createCplusFeedRuntime(search = "") {
@@ -433,6 +444,138 @@ describe("shared nutrition core contract", () => {
     const printHtml = runtime.getElement("branded-print").innerHTML;
     expect(printHtml).toContain('<td class="fc-chart__ec">3.0</td>');
     expect(printHtml).toContain('<td class="fc-chart__ec">2.0</td>');
+  });
+
+  test("Component Plus renders a branded two-page print chart from live calculator state", () => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    runtime.api.state.targetEC = { Veg: 3, Stretch: 2.7, Stack: 2.2, Swell: 2, Ripen: 1.4 };
+    runtime.api.render();
+    expect(runtime.getElement("branded-print").innerHTML).toBe("");
+    runtime.api.renderBrandedPrint();
+
+    const printHtml = runtime.getElement("branded-print").innerHTML;
+    expect(cplusCalculator).toContain('id="branded-print"');
+    expect(cplusCalculator).toContain("family=Oswald");
+    expect(cplusCalculator).toContain('<link rel="preload" href="assets/feed-chart/logo-dark.png" as="image">');
+    expect(cplusCalculator).toContain('<link rel="preload" href="assets/feed-chart/qr-moreinfo.png" as="image">');
+    expect(cplusCalculator).toContain("clean two-page PDF");
+    expect(cplusCalculator).toContain('addEventListener("beforeprint", renderBrandedPrint)');
+    expect(printHtml.match(/class="fc-page/g)?.length).toBe(2);
+    expect(printHtml).toContain("Component Plus");
+    expect(printHtml).toContain("Feed Chart");
+    expect(printHtml).toContain("Mixing Instructions");
+    expect(printHtml).toContain('<td class="fc-chart__ec">3.0</td>');
+    expect(printHtml).toContain('<td class="fc-chart__ec">2.0</td>');
+    expect(printHtml).toContain("50 gal tanks");
+    expect(printHtml).toContain("Use C+ stock concentrates within 14 days");
+  });
+
+  test("Component Plus branded print retains the direct PhosZyme unattainable-target warning", () => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    runtime.api.state.application = "direct";
+    runtime.api.state.unit = "g/gal";
+    runtime.api.state.usePhoszyme = true;
+    runtime.api.state.targetEC.Swell = 0.05;
+    runtime.api.renderBrandedPrint();
+
+    expect(runtime.getElement("branded-print").innerHTML).toContain(
+      runtime.api.FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(["Swell"]),
+    );
+  });
+
+  test("Component Plus branded print uses metric supplement and EC-contribution units", () => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    runtime.api.state.application = "direct";
+    runtime.api.state.unit = "g/L";
+    runtime.api.renderBrandedPrint();
+
+    const printHtml = runtime.getElement("branded-print").innerHTML;
+    expect(printHtml).toContain("0.13–0.53 mL/L");
+    expect(printHtml).toContain("0.05 g/L");
+    expect(printHtml).toContain("Heavy: 8 mL/L; Maint.: 4 mL/L");
+    expect(printHtml).toContain("Weekly: 0.25 mL/L; Transplant: 0.5 mL/L");
+    expect(printHtml).toContain("Si (mL/L)");
+    expect(printHtml).toContain("EC per g/L");
+    expect(printHtml).not.toContain("EC per g/gal");
+  });
+
+  test("Component Plus branded print builds beforeprint and printPage output before printing", () => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    expect(runtime.getElement("branded-print").innerHTML).toBe("");
+
+    runtime.dispatchWindowEvent("beforeprint");
+    expect(runtime.getElement("branded-print").innerHTML).toContain("Feed Chart");
+
+    runtime.api.printPage();
+    expect(runtime.getPrintSnapshots()).toHaveLength(1);
+    expect(runtime.getPrintSnapshots()[0]).toContain("Feed Chart");
+  });
+
+  test.each([
+    [
+      "3-doser stock with PhosZyme",
+      { application: "stock", doserMode: "3", method: "1-1-1", usePhoszyme: true, unit: "mL/gal" },
+      ["1-1-1 · 3-Doser Stock Concentrate", "C+ + PhosZyme", "PhosZyme*", "Tank 3"],
+    ],
+    [
+      "2-doser stock without PhosZyme",
+      { application: "stock", doserMode: "2", method: "2-doser", usePhoszyme: false, unit: "mL/gal" },
+      ["2-Doser Stock Concentrate", "C+ + MKP", "Tank 2 Total"],
+    ],
+    [
+      "metric stock validation",
+      { application: "stock", doserMode: "3", method: "1-1-1", usePhoszyme: false, unit: "mL/L" },
+      ["Draw 400 mL", "20 L of RO water", "mL / 20L", "EC / g / L"],
+    ],
+    [
+      "direct-to-reservoir pH Up",
+      { application: "direct", doserMode: "3", method: "1-1-1", usePhoszyme: false, showPhUp: true, unit: "g/L" },
+      ["Direct to Reservoir", "Add pH Up last, if needed", "pH Up last"],
+    ],
+  ])("Component Plus branded print covers %s", (_label, settings, expected) => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    Object.assign(runtime.api.state, settings);
+    runtime.api.renderBrandedPrint();
+    const printHtml = runtime.getElement("branded-print").innerHTML;
+    expected.forEach(text => expect(printHtml).toContain(text));
+  });
+
+  test("Component Plus branded print adapts its stock visual and validation table to two-doser PhosZyme mode", () => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    runtime.api.state.doserMode = "2";
+    runtime.api.state.method = "2-doser";
+    runtime.api.state.usePhoszyme = true;
+    runtime.api.state.stockTankVolumeGal = 100;
+    runtime.api.render();
+    runtime.api.renderBrandedPrint();
+
+    const printHtml = runtime.getElement("branded-print").innerHTML;
+    expect(printHtml).toContain("2-Doser Stock Concentrate");
+    expect(printHtml).toContain("100 gal tanks");
+    expect(printHtml).toContain("Tank 1");
+    expect(printHtml).toContain("Tank 2");
+    expect(printHtml).toContain("CaNO3");
+    expect(printHtml).toContain("Component Plus");
+    expect(printHtml).toContain("MKP");
+    expect(printHtml).toContain("pending physical confirmation");
+    expect(printHtml).not.toContain(">2.54<");
+  });
+
+  test("Component Plus branded DTR print uses the current 90-percent fill procedure", () => {
+    const runtime = createFeedRuntime(cplusCalculator);
+    runtime.api.state.application = "direct";
+    runtime.api.state.unit = "g/L";
+    runtime.api.state.usePhoszyme = true;
+    runtime.api.render();
+    runtime.api.renderBrandedPrint();
+
+    const printHtml = runtime.getElement("branded-print").innerHTML;
+    expect(printHtml).toContain("Direct to Reservoir");
+    expect(printHtml).toContain("90%");
+    expect(printHtml).toContain("top off");
+    expect(printHtml).toContain("g/L");
+    expect(printHtml).not.toContain("Fill RTU batch tank to final target volume");
+    expect(cplusCalculator).not.toContain("dtr-step-art.png");
   });
 
   test("Component Plus stock-tank volume scales stock weights and round-trips through share links", () => {
