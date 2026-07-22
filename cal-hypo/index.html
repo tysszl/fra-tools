@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="robots" content="noindex, nofollow">
   <link rel="canonical" href="https://tools.frontrowag.com/cal-hypo/">
   <title>Front Row Ag · Calcium Hypochlorite Reference</title>
   <style>
@@ -239,8 +238,8 @@
                 </div>
                 <div class="field">
                   <label for="prep-volume">Final stock volume</label>
-                  <div class="control-pair"><input id="prep-volume" inputmode="decimal" min="5" max="50" data-field="prepVolume" aria-describedby="prep-volume-note prep-volume-error"><span class="fixed-unit" id="prep-volume-unit">US gal</span></div>
-                  <p class="field-note" id="prep-volume-note">Normal range: 5–50 US gal.</p>
+                  <div class="control-pair"><input id="prep-volume" inputmode="decimal" min="1" max="50" data-field="prepVolume" aria-describedby="prep-volume-note prep-volume-error"><span class="fixed-unit" id="prep-volume-unit">US gal</span></div>
+                  <p class="field-note" id="prep-volume-note">Normal range: 1–50 US gal.</p>
                   <p class="field-error" id="prep-volume-error"></p>
                 </div>
               </div>
@@ -354,8 +353,9 @@
             </div>
             <p class="verification-message" id="verification-message">Enter a measured residual to compare it with the 0.5–2 ppm range.</p>
             <section class="restricted-state" id="restricted-state" hidden>
-              <h3>FRA technical approval required</h3>
-              <p>Using calcium hypochlorite in a fertilizer stock concentrate is case-specific. Confirm the product, concentration, injection order, and operating conditions with FRA technical before use.</p>
+              <h3>Fertilizer stock concentrate guidance</h3>
+              <p>Keep the applied chlorine dose at or below 2 ppm based on the final fertilizer-stock volume. Add it only after roughly 90% of the final water volume is already in the tank, then complete filling and mixing. This avoids a brief localized overconcentration.</p>
+              <p>The 2 ppm limit applies to the finished fertilizer stock concentrate. It does not limit the concentration of a separate DryTec dosing stock.</p>
             </section>
           </div>
         </details>
@@ -393,7 +393,7 @@ const CAL_HYPO_CONTRACT = deepFreeze({
   },
   domains: {
     stockRateGPerLiter: { min: 0.001, max: 30 },
-    stockPreparationGallons: { min: 5, max: 50 },
+    stockPreparationGallons: { min: 1, max: 50 },
     targetPpm: { min: 0.01, max: 100 },
     volumeLiters: { min: 0.001, max: 1000000 },
     customInjectionPercent: { min: 0.001, max: 100 },
@@ -824,11 +824,11 @@ function renderUi() {
   setText("direct-volume-unit", activeUiState.unitSystem === "us" ? "US gal" : "L");
   setText("stock-rate-note", stockValues.preset === "custom" ? "Custom stock rate." : "Edit this value to use a custom stock rate.");
   const prepVolume = document.getElementById("prep-volume");
-  const minPrepVolume = activeUiState.unitSystem === "us" ? 5 : 5 * CAL_HYPO_CONTRACT.units.litersPerUsGallon;
+  const minPrepVolume = activeUiState.unitSystem === "us" ? 1 : CAL_HYPO_CONTRACT.units.litersPerUsGallon;
   const maxPrepVolume = activeUiState.unitSystem === "us" ? 50 : 50 * CAL_HYPO_CONTRACT.units.litersPerUsGallon;
   prepVolume.min = String(rounded(minPrepVolume, 2));
   prepVolume.max = String(rounded(maxPrepVolume, 2));
-  setText("prep-volume-note", activeUiState.unitSystem === "us" ? "Normal range: 5–50 US gal." : "Normal range: 18.93–189.27 L.");
+  setText("prep-volume-note", activeUiState.unitSystem === "us" ? "Normal range: 1–50 US gal." : "Normal range: 3.79–189.27 L.");
   const outputSelect = document.getElementById("stock-output-unit");
   outputSelect.options[0].textContent = activeUiState.unitSystem === "us" ? "mL per gallon" : "mL per liter";
 

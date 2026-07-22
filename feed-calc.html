@@ -91,6 +91,7 @@
   }
   .toggle-btn:focus-visible,
   .btn:focus-visible,
+  .configuration-toggle:focus-visible,
   .theme-toggle:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -119,6 +120,14 @@
     margin-bottom: 28px;
     padding-top: 8px;
   }
+  .header-logo {
+    display: block;
+    width: 190px;
+    height: auto;
+    margin: 0 auto 12px;
+    filter: invert(1);
+  }
+  body.light .header-logo { filter: none; }
   .header h1 {
     font-size: 1.5rem;
     font-weight: 700;
@@ -146,6 +155,37 @@
     font-weight: 600;
     margin-bottom: 16px;
   }
+
+  .configuration-toggle {
+    appearance: none;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .configuration-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .configuration-toggle-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .configuration-toggle-note {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 400;
+  }
+  .configuration-body { padding-top: 20px; }
 
   /* ── Toggle Buttons ───────────────────── */
   .toggle-group {
@@ -1095,13 +1135,21 @@
 
   <!-- Header -->
   <div class="header">
+    <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="header-logo">
     <h1><span>Front Row Ag</span> · Feed Calculator</h1>
     <p>Stock concentrate mixing rates & feed schedules</p>
   </div>
 
   <!-- Configuration Card -->
   <div class="card" id="config-card">
-    <h2>Configuration</h2>
+    <button type="button" class="configuration-toggle" id="configuration-toggle" aria-expanded="false" aria-controls="configuration-body" onclick="toggleConfiguration()">
+      <span class="configuration-toggle-text">
+        <span class="configuration-toggle-title">Customize your feed chart</span>
+        <span class="configuration-toggle-note">Facility, application, dosers, units, EC, and supplements</span>
+      </span>
+      <span class="chevron" id="configuration-chevron" aria-hidden="true">▾</span>
+    </button>
+    <div class="configuration-body" id="configuration-body" hidden>
 
     <div class="facility-row">
       <input type="text" class="facility-input" id="facility-input" placeholder="Facility name (optional — appears on printed chart)" oninput="updateFacility()">
@@ -1218,6 +1266,7 @@
       </div>
     </div>
 
+    </div>
   </div>
 
   <!-- Feed Schedule Card -->
@@ -2570,6 +2619,15 @@ function handleApplicationChange(val) {
 function toggleInstructions() {
   document.getElementById("instructions-body").classList.toggle("open");
   document.getElementById("chevron").classList.toggle("open");
+}
+
+function toggleConfiguration() {
+  const body = document.getElementById("configuration-body");
+  const toggle = document.getElementById("configuration-toggle");
+  const opening = body.hidden;
+  body.hidden = !opening;
+  toggle.setAttribute("aria-expanded", String(opening));
+  document.getElementById("configuration-chevron").classList.toggle("open", opening);
 }
 
 function toggleSupplements() {

@@ -106,12 +106,12 @@ describe("calcium hypochlorite calculation contract", () => {
     expect(metric.productMassGrams).toBeCloseTo(14.529445, 6);
   });
 
-  test("keeps normal stock preparation volumes between 5 and 50 gallons", () => {
-    expect(api.stockPreparationVolume(5, "us-gal").valid).toBe(true);
+  test("keeps normal stock preparation volumes between 1 and 50 gallons", () => {
+    expect(api.stockPreparationVolume(1, "us-gal").valid).toBe(true);
     expect(api.stockPreparationVolume(50, "us-gal").valid).toBe(true);
-    expect(api.stockPreparationVolume(4.99, "us-gal")).toMatchObject({ valid: false, code: "stock-preparation-range" });
+    expect(api.stockPreparationVolume(0.99, "us-gal")).toMatchObject({ valid: false, code: "stock-preparation-range" });
     expect(api.stockPreparationVolume(50.01, "us-gal")).toMatchObject({ valid: false, code: "stock-preparation-range" });
-    expect(api.stockPreparationVolume(18.92705892, "l").valid).toBe(true);
+    expect(api.stockPreparationVolume(3.785411784, "l").valid).toBe(true);
   });
 
   test("direct powder retains the independent 100 gal / 2 ppm vector", () => {
@@ -260,10 +260,16 @@ describe("sales-team workflow", () => {
     expect(api.CAL_HYPO_UI.compareResidual("bad").status).toBe("invalid");
   });
 
-  test("keeps the internal page unlisted and states the theoretical-dose distinction", () => {
-    expect(calculator).toContain('<meta name="robots" content="noindex, nofollow">');
+  test("publishes the page and states the theoretical-dose distinction", () => {
+    expect(calculator).not.toContain('<meta name="robots" content="noindex, nofollow">');
     expect(calculator).toContain("Calculated chlorine values are theoretical applied doses");
     expect(calculator).toContain("0.5–2 ppm");
+  });
+
+  test("includes the approved fertilizer-stock guidance", () => {
+    expect(calculator).toContain("at or below 2 ppm based on the final fertilizer-stock volume");
+    expect(calculator).toContain("roughly 90% of the final water volume");
+    expect(calculator).toContain("does not limit the concentration of a separate DryTec dosing stock");
   });
 
   test("does not expose available-chlorine chemistry as a sales-team input", () => {

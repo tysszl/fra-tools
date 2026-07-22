@@ -6,12 +6,27 @@ import { tmpdir } from "node:os";
 const costCalculator = readFileSync(new URL("../cost-calc.html", import.meta.url), "utf8");
 const usageCalculator = readFileSync(new URL("../usage-calc.html", import.meta.url), "utf8");
 const feedCalculator = readFileSync(new URL("../feed-calc.html", import.meta.url), "utf8");
+const toolsIndex = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const cplusCalculator = readFileSync(new URL("../cplus-calc.html", import.meta.url), "utf8");
 const nutritionCoreSource = readFileSync(new URL("../src/nutrition-core.js", import.meta.url), "utf8").trimEnd();
 const nutritionCore = new Function(`${nutritionCoreSource}\nreturn FRA_NUTRITION_CORE;`)() as any;
 
 const GENERATED_START = "// BEGIN GENERATED: nutrition-core";
 const GENERATED_END = "// END GENERATED: nutrition-core";
+
+describe("public calculator navigation", () => {
+  test("lists the calcium hypochlorite calculator", () => {
+    expect(toolsIndex).toContain('href="cal-hypo/"');
+    expect(toolsIndex).toContain("Calcium Hypochlorite Calculator");
+  });
+
+  test("brands the feed calculator and collapses customization by default", () => {
+    expect(feedCalculator).toContain('src="assets/feed-chart/logo-dark.png"');
+    expect(feedCalculator).toContain("Customize your feed chart");
+    expect(feedCalculator).toContain('id="configuration-body" hidden');
+    expect(feedCalculator).toContain('aria-expanded="false"');
+  });
+});
 
 function getEmbeddedCore(html: string) {
   const pattern = new RegExp(`${GENERATED_START}\\n([\\s\\S]*?)\\n${GENERATED_END}`);
