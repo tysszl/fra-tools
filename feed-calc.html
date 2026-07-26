@@ -120,14 +120,19 @@
     margin-bottom: 28px;
     padding-top: 8px;
   }
+  /* AIDEV-NOTE: Two logo files, one per theme — never a CSS filter. invert(1) turns the
+     black wordmark white but also flips the red droplet to cyan, and the droplet is
+     always red. logo-dark.png = black wordmark for light mode; logo-white.png = white
+     wordmark for dark mode. Both keep the red droplet. */
   .header-logo {
     display: block;
     width: 190px;
     height: auto;
     margin: 0 auto 12px;
-    filter: invert(1);
   }
-  body.light .header-logo { filter: none; }
+  .header-logo--light { display: none; }
+  body.light .header-logo--dark { display: none; }
+  body.light .header-logo--light { display: block; }
   .header h1 {
     font-size: 1.5rem;
     font-weight: 700;
@@ -1132,7 +1137,7 @@
   <div class="print-header" id="print-header">
     <div class="print-header-row">
       <div class="print-header-left">
-        <img src="logo.png" alt="Front Row Ag" class="print-logo">
+        <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="print-logo">
       </div>
       <div class="print-header-right">
         <div class="print-title">Feed Calculator</div>
@@ -1144,7 +1149,8 @@
 
   <!-- Header -->
   <div class="header">
-    <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="header-logo">
+    <img src="assets/feed-chart/logo-white.png" alt="Front Row Ag" class="header-logo header-logo--dark">
+    <img src="assets/feed-chart/logo-dark.png" alt="" aria-hidden="true" class="header-logo header-logo--light">
     <h1><span>Front Row Ag</span> · Feed Calculator</h1>
     <p>Stock concentrate mixing rates & feed schedules</p>
   </div>
