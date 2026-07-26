@@ -120,14 +120,19 @@
     margin-bottom: 28px;
     padding-top: 8px;
   }
+  /* AIDEV-NOTE: Two logo files, one per theme — never a CSS filter. invert(1) turns the
+     black wordmark white but also flips the red droplet to cyan, and the droplet is
+     always red. logo-dark.png = black wordmark for light mode; logo-white.png = white
+     wordmark for dark mode. Both keep the red droplet. */
   .header-logo {
     display: block;
     width: 190px;
     height: auto;
     margin: 0 auto 12px;
-    filter: invert(1);
   }
-  body.light .header-logo { filter: none; }
+  .header-logo--light { display: none; }
+  body.light .header-logo--dark { display: none; }
+  body.light .header-logo--light { display: block; }
   .header h1 {
     font-size: 1.5rem;
     font-weight: 700;
@@ -248,6 +253,15 @@
   }
   .facility-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
   .facility-input:focus { outline: none; border-color: var(--accent); }
+
+  .stock-volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+  .stock-volume-input { width: 120px; }
 
   /* ── Feed Schedule Table ──────────────── */
   .feed-table {
@@ -1123,7 +1137,7 @@
   <div class="print-header" id="print-header">
     <div class="print-header-row">
       <div class="print-header-left">
-        <img src="logo.png" alt="Front Row Ag" class="print-logo">
+        <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="print-logo">
       </div>
       <div class="print-header-right">
         <div class="print-title">Feed Calculator</div>
@@ -1135,7 +1149,8 @@
 
   <!-- Header -->
   <div class="header">
-    <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="header-logo">
+    <img src="assets/feed-chart/logo-white.png" alt="Front Row Ag" class="header-logo header-logo--dark">
+    <img src="assets/feed-chart/logo-dark.png" alt="" aria-hidden="true" class="header-logo header-logo--light">
     <h1><span>Front Row Ag</span> · Feed Calculator</h1>
     <p>Stock concentrate mixing rates & feed schedules</p>
   </div>
@@ -1171,6 +1186,7 @@
     </div>
 
     <div id="method-section">
+      <div id="method-block">
       <div class="config-spacer"></div>
       <div class="section-label-row">
         <div class="section-label">Mixing Method</div>
@@ -1186,6 +1202,7 @@
           <p><strong>1:1:1</strong> means everything is mixed at 1 pound per gallon — 50 pounds of each part into 50-gallon stock tanks. This is a lower concentration than 3:2:2 and is used by facilities that prefer a uniform weight ratio. Injection rates will differ between parts since each contributes a different share of the total EC.</p>
         </div>
       </div>
+      </div>
       <div class="config-spacer"></div>
       <div class="section-label-row">
         <div class="section-label">Dosers</div>
@@ -1198,8 +1215,19 @@
       <div class="info-drawer" id="doser-drawer">
         <div class="info-drawer-content">
           <p><strong>3-Doser:</strong> Three separate stock tanks — Part A, Part B, and Bloom each get their own injector. This is the standard setup and allows full flexibility with per-phase recipe adjustments.</p>
-          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. Locks all phases to the Swell recipe since the B-to-Bloom ratio is fixed in a single tank. The two tanks are balanced to run within ~1 mL/gal of each other, so in practice set both dosers to the same injection rate and confirm with EC/PPM validation.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. A combined tank fixes the Part B–to–Bloom ratio, so all flower phases run the Swell recipe, and the tank is mixed at that ratio rather than 1:1. Tank 1 is the same Part A tank as the standard 3-2-2 build. <strong>The two tanks run at different injection rates</strong> — set each doser to the rate shown in its own row, then confirm with EC/PPM validation.</p>
         </div>
+      </div>
+
+      <div id="stock-volume-block">
+        <div class="config-spacer"></div>
+        <div class="section-label">Stock Tank Size</div>
+        <div class="stock-volume-row">
+          <input type="number" class="facility-input stock-volume-input" id="stock-volume-input" min="10" max="100000" step="0.1" value="50" oninput="handleStockTankVolumeInput(this.value)" onchange="handleStockTankVolumeChange(this.value)">
+          <span>gal per stock tank</span>
+        </div>
+        <p class="config-note" id="stock-volume-derived"></p>
+        <p class="config-note">Applied to both stock tanks. The 50 gal default fits a standard 55-gallon barrel. Tank 2 is the more dilute tank and runs at a higher injection rate, so it empties roughly 1.7x faster than Tank 1 — size up or plan refills accordingly.</p>
       </div>
     </div>
 
@@ -1241,7 +1269,7 @@
       </div>
     </div>
     </div>
-    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode locks every phase to the Swell recipe — the combined tank fixes the B-to-Bloom ratio — so the recipe schedule options are hidden.</p>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode locks every phase to the Swell recipe — the combined tank is weighed to Swell's Part B–to–Bloom ratio and can't be re-split per phase — so the recipe schedule options are hidden.</p>
     <p class="config-note" id="phz-target-warning" hidden style="color:#b03050"></p>
 
     <div class="config-spacer"></div>
@@ -1307,7 +1335,7 @@
       Veg / Moms is not served in 2-doser: a combined B + Bloom tank can't deliver a zero-Bloom Veg recipe. Run veg / moms on a separate Part A + Part B feed.
     </p>
     <p id="twodoser-rate-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:6px; font-style:italic;">
-      Set both dosers to the same injection rate — Part A and the combined B + Bloom tank are balanced to run within ~1 mL/gal of each other. Confirm with EC/PPM validation.
+      The two tanks run at different injection rates — set each doser to the rate shown in its own row above. Tank 2 is the more dilute tank and runs faster. Confirm with EC/PPM validation.
     </p>
     <div class="btn-row">
       <button class="btn" id="btn-copy" onclick="copySummary()">
@@ -1666,6 +1694,18 @@ const FRA_NUTRITION_CORE = (() => {
 // additions, Tyler Jun 10) → worst case ~0.41 at high-strength Veg, a deliberate ~2%
 // allowance at that one brief phase; every other recipe lands well under 0.4. DTR mode
 // is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
+// ── 2-doser Tank 2 charge ────────────────────────────────────────────────────
+// Bloom is the fixed anchor at 50 lb per 50 gal — 2 whole 25-lb bags, and 1.00 lb/gal is
+// the same concentration the standard 1-1-1 build uses. Part B is the only dial: it sets
+// how close the combined tank sits to the Swell recipe, which needs Bloom:PartB = 85:48
+// by weight. 28 lb gives 1.7857, within 0.84%.
+//
+// Everything downstream derives from these three numbers — stock rates, both injection
+// rates, validation ECs, the chart, and the print output.
+const TWO_DOSER_TANK_GAL = 50;
+const TWO_DOSER_BLOOM_LB = 50;
+const TWO_DOSER_PART_B_LB = 28;
+
 const NUTRITION_LINE_ID = "3part";
 const CORE_LINE = FRA_NUTRITION_CORE.getRoleLine(NUTRITION_LINE_ID);
 const CONSTANTS = {
@@ -1691,15 +1731,33 @@ const LINES = {
     ecPerGram: CORE_LINE.ecPerGram,
     recipes: CORE_LINE.recipes,
     recipeNames: CORE_LINE.recipeNames,
+    // AIDEV-NOTE: "2-doser" is its own standardized build, not a variant of 3-2-2 — the
+    // same pattern cplus-calc.html uses. Tank 1 holds Part A alone; Tank 2 holds Part B and
+    // Bloom together, so the tank's Bloom:PartB weight ratio IS the recipe and cannot be
+    // re-split per phase. Swell requires 85:48 = 1.7708 by weight (0.325/0.200 over
+    // 0.234/0.255 — an exact rational).
+    //
+    // The two tanks intentionally run at DIFFERENT injection rates. Tank 1 is identical to
+    // the standard 3-2-2 Part A tank (1.50 lb/gal, validation 2.75, 8.01 mL/gal per 1.0 EC),
+    // which leaves Tank 2 free to be dilute: Bloom at its standard 1.00 lb/gal puts the
+    // combined tank near 187 g/L, below the C+ two-product tank and below the densest single
+    // tank this line specs. Both tanks stay inside the 0.2-2.0% injector band across the
+    // whole chart. Requiring one shared rate instead would force Tank 2 past 300 g/L.
     stockRates: {
       "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
       "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
-      "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 }
+      "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 },
+      "2-doser": {
+        partA: 1.50,
+        partB: TWO_DOSER_PART_B_LB / TWO_DOSER_TANK_GAL,
+        bloom: TWO_DOSER_BLOOM_LB / TWO_DOSER_TANK_GAL
+      }
     },
     tankVolumes: {
       "4-3-3": { tankA: 53.5, tankB: 60 },
       "3-2-2": { tankA: 50, tankB: 50 },
-      "1-1-1": { tankA: 50, tankB: 50 }
+      "1-1-1": { tankA: 50, tankB: 50 },
+      "2-doser": { tankA: TWO_DOSER_TANK_GAL, tankB: TWO_DOSER_TANK_GAL }
     },
     defaultMethod: "3-2-2",
     schedules: {
@@ -1763,6 +1821,17 @@ const VALID_PRESETS = ["high", "standard", "custom"];
 const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
+const VALID_METHODS = ["4-3-3", "3-2-2", "1-1-1"];
+
+// 2-doser stock tank sizing. Tank 1 holds Part A, Tank 2 holds Part B + Bloom and is
+// filled 5% higher so both tanks land on the same injection rate at whole-bag-friendly
+// Part A and Part B weights. Defaults fit a standard 55-gal barrel.
+const DEFAULT_STOCK_TANK_VOLUME_GAL = 50;
+// Both 2-doser tanks are the same size. The build gets its correctness from the
+// CHARGE in Tank 2, not from tank geometry — volume only scales capacity.
+const TANK2_VOLUME_FACTOR = 1.0;
+const MIN_STOCK_TANK_VOLUME_GAL = 10;
+const MAX_STOCK_TANK_VOLUME_GAL = 100000;
 
 const INSTRUCTIONS = [
   "Start with clean stock tanks marked at target volume.",
@@ -1799,10 +1868,10 @@ function getReservoirInstructions(usePhz, usePhUp, met) {
 const INSTRUCTIONS_2DOSER = [
   "Start with two clean stock tanks marked at target volume.",
   "Add RO water to 50% of target volume in each tank; begin agitating.",
-  "Tank 1: Add Part A over 5 minutes while agitating. Tank 2: Add Part B, then Bloom, then PhosZyme over 5 minutes while agitating.",
+  "Tank 1: Add Part A over 5 minutes while agitating. Tank 2: Add Part B, then PhosZyme, then Bloom over 5 minutes while agitating — Bloom is the largest addition and dissolves slowest.",
   "Add RO water to target volume in each tank; mix for 10 more minutes.",
   "Validate and adjust each stock tank as necessary.",
-  "Set both dosers to the same injection rate; confirm final solution EC/PPM."
+  "Set each doser to its own injection rate from the chart; confirm final solution EC/PPM."
 ];
 
 // ═══════════════════════════════════════════════
@@ -1814,6 +1883,10 @@ let state = {
   application: "stock",
   method: "3-2-2",
   doserMode: "3",
+  // 2-doser only: stock tank volume in gallons, applied to both tanks.
+  // 3-doser keeps the fixed per-method tankVolumes above.
+  stockTankVolumeGal: DEFAULT_STOCK_TANK_VOLUME_GAL,
+  lastThreeDoserMethod: "3-2-2",
   usePhoszyme: false,
   showSi: false,
   showPhUp: false,
@@ -1836,6 +1909,65 @@ let state = {
 
 function isMetric(unit) {
   return unit === "g/L" || unit === "mL/L";
+}
+
+// "3-2-2" / "1-1-1" in 3-doser; the 2-doser build has no mixing-method choice, so it
+// labels itself. Keeps state.method === "2-doser" from printing as "2-doser 2-Doser".
+// Bloom:Part B by weight as the tank is actually charged. This is the recipe the
+// combined tank can physically deliver, and it is fixed for the whole flower cycle.
+function tankBloomToPartBRatio() {
+  const rates = LINE().stockRates[state.method];
+  return rates.bloom / rates.partB;
+}
+
+// The effective target EC to hand the Part B dosing math so that Part B AND the Bloom
+// riding with it sum to the tank's combined share of the real target EC.
+function twoDoserTankTargetEc(phase, targetEc) {
+  const recipe = getRecipe(phase);
+  const share = recipe.partB + recipe.bloom;
+  if (!(share > 0) || !(recipe.partB > 0)) return targetEc;
+  const ecPerGramB = ecPerGram().partB + ecPerGram().bloom * tankBloomToPartBRatio();
+  return targetEc * share * ecPerGram().partB / (recipe.partB * ecPerGramB);
+}
+
+// AIDEV-NOTE: 2-doser prints mL/gal to one decimal. Whole-mL rounding is fine at the
+// 3-doser rates but not here: Tank 1 at Ripen is 14.4 mL/gal, and rounding that to 14
+// costs 2.9% of its EC, with Tank 2 rounding the same direction on top. One decimal keeps
+// the rate a grower actually dials consistent with the EC printed beside it (worst case
+// 0.2%). Other units already carry enough precision.
+function twoDoserRateDisplay(role, targetEc, phase, unit, fallback) {
+  if (unit !== "mL/gal") return fallback;
+  const recipe = getRecipe(phase);
+  const conc = getStockConc(state.method, role);
+  if (!(conc > 0) || !(recipe[role] > 0)) return fallback;
+  const gramsPerGallon = targetEc * recipe[role] / ecPerGram()[role];
+  return (gramsPerGallon / conc * UNIT_FACTORS["mL/gal"]).toFixed(1);
+}
+
+function stockConfigLabel() {
+  return state.doserMode === "2" ? "2-Doser" : state.method;
+}
+
+function normalizeStockTankVolume(value) {
+  const parsed = Number(value);
+  // AIDEV-NOTE: 10 gal floor. Tank charges print to 0.1 lb, so below ~10 gal that rounding
+  // distorts the Bloom:PartB ratio the whole build depends on (at 1 gal, Part B's 0.56 lb
+  // charge prints as 0.6 and a customer following the table mixes 1.667 instead of 1.786).
+  if (!Number.isFinite(parsed) || parsed < MIN_STOCK_TANK_VOLUME_GAL) return DEFAULT_STOCK_TANK_VOLUME_GAL;
+  return Math.round(Math.min(parsed, MAX_STOCK_TANK_VOLUME_GAL) * 10) / 10;
+}
+
+function formatStockTankVolume(value) {
+  const normalized = normalizeStockTankVolume(value);
+  return Number.isInteger(normalized) ? String(normalized) : normalized.toFixed(1);
+}
+
+// 3-doser keeps the fixed per-method tank volumes; 2-doser scales both tanks off the
+// user's Tank 1 volume, holding concentrations — and therefore injection rates — constant.
+function getTankVolumes(method) {
+  if (state.doserMode !== "2") return LINE().tankVolumes[method];
+  const tankA = normalizeStockTankVolume(state.stockTankVolumeGal);
+  return { tankA, tankB: Math.round(tankA * TANK2_VOLUME_FACTOR * 10) / 10 };
 }
 
 function getStockConc(method, component) {
@@ -1929,7 +2061,7 @@ function calcSiRate(ec) {
 
 function calcStockTanks(method, unit) {
   const met = isMetric(unit);
-  const vols = LINE().tankVolumes[method];
+  const vols = getTankVolumes(method);
   const rates = LINE().stockRates[method];
   const names = LINE().stockNames;
 
@@ -2033,7 +2165,8 @@ function computeFeedRows() {
       if (is2Doser && phase === "Veg") return null;
       const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       const r = calcDosage(phase, "partA", method, unit, eEC);
-      return { display: r.display, dosage: r.dosage, ec: r.ec };
+      const display = is2Doser ? twoDoserRateDisplay("partA", eEC, phase, unit, r.display) : r.display;
+      return { display, dosage: r.dosage, ec: r.ec };
     })
   });
 
@@ -2043,10 +2176,23 @@ function computeFeedRows() {
       cells: PHASES.map(phase => {
         if (phase === "Veg") return null;
         const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-        const resultB = calcDosage(phase, "partB", method, unit, eEC);
-        let combinedEc = resultB.ec + calcEcContribution(phase, "bloom", eEC);
+        // AIDEV-NOTE: One tank, one rate, two products. The rate is set so the TANK
+        // delivers its combined share of target EC — NOT so Part B hits its own recipe
+        // share. Those coincide only when the tanked Bloom:B ratio is exactly the
+        // recipe's; with whole-pound rounding it isn't, and dosing off Part B alone
+        // would let Bloom drag total EC off target (at the 25-lb build, +4.2%).
+        // Bloom's EC likewise comes from what the tank delivers, never from its recipe
+        // share. Mixing those two views — a rate from one and an EC from the other —
+        // makes the chart describe a tank that isn't the one being mixed.
+        const t2EC = twoDoserTankTargetEc(phase, eEC);
+        const resultB = calcDosage(phase, "partB", method, unit, t2EC);
+        const gramsB = (t2EC * getRecipe(phase).partB) / ecPerGram().partB;
+        const partBEc = gramsB * ecPerGram().partB;
+        const bloomEc = gramsB * tankBloomToPartBRatio() * ecPerGram().bloom;
+        let combinedEc = partBEc + bloomEc;
         if (usePhz) combinedEc += getPhzEcContribution(phase, targetEC[phase]);
-        return { display: resultB.display, dosage: resultB.dosage, ec: combinedEc };
+        const display = twoDoserRateDisplay("partB", t2EC, phase, unit, resultB.display);
+        return { display, dosage: resultB.dosage, ec: combinedEc };
       })
     });
   } else {
@@ -2117,12 +2263,21 @@ const BP_DTR_NOTES = [
   "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
   "If using PhosZyme, add with Part B."
 ];
+// AIDEV-NOTE: 2-doser combines Part B and Bloom in Tank 2, so the "each part in its own
+// tank" wording is wrong there. Both variants validate stock EC identically.
 const BP_STOCK_NOTES = [
   "Mix each part into its own stock tank; validate stock EC before use and adjust as necessary.",
   "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
   "If using PhosZyme, mix it into the Part B stock tank — never with Part A.",
   "Avoid mixing strong oxidizers, especially peroxides, into stock tanks.",
   "Set injectors to the listed rates, then confirm final solution EC/PPM at the emitter."
+];
+const BP_STOCK_NOTES_2DOSER = [
+  "Tank 1 holds Part A alone. Tank 2 holds Part B and Bloom together — mix Part B first, then Bloom. Validate each stock tank's EC before use and adjust as necessary.",
+  "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
+  "If using PhosZyme, mix it into Tank 2 after Part B and before Bloom — never with Part A.",
+  "Avoid mixing strong oxidizers, especially peroxides, into stock tanks.",
+  "The two tanks run at different injection rates. Set each doser to the rate on its own row, then confirm final solution EC/PPM at the emitter."
 ];
 const BP_EC_CONSIDERATIONS = "Given the variance in facility infrastructure, cultivation methods, and cultivars, it's impossible to give a specific EC prescription that applies to all scenarios. Most facilities feed at 2.0–3.0 EC with Front Row Ag, and our \"Standard\" and \"High Strength\" feed charts reflect effective feeding strategies in this range.";
 const BP_FEED_CHART_NOTES = "These feed charts are not a prescription, but an example of the general ranges and relationship of EC and recipes that can be used. Each facility and cultivation methodology will require customization of EC values. See \"EC Considerations.\"";
@@ -2208,7 +2363,7 @@ function fcStockTable() {
   const valBlock = fcH("Validation (Step 4)",
     `<div class="fc-valsteps"><ol>${valSteps.map(s => `<li>${s}</li>`).join("")}</ol></div>`
     + (usePhz ? `<div class="fc-caption">PhosZyme in the Part B tank raises that tank's validation EC.</div>` : ""));
-  return `<div class="fc-grid fc-grid--rates"><div>${fcBand(`${state.method}${is2Doser ? " &middot; 2-Doser" : ""} Stock Concentrate Rates`)}${table}</div>${valBlock}</div>`;
+  return `<div class="fc-grid fc-grid--rates"><div>${fcBand(`${stockConfigLabel()} Stock Concentrate Rates`)}${table}</div>${valBlock}</div>`;
 }
 
 function renderBrandedPrint() {
@@ -2221,12 +2376,14 @@ function renderBrandedPrint() {
   const facility = document.getElementById("facility-input").value.trim();
   const artImg = isStock ? BP_ASSETS.stockArt : BP_ASSETS.dtrArt;
   const artTitle = isStock ? "Visual Guide: How to Make Stock Concentrate" : "Visual Guide: Mixing Step-by-Step";
-  const notes = isStock ? BP_STOCK_NOTES : BP_DTR_NOTES;
+  const notes = isStock
+    ? (state.doserMode === "2" ? BP_STOCK_NOTES_2DOSER : BP_STOCK_NOTES)
+    : BP_DTR_NOTES;
   const notesTitle = isStock ? "Stock Concentrate Notes" : "Direct to Reservoir Notes";
 
   // Shared title lockup + unit band (identical system on both pages)
   const mainTitle = isStock ? "Stock Concentrate" : "Direct to Reservoir";
-  const bandLeft = `USA &middot; ${unit}${isStock ? ` &middot; ${state.method}${is2Doser ? " &middot; 2-Doser" : ""}` : ""}`;
+  const bandLeft = `USA &middot; ${unit}${isStock ? ` &middot; ${stockConfigLabel()}` : ""}`;
   const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   const bandRight = facility ? `${facility} &middot; ${dateStr}` : dateStr;
 
@@ -2341,6 +2498,7 @@ function render() {
   document.getElementById("unit-badge").textContent = unit === "ratio" ? "ratio" : unit;
 
   syncRecipeScheduleControls();
+  syncStockConfigControls();
 
   // EC displays
   PHASES.forEach(p => {
@@ -2389,7 +2547,7 @@ function render() {
   // Stock tank table (only when stock concentrate)
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    const titlePrefix = stockConfigLabel();
     document.getElementById("stock-title").textContent = `${titlePrefix} Stock Concentrate Rates`;
     document.getElementById("vol-header").textContent = stock.volUnit;
     document.getElementById("wt-header").textContent = stock.wtUnit;
@@ -2496,8 +2654,9 @@ function render() {
   // Print config line
   const printParts = [LINE().label];
   if (isStock) {
-    printParts.push(`${method} Stock Concentrate`);
-    printParts.push(is2Doser ? "2-Doser" : "3-Doser");
+    printParts.push(`${stockConfigLabel()} Stock Concentrate`);
+    if (is2Doser) printParts.push(`${formatStockTankVolume(getTankVolumes(method).tankA)} / ${formatStockTankVolume(getTankVolumes(method).tankB)} gal tanks`);
+    else printParts.push("3-Doser");
   } else {
     printParts.push("Direct to Reservoir");
   }
@@ -2571,8 +2730,27 @@ function applyApplicationState() {
   // Reset doser mode when switching to direct
   if (!isStock && state.doserMode === "2") {
     state.doserMode = "3";
+    state.method = state.lastThreeDoserMethod;
     restoreThreeDoserSchedule();
   }
+}
+
+// 2-doser is its own standardized tank build — the mixing-method choice doesn't apply to
+// it, and the tank size input takes that slot. Called from render() so it tracks the doser
+// toggle, not just the application toggle.
+function syncStockConfigControls() {
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  if (!is2Doser) state.lastThreeDoserMethod = state.method;
+  document.getElementById("method-block").style.display = isStock && !is2Doser ? "" : "none";
+  document.getElementById("stock-volume-block").style.display = isStock && is2Doser ? "" : "none";
+  const volInput = document.getElementById("stock-volume-input");
+  if (volInput !== document.activeElement) {
+    volInput.value = formatStockTankVolume(state.stockTankVolumeGal);
+  }
+  const vols = getTankVolumes(state.method);
+  document.getElementById("stock-volume-derived").textContent =
+    `Tank 1 (Part A) ${formatStockTankVolume(vols.tankA)} gal · Tank 2 (B + Bloom) ${formatStockTankVolume(vols.tankB)} gal`;
 }
 
 function rebuildRecipeSelects() {
@@ -2713,10 +2891,26 @@ function handleDoserChange(val) {
   state.doserMode = val;
   if (val === "2" && previousMode !== "2") {
     rememberThreeDoserSchedule();
+    state.lastThreeDoserMethod = state.method;
+    state.method = "2-doser";
   }
   if (val !== "2" && previousMode === "2") {
     restoreThreeDoserSchedule();
+    state.method = state.lastThreeDoserMethod;
   }
+  render();
+}
+
+function handleStockTankVolumeInput(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < MIN_STOCK_TANK_VOLUME_GAL || parsed > MAX_STOCK_TANK_VOLUME_GAL) return;
+  state.stockTankVolumeGal = Math.round(parsed * 10) / 10;
+  render();
+}
+
+function handleStockTankVolumeChange(value) {
+  state.stockTankVolumeGal = normalizeStockTankVolume(value);
+  document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
   render();
 }
 
@@ -2779,8 +2973,14 @@ function updateURL() {
   // Only write params that differ from defaults
   if (state.application !== "stock") p.set("a", state.application);
   if (state.application === "stock") {
-    if (state.method !== "3-2-2") p.set("m", state.method);
-    if (state.doserMode === "2") p.set("d", "2");
+    if (state.doserMode === "2") {
+      p.set("d", "2");
+      if (state.stockTankVolumeGal !== DEFAULT_STOCK_TANK_VOLUME_GAL) {
+        p.set("tv", formatStockTankVolume(state.stockTankVolumeGal));
+      }
+    } else if (state.method !== "3-2-2") {
+      p.set("m", state.method);
+    }
   }
   if (state.usePhoszyme) p.set("phz", "yes");
   if (state.showSi) p.set("si", "yes");
@@ -2811,10 +3011,15 @@ function loadFromURL() {
     document.getElementById("print-facility").textContent = p.get("fac");
   }
   if (p.has("a") && VALID_APPS.includes(p.get("a"))) state.application = p.get("a");
-  if (p.has("m") && LINE().stockRates[p.get("m")]) state.method = p.get("m");
+  if (p.has("m") && VALID_METHODS.includes(p.get("m"))) {
+    state.method = p.get("m");
+    state.lastThreeDoserMethod = p.get("m");
+  }
   if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
     state.doserMode = p.get("d");
+    if (state.doserMode === "2") state.method = "2-doser";
   }
+  if (p.has("tv")) state.stockTankVolumeGal = normalizeStockTankVolume(p.get("tv"));
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") === "yes");
   }
@@ -2896,7 +3101,23 @@ function printPage() {
   window.print();
 }
 
+// AIDEV-NOTE: Split so the summary can be built and asserted without a clipboard. The
+// product rows come from computeFeedRows() — the same source as the on-screen table and
+// the branded print chart — so all three can never print different rates.
 function copySummary() {
+  const { html, plain } = buildSummary();
+  copyRichText(html, plain).then(() => {
+    const btn = document.getElementById("btn-copy");
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Summary`;
+    }, 2000);
+  });
+}
+
+function buildSummary() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
@@ -2911,8 +3132,9 @@ function copySummary() {
   // ── Config summary ──
   let configParts = [LINE().label];
   if (isStock) {
-    configParts.push(`${method} stock concentrate`);
-    configParts.push(is2Doser ? "2-Doser" : "3-Doser");
+    configParts.push(`${stockConfigLabel()} stock concentrate`);
+    if (is2Doser) configParts.push(`${formatStockTankVolume(getTankVolumes(method).tankA)} / ${formatStockTankVolume(getTankVolumes(method).tankB)} gal tanks`);
+    else configParts.push("3-Doser");
   } else {
     configParts.push("Direct to reservoir");
   }
@@ -2949,55 +3171,18 @@ function copySummary() {
   PHASES.forEach(p => html += `<td ${ts}><b>${formatTargetEC(targetEC[p])}</b></td>`);
   html += `</tr>`;
 
-  // Part A / CaNO3 row
-  html += `<tr><td ${tl}>${names.partA}</td>`;
-  PHASES.forEach(phase => {
-    if (is2Doser && phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
-    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-    const r = calcDosage(phase, "partA", method, unit, eEC);
-    html += `<td ${ts}>${r.display}</td>`;
+  // AIDEV-NOTE: Product rows come from computeFeedRows() — the same source the on-screen
+  // table and the branded print chart use — so Copy Summary can never drift from them.
+  // It previously rebuilt the rows by calling calcDosage(..., "partB", ...) directly, which
+  // bypassed the 2-doser tank solver and copied a materially different rate than the chart
+  // showed (7.5% high on Tank 2 at the whole-bag charge).
+  computeFeedRows().forEach(row => {
+    html += `<tr><td ${tl}>${row.label}</td>`;
+    row.cells.forEach(cell => {
+      html += `<td ${ts}>${!cell || cell.dosage === 0 || cell.display === "–" ? "–" : cell.display}</td>`;
+    });
+    html += `</tr>`;
   });
-  html += `</tr>`;
-
-  if (is2Doser) {
-    // Combined B + Bloom row
-    const lbl = usePhz ? "B + Bloom + PhosZyme" : "B + Bloom";
-    html += `<tr><td ${tl}>${lbl}</td>`;
-    PHASES.forEach(phase => {
-      if (phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const resultB = calcDosage(phase, "partB", method, unit, eEC);
-      html += `<td ${ts}>${resultB.display}</td>`;
-    });
-    html += `</tr>`;
-  } else {
-    // Carrier row (or carrier + PhosZyme)
-    const bLbl = usePhz && isStock ? LINE().phzComboLabel : names.partB;
-    html += `<tr><td ${tl}>${bLbl}</td>`;
-    PHASES.forEach(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const resultB = calcDosage(phase, "partB", method, unit, eEC);
-      html += `<td ${ts}>${resultB.display}</td>`;
-    });
-    html += `</tr>`;
-
-    if (usePhz && !isStock) {
-      html += `<tr><td ${tl}>PhosZyme</td>`;
-      PHASES.forEach(phase => {
-        html += `<td ${ts}>${calcPhoszymeDosage(phase, method, unit, targetEC[phase]).display}</td>`;
-      });
-      html += `</tr>`;
-    }
-
-    // Bloom / MKP row
-    html += `<tr><td ${tl}>${names.bloom}</td>`;
-    PHASES.forEach(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const r = calcDosage(phase, "bloom", method, unit, eEC);
-      html += `<td ${ts}>${r.display}</td>`;
-    });
-    html += `</tr>`;
-  }
 
   html += `</table>`;
   const unreachablePhzPhases = PHASES.filter(phase =>
@@ -3035,7 +3220,7 @@ function copySummary() {
   // ── Stock Concentrate Table (stock mode only) ──
   if (isStock) {
     const stock = calcStockTanks(method, unit);
-    const titlePrefix = is2Doser ? `${method} 2-Doser` : method;
+    const titlePrefix = stockConfigLabel();
     html += `<h3 style="margin:20px 0 6px;">${titlePrefix} Stock Concentrate Rates</h3>`;
     html += `<table style="border-collapse:collapse;font-size:14px;">`;
     html += `<tr><th ${th}>Tank</th><th ${th}>Part</th><th ${th}>${stock.volUnit}</th><th ${th}>${stock.wtUnit}</th><th ${th}>${stock.concUnit}</th>`;
@@ -3112,35 +3297,11 @@ function copySummary() {
   let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
   plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
   plain += "Target EC".padEnd(20) + PHASES.map(p => formatTargetEC(targetEC[p]).padEnd(12)).join("") + "\n\n";
-  plain += names.partA.padEnd(20) + PHASES.map(phase => {
-    if (is2Doser && phase === "Veg") return "–".padEnd(12);
-    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-    return calcDosage(phase, "partA", method, unit, eEC).display.padEnd(12);
-  }).join("") + "\n";
-
-  if (is2Doser) {
-    const lbl = usePhz ? "B+Bloom+PhZ" : "B + Bloom";
-    plain += lbl.padEnd(20) + PHASES.map(phase => {
-      if (phase === "Veg") return "–".padEnd(12);
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
-    }).join("") + "\n";
-  } else {
-    const bLbl = usePhz && isStock ? LINE().phzComboLabel : names.partB;
-    plain += bLbl.padEnd(20) + PHASES.map(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
-    }).join("") + "\n";
-    if (usePhz && !isStock) {
-      plain += "PhosZyme".padEnd(20) + PHASES.map(phase => {
-        return calcPhoszymeDosage(phase, method, unit, targetEC[phase]).display.padEnd(12);
-      }).join("") + "\n";
-    }
-    plain += names.bloom.padEnd(20) + PHASES.map(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
-    }).join("") + "\n";
-  }
+  computeFeedRows().forEach(row => {
+    plain += row.label.padEnd(20) + row.cells.map(cell =>
+      (!cell || cell.dosage === 0 || cell.display === "–" ? "–" : cell.display).padEnd(12)
+    ).join("") + "\n";
+  });
 
   if (!isStock && usePhz) {
     const unreachable = PHASES.filter(phase => !getPhzAdjustment(phase, targetEC[phase]).achievable);
@@ -3173,15 +3334,7 @@ function copySummary() {
     }
   }
 
-  copyRichText(html, plain).then(() => {
-    const btn = document.getElementById("btn-copy");
-    btn.classList.add("copied");
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
-    setTimeout(() => {
-      btn.classList.remove("copied");
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Summary`;
-    }, 2000);
-  });
+  return { html, plain };
 }
 
 // ═══════════════════════════════════════════════
