@@ -174,6 +174,22 @@ function createFeedRuntime(html: string) {
   }>(html, "{ state, getPhzAdjustedTargetEC, getPhzAdjustment, calcPhoszymeDosage, calcDosage, LINES, CORE_LINE, handleApplicationChange, render, renderBrandedPrint, printPage, formatTargetEC, FRA_NUTRITION_CORE }");
 }
 
+// feed-calc.html only — the 3-Part page owns the 2-doser tank build, so these names
+// don't exist on cplus-calc.html and can't go in the shared factory above.
+function createThreePartRuntime() {
+  return createRuntime<{
+    state: Record<string, any>;
+    LINES: Record<string, any>;
+    computeFeedRows: () => Array<{ label: string; cells: Array<{ display: string; dosage: number; ec: number } | null> }>;
+    calcStockTanks: (method: string, unit: string) => any;
+    getTankVolumes: (method: string) => { tankA: number; tankB: number };
+    stockConfigLabel: () => string;
+    buildSummary: () => { html: string; plain: string };
+    calcDosage: (phase: string, role: string, method: string, unit: string, targetEc: number) => { display: string };
+    BP_STOCK_NOTES_2DOSER: string[];
+  }>(feedCalculator, "{ state, LINES, computeFeedRows, calcStockTanks, getTankVolumes, stockConfigLabel, buildSummary, calcDosage, BP_STOCK_NOTES_2DOSER }");
+}
+
 function createCplusFeedRuntime(search = "") {
   return createRuntime<{
     state: Record<string, any>;
@@ -739,5 +755,195 @@ describe("additive handling", () => {
     api.loadFromURL();
     expect(api.state.veg.triologicGalPerWeek).toBe(0);
     expect(api.state.flower.triologicGalPerWeek).toBe(0);
+  });
+});
+
+// The 3-Part 2-doser tank is a single vessel, so its Bloom-to-Part-B weight ratio IS the
+// recipe, and one rate serves both products. Jun 2026 locked the mode to Swell but left
+// the tank at 1.00/1.00 — the Stack ratio — and took the printed rate from Part B's own
+// recipe share while reporting EC as the sum of Part B's AND Bloom's shares. Rate and EC
+// described different tanks, and charts ran 14.1% under target. These pin the fix.
+describe("3-Part 2-doser combined tank", () => {
+  const EC_PER_GRAM = { partA: 0.306, partB: 0.255, bloom: 0.2 };
+  const SWELL = { partA: 0.441, partB: 0.234, bloom: 0.325 };
+  const G_PER_LB = 454;
+  const ML_PER_GAL = 3785;
+  const HIGH = { Veg: 3, Stretch: 3, Stack: 2.7, Swell: 2.4, Ripen: 1.8 };
+  // exact Swell requirement, as a rational: (0.325/0.200) / (0.234/0.255) = 85/48
+  const EXACT_RATIO = 85 / 48;
+
+  function twoDoser(partBLb?: number) {
+    const { api } = createThreePartRuntime();
+    api.state.application = "stock";
+    api.state.doserMode = "2";
+    api.state.method = "2-doser";
+    api.state.usePhoszyme = false;
+    api.state.targetEC = { ...HIGH };
+    if (partBLb !== undefined) {
+      const rates = api.LINES["3part"].stockRates["2-doser"];
+      api.LINES["3part"].stockRates["2-doser"] = { ...rates, partB: partBLb / 50 };
+    }
+    return api;
+  }
+
+  test("Swell's required Bloom:Part B weight ratio is exactly 85:48", () => {
+    expect((SWELL.bloom / EC_PER_GRAM.bloom) / (SWELL.partB / EC_PER_GRAM.partB))
+      .toBeCloseTo(EXACT_RATIO, 12);
+    expect(EXACT_RATIO).toBeCloseTo(1.770833, 6);
+  });
+
+  test("Tank 1 is byte-identical to the standard 3-2-2 Part A tank", () => {
+    const api = twoDoser();
+    const twoDoserRates = api.LINES["3part"].stockRates["2-doser"];
+    const standard = api.LINES["3part"].stockRates["3-2-2"];
+    expect(twoDoserRates.partA).toBe(standard.partA);
+
+    const stock = api.calcStockTanks("2-doser", "mL/gal");
+    const partA = stock.rows.find((r: any) => r.key === "partA")!;
+    expect(partA.vol).toBe(50);
+    expect(partA.wt).toBe(75);
+    expect(partA.valEC).toBe(2.75);
+  });
+
+  test("Tank 2 charge is 2 whole bags of Bloom plus 28 lb Part B", () => {
+    const api = twoDoser();
+    const stock = api.calcStockTanks("2-doser", "mL/gal");
+    const wt = Object.fromEntries(stock.rows.map((r: any) => [r.key, r.wt]));
+    expect(wt.bloom).toBe(50);
+    expect(wt.partB).toBe(28);
+
+    // Bloom at its standard 1-1-1 concentration — already validated in the field
+    const rates = api.LINES["3part"].stockRates["2-doser"];
+    expect(rates.bloom).toBe(api.LINES["3part"].stockRates["1-1-1"].bloom);
+    expect(rates.bloom / rates.partB).toBeCloseTo(50 / 28, 12);
+  });
+
+  // THE bug: the printed rate and the printed EC described different tanks.
+  test.each([["28 lb default", undefined], ["25 lb whole-bag build", 25]])(
+    "%s — printed rate and printed EC agree, and total EC lands on target",
+    (_label, partBLb) => {
+      const api = twoDoser(partBLb as number | undefined);
+      const rates = api.LINES["3part"].stockRates["2-doser"];
+      [{ Veg: 3, Stretch: 3, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
+       { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.4 }].forEach(preset => {
+      api.state.targetEC = { ...preset };
+      const rows = api.computeFeedRows();
+      const partA = rows[0];
+      const tank2 = rows[1];
+
+      // Veg is not served in 2-doser; cells 1-4 are the flower cycle
+      [1, 2, 3, 4].forEach(i => {
+        const target = [preset.Veg, preset.Stretch, preset.Stack, preset.Swell, preset.Ripen][i];
+
+        // reconstruct what the tank delivers FROM THE PRINTED mL/gal figure
+        const mlPerGal = Number(tank2.cells[i]!.display);
+        const gramsPerMl = G_PER_LB / ML_PER_GAL;
+        const deliveredEc = mlPerGal * gramsPerMl
+          * (rates.partB * EC_PER_GRAM.partB + rates.bloom * EC_PER_GRAM.bloom);
+
+        // printed EC must be what the printed rate actually delivers (±rounding)
+        expect(Math.abs(deliveredEc / tank2.cells[i]!.ec - 1)).toBeLessThan(0.02);
+
+        // unrounded math must land on target
+        expect(partA.cells[i]!.ec + tank2.cells[i]!.ec).toBeCloseTo(target, 6);
+
+        // and so must the PRINTED rates — what a grower actually dials on both dosers
+        const deliveredPartA = Number(partA.cells[i]!.display) * gramsPerMl
+          * rates.partA * EC_PER_GRAM.partA;
+        expect(Math.abs((deliveredPartA + deliveredEc) / target - 1)).toBeLessThan(0.005);
+      });
+      });
+    },
+  );
+
+  test("28 lb rounding costs under 1% on the recipe split", () => {
+    const api = twoDoser();
+    const rates = api.LINES["3part"].stockRates["2-doser"];
+    expect(Math.abs((rates.bloom / rates.partB) / EXACT_RATIO - 1)).toBeLessThan(0.01);
+  });
+
+  test("the 25 lb build is reachable by changing only the Part B charge", () => {
+    const api = twoDoser(25);
+    const rates = api.LINES["3part"].stockRates["2-doser"];
+    expect(rates.bloom / rates.partB).toBe(2);
+    // whole bags throughout: 3 A, 1 B, 2 Bloom
+    const stock = api.calcStockTanks("2-doser", "mL/gal");
+    const wt = Object.fromEntries(stock.rows.map((r: any) => [r.key, r.wt]));
+    [wt.partA, wt.partB, wt.bloom].forEach(w => expect(w % 25).toBe(0));
+  });
+
+  test.each([["28 lb default", undefined], ["25 lb whole-bag build", 25]])(
+    "%s — every phase stays inside the 0.2-2.0%% injector band",
+    (_label, partBLb) => {
+      const api = twoDoser(partBLb as number | undefined);
+      [["high", { Veg: 3, Stretch: 3, Stack: 2.7, Swell: 2.4, Ripen: 1.8 }],
+       ["standard", { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.4 }]]
+        .forEach(([, ecs]) => {
+          api.state.targetEC = { ...(ecs as Record<string, number>) };
+          api.computeFeedRows().forEach(row => {
+            row.cells.forEach(cell => {
+              if (!cell) return;
+              const injectionPct = Number(cell.display) / ML_PER_GAL * 100;
+              expect(injectionPct).toBeGreaterThanOrEqual(0.2);
+              expect(injectionPct).toBeLessThanOrEqual(2.0);
+            });
+          });
+        });
+    },
+  );
+
+  test("combined Tank 2 density stays under the proven two-product tank (210 g/L)", () => {
+    const api = twoDoser();
+    const rates = api.LINES["3part"].stockRates["2-doser"];
+    const gPerL = (rates.partB + rates.bloom) * G_PER_LB / 3.785;
+    expect(gPerL).toBeLessThan(210);
+  });
+
+  // Copy Summary rebuilt its own product rows and bypassed the tank solver, copying a
+  // different rate than the chart displayed. Both outputs now read computeFeedRows().
+  test.each([["28 lb default", undefined], ["25 lb whole-bag build", 25]])(
+    "%s — Copy Summary rates match the chart exactly",
+    (_label, partBLb) => {
+      const api = twoDoser(partBLb as number | undefined);
+      const chart = api.computeFeedRows();
+      const chartRates = chart.map(r => r.cells.map(c => (c ? c.display : "–")));
+
+      const summary = api.buildSummary();
+      chartRates.forEach(row =>
+        row.forEach(display => {
+          if (display === "–") return;
+          expect(summary.html).toContain(`>${display}<`);
+          expect(summary.plain).toContain(display);
+        }),
+      );
+      // and nothing from the pre-fix Part-B-share calculation leaks through
+      const stale = api.calcDosage("Ripen", "partB", "2-doser", "mL/gal", 1.8).display;
+      const live = chart[1].cells[4]!.display;
+      if (stale !== live) expect(summary.plain).not.toContain(` ${stale} `);
+    },
+  );
+
+  test("branded print notes describe a combined Tank 2, not one tank per part", () => {
+    const api = twoDoser();
+    const notes = api.BP_STOCK_NOTES_2DOSER.join(" ");
+    expect(notes).not.toContain("Mix each part into its own stock tank");
+    expect(notes).toContain("Tank 2 holds Part B and Bloom together");
+    expect(notes).toContain("different injection rates");
+  });
+
+  // Public repo — the source ships to customers. Internal incident detail, impact
+  // figures, and pending approvals belong in the private repo, not here.
+  test("source carries no internal incident or approval detail", () => {
+    ["14.1%", "postmortem", "sign-off", "Pending Matthew", "six-week"].forEach(term => {
+      expect(feedCalculator).not.toContain(term);
+    });
+  });
+
+  test("2-doser labels itself instead of echoing a mixing method", () => {
+    const api = twoDoser();
+    expect(api.stockConfigLabel()).toBe("2-Doser");
+    api.state.doserMode = "3";
+    api.state.method = "3-2-2";
+    expect(api.stockConfigLabel()).toBe("3-2-2");
   });
 });
