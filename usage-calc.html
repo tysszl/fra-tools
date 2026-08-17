@@ -903,6 +903,22 @@ const FRA_NUTRITION_CORE = (() => {
     return 2;
   }
 
+  function formatFeedDoseFromInjectionPercent(injectionPercent, unit) {
+    const normalizedPercent = Math.max(0, Number(injectionPercent) || 0);
+    if (!(normalizedPercent > 0)) return { dosage: 0, display: "–" };
+    if (unit === "ratio") {
+      const ratio = Math.round(100 / normalizedPercent);
+      return { dosage: ratio, display: `1:${ratio}` };
+    }
+    if (!Object.hasOwn(feedUnitFactors, unit) || feedUnitFactors[unit] === null) {
+      throw new Error(`Unknown feed unit: ${unit}`);
+    }
+    const gramsPerGallonAtOnePoundStock = normalizedPercent / 100 * fieldUnits.gramsPerPound;
+    const dosage = gramsPerGallonAtOnePoundStock * feedUnitFactors[unit];
+    const decimals = getFeedUnitDecimals(unit);
+    return { dosage: +dosage.toFixed(decimals), display: dosage.toFixed(decimals) };
+  }
+
   function createFeedMathAdapter({
     lineId,
     getRecipeName,
@@ -944,17 +960,9 @@ const FRA_NUTRITION_CORE = (() => {
         targetEc,
       );
       const stockConcentration = getStockConcentration(method, role);
-      if (unit === "ratio") {
-        const injectionPercent = gramsPerGallon / stockConcentration
-          * (100 / fieldUnits.gramsPerPound);
-        if (!(injectionPercent > 0)) return { dosage: 0, ec: 0, display: "–" };
-        const ratio = Math.round(100 / injectionPercent);
-        return { dosage: ratio, ec, display: `1:${ratio}` };
-      }
-
-      const dosage = gramsPerGallon / stockConcentration * feedUnitFactors[unit];
-      const decimals = getFeedUnitDecimals(unit);
-      return { dosage: +dosage.toFixed(decimals), ec, display: dosage.toFixed(decimals) };
+      const injectionPercent = gramsPerGallon / stockConcentration
+        * (100 / fieldUnits.gramsPerPound);
+      return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit), ec };
     }
 
     function calculatePhoszymeDosage(phase, method, unit, finalTargetEc) {
@@ -1006,6 +1014,7 @@ const FRA_NUTRITION_CORE = (() => {
     doseRoleGramsPerGallon,
     getPhoszymeAdjustment,
     formatDirectPhoszymeWarning,
+    formatFeedDoseFromInjectionPercent,
     createFeedMathAdapter,
   });
 })();

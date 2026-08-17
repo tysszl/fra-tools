@@ -195,9 +195,19 @@ function createCplusFeedRuntime(search = "") {
     state: Record<string, any>;
     handleStockTankVolumeInput: (value: unknown) => void;
     handleStockTankVolumeChange: (value: unknown) => void;
+    handleTwoDoserCaStockChange: (value: string) => void;
+    handleTwoDoserFinalPhaseChange: (value: string) => void;
+    getEffectiveStockRates: (method: string) => Record<string, number>;
+    getPhaseRecipeLabel: (phase: string) => string;
+    getStockInstructions: (is2Doser: boolean, usePhz: boolean) => string[];
+    computeFeedRows: () => Array<{ label: string; cells: Array<{ display: string; dosage: number; ec: number } | null> }>;
     calcStockTanks: (method: string, unit: string) => { rows: Array<Record<string, any>> };
+    buildSummary: () => { html: string; plain: string };
+    render: () => void;
+    renderBrandedPrint: () => void;
+    updateURL: () => void;
     loadFromURL: () => void;
-  }>(cplusCalculator, "{ state, handleStockTankVolumeInput, handleStockTankVolumeChange, calcStockTanks, loadFromURL }", search);
+  }>(cplusCalculator, "{ state, handleStockTankVolumeInput, handleStockTankVolumeChange, handleTwoDoserCaStockChange, handleTwoDoserFinalPhaseChange, getEffectiveStockRates, getPhaseRecipeLabel, getStockInstructions, computeFeedRows, calcStockTanks, buildSummary, render, renderBrandedPrint, updateURL, loadFromURL }", search);
 }
 
 describe("shared nutrition core contract", () => {
@@ -662,6 +672,125 @@ describe("shared nutrition core contract", () => {
     restored.api.loadFromURL();
     expect(restored.api.state.stockTankVolumeGal).toBe(1000);
     expect(restored.api.calcStockTanks("1-1-1", "mL/gal").rows[0].vol).toBe(1000);
+  });
+
+  describe("Component Plus controlled 2-doser options", () => {
+    function configureTwoDoser(api: ReturnType<typeof createCplusFeedRuntime>["api"]) {
+      api.state.doserMode = "2";
+      api.state.method = "2-doser";
+      api.state.unit = "mL/gal";
+      api.state.usePhoszyme = false;
+    }
+
+    test("preserves the current 0.75 lb/gal equal-rate method by default", () => {
+      const runtime = createCplusFeedRuntime();
+      const { api } = runtime;
+      configureTwoDoser(api);
+
+      expect(api.getEffectiveStockRates("2-doser")).toEqual({ partA: 0.75, partB: 0.75, bloom: 1 });
+      const stock = api.calcStockTanks("2-doser", "mL/gal").rows;
+      expect(stock.find(row => row.key === "partA")).toMatchObject({ wt: 37.5, conc: 0.75, valEC: 1.43 });
+      expect(api.getStockInstructions(true, false).at(-1)).toContain("same injection rate");
+
+      api.updateURL();
+      expect(runtime.getReplacedUrl()).toContain("d=2");
+      expect(runtime.getReplacedUrl()).not.toContain("ca=");
+      expect(runtime.getReplacedUrl()).not.toContain("fp=");
+    });
+
+    test("uses a 1.00 lb/gal CaNO3 stock without changing Tank 2", () => {
+      const runtime = createCplusFeedRuntime();
+      const { api } = runtime;
+      configureTwoDoser(api);
+      api.handleTwoDoserCaStockChange("1.00");
+
+      expect(api.getEffectiveStockRates("2-doser")).toEqual({ partA: 1, partB: 0.75, bloom: 1 });
+      const stock = api.calcStockTanks("2-doser", "mL/gal").rows;
+      expect(stock.find(row => row.key === "partA")).toMatchObject({ wt: 50, conc: 1, valEC: 1.9 });
+      expect(stock.find(row => row.key === "partB")).toMatchObject({ wt: 37.5, conc: 0.75, valEC: 1.27 });
+      expect(stock.find(row => row.key === "bloom")).toMatchObject({ wt: 50, conc: 1, valEC: 1.17 });
+
+      api.state.targetEC.Stretch = 3;
+      const rows = api.computeFeedRows();
+      expect(rows[0].cells[1]).toMatchObject({ dosage: 29, ec: 1.1052 });
+      expect(rows[1].cells[1]).toMatchObject({ dosage: 39 });
+      expect(rows[0].cells[1]!.ec + rows[1].cells[1]!.ec).toBeCloseTo(3, 10);
+      expect(api.getStockInstructions(true, false).at(-1)).toContain("listed injection rate");
+      expect(api.getStockInstructions(true, false).at(-1)).not.toContain("same injection rate");
+      expect(runtime.getReplacedUrl()).toContain("ca=1");
+    });
+
+    test("solves the optional final Near Ripen phase at 31.5% calcium", () => {
+      const runtime = createCplusFeedRuntime();
+      const { api } = runtime;
+      configureTwoDoser(api);
+      api.handleTwoDoserCaStockChange("1.00");
+      api.handleTwoDoserFinalPhaseChange("near-ripen");
+      api.state.targetEC.Ripen = 1.8;
+
+      const rows = api.computeFeedRows();
+      expect(api.getPhaseRecipeLabel("Ripen")).toBe("Near Ripen");
+      expect(rows[0].cells[4]).toMatchObject({ dosage: 15 });
+      expect(rows[0].cells[4]!.ec).toBeCloseTo(0.567, 10);
+      expect(rows[1].cells[4]).toMatchObject({ dosage: 25 });
+      expect(rows[1].cells[4]!.ec).toBeCloseTo(1.233, 10);
+      expect(rows[0].cells[4]!.ec + rows[1].cells[4]!.ec).toBeCloseTo(1.8, 10);
+
+      api.state.unit = "mL/L";
+      const metricRows = api.computeFeedRows();
+      expect(metricRows[0].cells[4]).toMatchObject({ dosage: 3.9 });
+      expect(metricRows[0].cells[4]!.ec).toBeCloseTo(0.567, 10);
+      expect(metricRows[1].cells[4]).toMatchObject({ dosage: 6.7 });
+      expect(metricRows[1].cells[4]!.ec).toBeCloseTo(1.233, 10);
+
+      api.handleTwoDoserCaStockChange("0.75");
+      expect(api.getStockInstructions(true, false).at(-1)).toContain("listed injection rate");
+      expect(api.getStockInstructions(true, false).at(-1)).not.toContain("same injection rate");
+
+      api.state.usePhoszyme = true;
+      api.state.unit = "mL/gal";
+      const phoszymeRows = api.computeFeedRows();
+      expect(phoszymeRows[0].cells[4]).toMatchObject({ dosage: 20 });
+      expect(phoszymeRows[1].cells[4]).toMatchObject({ dosage: 24 });
+      expect(phoszymeRows[0].cells[4]!.ec + phoszymeRows[1].cells[4]!.ec).toBeCloseTo(1.8, 10);
+    });
+
+    test("keeps screen, print, copy summary, and share links on the same selected configuration", () => {
+      const runtime = createCplusFeedRuntime();
+      const { api } = runtime;
+      configureTwoDoser(api);
+      api.handleTwoDoserCaStockChange("1.00");
+      api.handleTwoDoserFinalPhaseChange("near-ripen");
+      api.state.targetEC.Ripen = 1.8;
+      api.render();
+      api.renderBrandedPrint();
+
+      expect(runtime.getElement("recipe-ripen").value).toBe("Near Ripen");
+      expect(runtime.getElement("twodoser-rate-note").textContent).toContain("listed rate");
+      expect(runtime.getElement("print-config-line").textContent).toContain("CaNO3 1.00 lb/gal");
+      expect(runtime.getElement("branded-print").innerHTML).toContain("Near Ripen");
+      expect(runtime.getElement("branded-print").innerHTML).toContain("CaNO3 1.00 lb/gal");
+
+      const summary = api.buildSummary();
+      expect(summary.html).toContain("Near Ripen");
+      expect(summary.plain).toContain("CaNO3 1.00 lb/gal");
+      expect(summary.plain).toContain("15");
+      expect(summary.plain).toContain("25");
+      expect(runtime.getReplacedUrl()).toContain("ca=1");
+      expect(runtime.getReplacedUrl()).toContain("fp=near-ripen");
+    });
+
+    test("round-trips valid options and ignores invalid option values", () => {
+      const restored = createCplusFeedRuntime("?d=2&ca=1&fp=near-ripen");
+      restored.api.loadFromURL();
+      expect(restored.api.state.twoDoserCaStockLbPerGal).toBe(1);
+      expect(restored.api.state.twoDoserFinalPhase).toBe("near-ripen");
+
+      const invalid = createCplusFeedRuntime("?d=2&ca=2&fp=ripen");
+      invalid.api.loadFromURL();
+      expect(invalid.api.state.twoDoserCaStockLbPerGal).toBe(0.75);
+      expect(invalid.api.state.twoDoserFinalPhase).toBe("swell");
+    });
   });
 
   test("iPhone printing reserves enough page-height slack to avoid footer-only pages", () => {

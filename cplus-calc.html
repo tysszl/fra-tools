@@ -1255,7 +1255,7 @@
       <div class="info-drawer" id="doser-drawer">
         <div class="info-drawer-content">
           <p><strong>3-Doser:</strong> Three separate stock tanks — CaNO3, Component Plus, and MKP each get their own injector, mixed at 1 lb per gallon (1-1-1). This is the standard setup and allows full flexibility with per-phase recipe adjustments. Injection rates differ between tanks since each product carries a different share of the total EC.</p>
-          <p><strong>2-Doser:</strong> Two stock tanks — CaNO3 alone in Tank 1 at 0.75 lb/gal, and C+ + MKP combined in Tank 2 at 0.75 + 1.00 lb/gal. Used in facilities with only two injectors. Calcium can never share a tank with phosphate or sulfate, so CaNO3 always stays alone. The combined tank fixes the C+-to-MKP ratio, which locks all flower phases to the Swell recipe, and the concentrations are balanced so both tanks run at the same injection rate — one doser setting, equal drawdown. Confirm with EC/PPM validation.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — CaNO3 alone in Tank 1, and C+ + MKP combined in Tank 2 at 0.75 + 1.00 lb/gal. Used in facilities with only two injectors. Calcium can never share a tank with phosphate or sulfate, so CaNO3 always stays alone. Choose 0.75 lb/gal CaNO3 for equal-rate operation or 1.00 lb/gal for a whole-bag build with separate injector rates. The combined tank fixes the C+-to-MKP ratio, so flower runs Swell with an optional Near Ripen final phase. Confirm with EC/PPM validation.</p>
         </div>
       </div>
 
@@ -1266,6 +1266,24 @@
         <span>gal per stock tank</span>
       </div>
       <p class="config-note">Applied to each active stock tank. Choose a volume that can be used within 14 days.</p>
+
+      <div id="twodoser-settings" hidden>
+        <div class="config-spacer"></div>
+        <div class="section-label">CaNO3 Stock Concentration</div>
+        <div class="toggle-group" id="twodoser-ca-stock-group">
+          <button class="toggle-btn active" data-val="0.75">0.75 lb/gal · Equal-rate Swell</button>
+          <button class="toggle-btn" data-val="1.00">1.00 lb/gal · Whole-bag</button>
+        </div>
+        <p class="config-note">Tank 2 remains fixed at 0.75 lb/gal Component Plus + 1.00 lb/gal MKP. The 1.00 lb/gal CaNO3 option requires separate injector rates.</p>
+
+        <div class="config-spacer"></div>
+        <div class="section-label">Final Phase</div>
+        <div class="toggle-group" id="twodoser-final-phase-group">
+          <button class="toggle-btn active" data-val="swell">Swell</button>
+          <button class="toggle-btn" data-val="near-ripen">Near Ripen</button>
+        </div>
+        <p class="config-note">Near Ripen holds calcium at the canonical Ripen share (31.5% of total EC), then assigns the remaining 68.5% to the fixed C+ + MKP tank. It is a two-tank approximation, not the canonical three-product Ripen recipe.</p>
+      </div>
     </div>
     <p class="config-note" id="cplus-stock-note" style="display:none">Component Plus stock mixes at 1 lb per gallon in each of the three tanks (1-1-1). Injection rates differ between tanks — each product carries a different share of the total EC.</p>
 
@@ -1305,7 +1323,7 @@
       </div>
     </div>
     </div>
-    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode locks every phase to the Swell recipe — the combined tank fixes the C+-to-MKP ratio — so the recipe schedule options are hidden.</p>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode runs the fixed C+ + MKP tank on Swell through flower. The separate Final Phase control can hold Swell or taper calcium to Near Ripen.</p>
     <p class="config-note" id="phz-target-warning" hidden style="color:#b03050"></p>
 
     <div class="config-spacer"></div>
@@ -1615,6 +1633,22 @@ const FRA_NUTRITION_CORE = (() => {
     return 2;
   }
 
+  function formatFeedDoseFromInjectionPercent(injectionPercent, unit) {
+    const normalizedPercent = Math.max(0, Number(injectionPercent) || 0);
+    if (!(normalizedPercent > 0)) return { dosage: 0, display: "–" };
+    if (unit === "ratio") {
+      const ratio = Math.round(100 / normalizedPercent);
+      return { dosage: ratio, display: `1:${ratio}` };
+    }
+    if (!Object.hasOwn(feedUnitFactors, unit) || feedUnitFactors[unit] === null) {
+      throw new Error(`Unknown feed unit: ${unit}`);
+    }
+    const gramsPerGallonAtOnePoundStock = normalizedPercent / 100 * fieldUnits.gramsPerPound;
+    const dosage = gramsPerGallonAtOnePoundStock * feedUnitFactors[unit];
+    const decimals = getFeedUnitDecimals(unit);
+    return { dosage: +dosage.toFixed(decimals), display: dosage.toFixed(decimals) };
+  }
+
   function createFeedMathAdapter({
     lineId,
     getRecipeName,
@@ -1656,17 +1690,9 @@ const FRA_NUTRITION_CORE = (() => {
         targetEc,
       );
       const stockConcentration = getStockConcentration(method, role);
-      if (unit === "ratio") {
-        const injectionPercent = gramsPerGallon / stockConcentration
-          * (100 / fieldUnits.gramsPerPound);
-        if (!(injectionPercent > 0)) return { dosage: 0, ec: 0, display: "–" };
-        const ratio = Math.round(100 / injectionPercent);
-        return { dosage: ratio, ec, display: `1:${ratio}` };
-      }
-
-      const dosage = gramsPerGallon / stockConcentration * feedUnitFactors[unit];
-      const decimals = getFeedUnitDecimals(unit);
-      return { dosage: +dosage.toFixed(decimals), ec, display: dosage.toFixed(decimals) };
+      const injectionPercent = gramsPerGallon / stockConcentration
+        * (100 / fieldUnits.gramsPerPound);
+      return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit), ec };
     }
 
     function calculatePhoszymeDosage(phase, method, unit, finalTargetEc) {
@@ -1718,6 +1744,7 @@ const FRA_NUTRITION_CORE = (() => {
     doseRoleGramsPerGallon,
     getPhoszymeAdjustment,
     formatDirectPhoszymeWarning,
+    formatFeedDoseFromInjectionPercent,
     createFeedMathAdapter,
   });
 })();
@@ -1766,8 +1793,8 @@ const LINES = {
     // (Jun 10 2026, active/shang-ri-la-cplus-2tote.md in the internal repo):
     // Tank 1 = CaNO3 alone (calcium can't share a tank with phosphate/sulfate);
     // Tank 2 = C+ + MKP combined at the Swell weight ratio (MKP:C+ = 1.00:0.75 =
-    // 1.333 vs Swell's required 1.331, 0.2% off). CaNO3 at 0.75 lb/gal equalizes
-    // both tanks' injection rates (Δ ~0.05%) — one doser setting, equal drawdown.
+    // 1.333 vs Swell's required 1.331, 0.2% off). The public 2-doser controls keep
+    // Tank 2 fixed and allow only the verified 0.75 or 1.00 lb/gal CaNO3 stocks.
     stockRates: {
       "1-1-1":   { partA: 1.00, partB: 1.00, bloom: 1.00 },
       "2-doser": { partA: 0.75, partB: 0.75, bloom: 1.00 }
@@ -1783,6 +1810,11 @@ const LINES = {
 };
 
 const DEFAULT_STOCK_TANK_VOLUME_GAL = 50;
+const DEFAULT_TWO_DOSER_CA_STOCK_LB_PER_GAL = 0.75;
+const TWO_DOSER_CA_STOCK_OPTIONS = [0.75, 1.00];
+const TWO_DOSER_FINAL_PHASE_OPTIONS = ["swell", "near-ripen"];
+const DEFAULT_TWO_DOSER_FINAL_PHASE = "swell";
+const NEAR_RIPEN_CA_EC_SHARE = 0.315;
 
 function LINE() { return LINES[state.line]; }
 function ecPerGram() { return LINE().ecPerGram; }
@@ -1874,14 +1906,18 @@ const INSTRUCTIONS_2DOSER = [
   "Tank 1: Add calcium nitrate over 5 minutes while agitating.",
   "Tank 2: Add Component Plus and let it dissolve fully, then PhosZyme, then MKP, while agitating (MKP dissolves slowly in cold water).",
   "Add RO water to target volume in each tank; mix for 10 more minutes.",
-  "Validate and adjust each stock tank as necessary.",
-  "Set both dosers to the same injection rate; confirm final solution EC/PPM."
+  "Validate and adjust each stock tank as necessary."
 ];
 
 function getStockInstructions(is2Doser, usePhz) {
   if (!is2Doser) return INSTRUCTIONS;
-  if (usePhz) return INSTRUCTIONS_2DOSER;
-  return INSTRUCTIONS_2DOSER.map(step => step.replace(", then PhosZyme", ""));
+  const steps = usePhz
+    ? [...INSTRUCTIONS_2DOSER]
+    : INSTRUCTIONS_2DOSER.map(step => step.replace(", then PhosZyme", ""));
+  steps.push(isTwoDoserEqualRate()
+    ? "Set both dosers to the same injection rate; confirm final solution EC/PPM."
+    : "Set each doser to its listed injection rate; confirm final solution EC/PPM.");
+  return steps;
 }
 
 // ═══════════════════════════════════════════════
@@ -1894,6 +1930,8 @@ let state = {
   method: "1-1-1",
   doserMode: "3",
   stockTankVolumeGal: DEFAULT_STOCK_TANK_VOLUME_GAL,
+  twoDoserCaStockLbPerGal: DEFAULT_TWO_DOSER_CA_STOCK_LB_PER_GAL,
+  twoDoserFinalPhase: DEFAULT_TWO_DOSER_FINAL_PHASE,
   usePhoszyme: false,
   showSi: false,
   showPhUp: false,
@@ -1929,13 +1967,53 @@ function formatStockTankVolume(value) {
   return Number.isInteger(normalized) ? String(normalized) : normalized.toFixed(1);
 }
 
+function normalizeTwoDoserCaStock(value) {
+  const parsed = Number(value);
+  return TWO_DOSER_CA_STOCK_OPTIONS.includes(parsed)
+    ? parsed
+    : DEFAULT_TWO_DOSER_CA_STOCK_LB_PER_GAL;
+}
+
+function normalizeTwoDoserFinalPhase(value) {
+  return TWO_DOSER_FINAL_PHASE_OPTIONS.includes(value)
+    ? value
+    : DEFAULT_TWO_DOSER_FINAL_PHASE;
+}
+
+function getEffectiveStockRates(method) {
+  const rates = { ...LINE().stockRates[method] };
+  if (method === "2-doser") {
+    rates.partA = normalizeTwoDoserCaStock(state.twoDoserCaStockLbPerGal);
+  }
+  return rates;
+}
+
+function isTwoDoserEqualRate() {
+  return getEffectiveStockRates("2-doser").partA === DEFAULT_TWO_DOSER_CA_STOCK_LB_PER_GAL
+    && state.twoDoserFinalPhase === "swell";
+}
+
+function formatTwoDoserCaStock() {
+  return `${getEffectiveStockRates("2-doser").partA.toFixed(2)} lb/gal`;
+}
+
+function getTwoDoserRateNote() {
+  if (isTwoDoserEqualRate()) {
+    return `Set both dosers to the same injection rate — the CaNO3 tank (${formatTwoDoserCaStock()}) and the combined C+ + MKP tank are concentration-balanced to run at the same rate. Confirm with EC/PPM validation.`;
+  }
+  if (getEffectiveStockRates("2-doser").partA === DEFAULT_TWO_DOSER_CA_STOCK_LB_PER_GAL) {
+    return "Use the same injection rate during Swell, then set each doser to its listed Near Ripen rate for the final phase. Confirm with EC/PPM validation.";
+  }
+  return `Set each doser to its listed rate — the CaNO3 tank (${formatTwoDoserCaStock()}) is more concentrated than the combined C+ + MKP tank, so the pumps must run independently. Confirm with EC/PPM validation.`;
+}
+
 function getStockConc(method, component) {
   if (state.application === "direct") return 1;
-  return LINE().stockRates[method][component];
+  return getEffectiveStockRates(method)[component];
 }
 
 function getStockConcDisplay(method, component, unit) {
-  const base = LINE().stockRates[method][component];
+  const base = getEffectiveStockRates(method)[component];
   if (isMetric(unit)) {
     return Math.round(base * CONSTANTS.g_per_lb / CONSTANTS.L_per_gal);
   }
@@ -1965,12 +2043,23 @@ function applyRecipeSchedule(schedule) {
 }
 
 function getRecipeScheduleLabel() {
-  if (state.doserMode === "2") return "Swell Recipe Locked";
+  if (state.doserMode === "2") {
+    return state.twoDoserFinalPhase === "near-ripen"
+      ? "Swell + Near Ripen"
+      : "Swell Recipe Locked";
+  }
   return RECIPE_SCHEDULE_LABELS[state.recipeSchedule];
 }
 
 function getPhaseRecipeName(phase) {
   return state.doserMode === "2" ? "Swell" : state.phaseRecipe[phase];
+}
+
+function getPhaseRecipeLabel(phase) {
+  if (state.doserMode !== "2") return state.phaseRecipe[phase];
+  if (phase === "Veg") return "Veg";
+  if (phase === "Ripen" && state.twoDoserFinalPhase === "near-ripen") return "Near Ripen";
+  return "Swell";
 }
 
 function recipesEqual(a, b) {
@@ -2021,7 +2110,7 @@ function calcSiRate(ec) {
 function calcStockTanks(method, unit) {
   const met = isMetric(unit);
   const stockVolumeGal = normalizeStockTankVolume(state.stockTankVolumeGal);
-  const rates = LINE().stockRates[method];
+  const rates = getEffectiveStockRates(method);
   const names = LINE().stockNames;
 
   const volA = met ? Math.round(stockVolumeGal * CONSTANTS.L_per_gal) : stockVolumeGal;
@@ -2109,17 +2198,61 @@ function copyRichText(html, plain) {
 // and branded print chart. Keeping the dosage and EC objects
 // together prevents a print-only calculation path from drifting.
 // ═══════════════════════════════════════════════
+// AIDEV-NOTE: Near Ripen is intentionally page-local, not a canonical recipe in the
+// shared nutrition core. The fixed C+ + MKP tank cannot reproduce 30.0/38.5 exactly.
+// This solver holds CaNO3 at canonical Ripen's 31.5% of final EC and sends the remaining
+// 68.5% through the fixed combo tank, including its tied PhosZyme contribution when used.
+function calcTwoDoserTankDose(targetEc, components, unit) {
+  const normalizedEc = Math.max(0, Number(targetEc) || 0);
+  const stockEcPerGallon = components.reduce((sum, component) =>
+    sum + component.lbPerGal * CONSTANTS.g_per_lb * component.ecPerGram, 0);
+  const injectionPercent = stockEcPerGallon > 0
+    ? normalizedEc / stockEcPerGallon * 100
+    : 0;
+  return {
+    ...FRA_NUTRITION_CORE.formatFeedDoseFromInjectionPercent(injectionPercent, unit),
+    ec: normalizedEc
+  };
+}
+
+function calcTwoDoserNearRipen(targetEc, unit) {
+  const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+  const rates = getEffectiveStockRates("2-doser");
+  const calciumEc = normalizedTarget * NEAR_RIPEN_CA_EC_SHARE;
+  const comboEc = normalizedTarget - calciumEc;
+  const tank2Components = [
+    { lbPerGal: rates.partB, ecPerGram: ecPerGram().partB },
+    { lbPerGal: rates.bloom, ecPerGram: ecPerGram().bloom }
+  ];
+  if (state.usePhoszyme) {
+    tank2Components.push({
+      lbPerGal: rates.partB * CONSTANTS.phoszyme_ratio,
+      ecPerGram: ecPerGram().phoszyme
+    });
+  }
+  return {
+    partA: calcTwoDoserTankDose(calciumEc, [
+      { lbPerGal: rates.partA, ecPerGram: ecPerGram().partA }
+    ], unit),
+    combo: calcTwoDoserTankDose(comboEc, tank2Components, unit)
+  };
+}
+
 function computeFeedRows() {
   const { method, unit, targetEC } = state;
   const is2Doser = state.doserMode === "2";
   const usePhz = state.usePhoszyme;
   const names = LINE().names;
+  const nearRipen = is2Doser && state.twoDoserFinalPhase === "near-ripen"
+    ? calcTwoDoserNearRipen(targetEC.Ripen, unit)
+    : null;
   const rows = [];
 
   rows.push({
     label: names.partA, dotCls: "dot-a", valCls: "val-a",
     cells: PHASES.map(phase => {
       if (is2Doser && phase === "Veg") return null;
+      if (phase === "Ripen" && nearRipen) return nearRipen.partA;
       const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
       return calcDosage(phase, "partA", method, unit, effectiveEC);
     })
@@ -2132,6 +2265,7 @@ function computeFeedRows() {
       valCls: "val-bbloom",
       cells: PHASES.map(phase => {
         if (phase === "Veg") return null;
+        if (phase === "Ripen" && nearRipen) return nearRipen.combo;
         const effectiveEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
         const carrier = calcDosage(phase, "partB", method, unit, effectiveEC);
         const phzEC = usePhz ? getPhzEcContribution(phase, targetEC[phase]) : 0;
@@ -2424,7 +2558,9 @@ function renderBrandedPrint() {
   const unit = state.unit;
   const facility = fcEscape(document.getElementById("facility-input").value.trim());
   const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-  const stockConfig = is2Doser ? "2-Doser Stock Concentrate" : "1-1-1 · 3-Doser Stock Concentrate";
+  const stockConfig = is2Doser
+    ? `2-Doser Stock Concentrate &middot; CaNO3 ${formatTwoDoserCaStock()}`
+    : "1-1-1 · 3-Doser Stock Concentrate";
   const leftConfig = isStock
     ? `${stockConfig} &middot; ${formatStockTankVolume(state.stockTankVolumeGal)} gal tanks &middot; ${unit}`
     : `Direct to Reservoir &middot; ${unit}`;
@@ -2440,7 +2576,7 @@ function renderBrandedPrint() {
     return `<tr><td class="fc-chart__label fc-chart__label--${suffix}">${row.label}</td>${cells}</tr>`;
   }).join("");
 
-  const recipes = PHASES.map(phase => is2Doser && phase === "Veg" ? "Veg" : getPhaseRecipeName(phase));
+  const recipes = PHASES.map(getPhaseRecipeLabel);
   const chart = `<div class="fc-chartwrap"><table class="fc-chart">`
     + `<tr><td class="fc-chart__phase" style="text-align:right;padding-right:10px;">Phase</td>${BP_PHASE_LABELS.map(label => `<td class="fc-chart__phase">${label}</td>`).join("")}</tr>`
     + `<tr><td class="fc-chart__label">Recipe</td>${recipes.map(recipe => `<td class="fc-chart__recipe">${recipe}</td>`).join("")}</tr>`
@@ -2449,7 +2585,7 @@ function renderBrandedPrint() {
     + `</table></div>`;
 
   const twoDoserNote = is2Doser
-    ? `<div class="fc-caption fc-caption--italic">Veg / Moms requires a separate CaNO3 + C+ feed; the combined C+ + MKP tank cannot make a zero-MKP Veg recipe.</div>`
+    ? `<div class="fc-caption fc-caption--italic">Veg / Moms requires a separate CaNO3 + C+ feed; the combined C+ + MKP tank cannot make a zero-MKP Veg recipe.${state.twoDoserFinalPhase === "near-ripen" ? " Near Ripen holds CaNO3 at 31.5% of total EC and assigns the balance to the fixed combo tank; it is not canonical three-product Ripen." : ""}</div>`
     : "";
   const metric = isMetric(unit);
   const { header: ecContributionHeader, contributions: ecContributions } = getBrandedEcContributions(metric, usePhz);
@@ -2526,7 +2662,9 @@ function render() {
   PHASES.forEach(p => {
     const sel = document.getElementById(`recipe-${p.toLowerCase()}`);
     if (is2Doser) {
-      sel.value = p === "Veg" ? "Veg" : "Swell";
+      const label = getPhaseRecipeLabel(p);
+      sel.innerHTML = `<option>${label}</option>`;
+      sel.value = label;
       sel.disabled = true;
       sel.classList.remove('modified');
     } else {
@@ -2554,6 +2692,8 @@ function render() {
   document.getElementById("feed-body").innerHTML = html;
   document.getElementById("twodoser-veg-note").hidden = !is2Doser;
   document.getElementById("twodoser-rate-note").hidden = !is2Doser;
+  document.getElementById("twodoser-rate-note").textContent = getTwoDoserRateNote();
+  document.getElementById("twodoser-settings").hidden = !is2Doser;
 
   // ── Supplemental products reference card ──
   renderSupplements();
@@ -2669,7 +2809,9 @@ function render() {
   // Print config line
   const printParts = [LINE().label];
   if (isStock) {
-    printParts.push(is2Doser ? "2-Doser Stock Concentrate (CaNO3 | C+ + MKP)" : "1-1-1 Stock Concentrate · 3-Doser");
+    printParts.push(is2Doser
+      ? `2-Doser Stock Concentrate (CaNO3 ${formatTwoDoserCaStock()} | C+ + MKP)`
+      : "1-1-1 Stock Concentrate · 3-Doser");
     printParts.push(`${formatStockTankVolume(state.stockTankVolumeGal)} gal tanks`);
   } else {
     printParts.push("Direct to Reservoir");
@@ -2743,6 +2885,7 @@ function applyApplicationState() {
     state.doserMode = "3";
     state.method = "1-1-1";
     restoreThreeDoserSchedule();
+    rebuildRecipeSelects();
   }
 }
 
@@ -2845,7 +2988,18 @@ function handleDoserChange(val) {
   }
   if (val !== "2" && previousMode === "2") {
     restoreThreeDoserSchedule();
+    rebuildRecipeSelects();
   }
+  render();
+}
+
+function handleTwoDoserCaStockChange(value) {
+  state.twoDoserCaStockLbPerGal = normalizeTwoDoserCaStock(value);
+  render();
+}
+
+function handleTwoDoserFinalPhaseChange(value) {
+  state.twoDoserFinalPhase = normalizeTwoDoserFinalPhase(value);
   render();
 }
 
@@ -2922,7 +3076,15 @@ function updateURL() {
   if (fac) p.set("fac", fac);
   // Only write params that differ from defaults
   if (state.application !== "stock") p.set("a", state.application);
-  if (state.application === "stock" && state.doserMode === "2") p.set("d", "2");
+  if (state.application === "stock" && state.doserMode === "2") {
+    p.set("d", "2");
+    if (state.twoDoserCaStockLbPerGal !== DEFAULT_TWO_DOSER_CA_STOCK_LB_PER_GAL) {
+      p.set("ca", String(state.twoDoserCaStockLbPerGal));
+    }
+    if (state.twoDoserFinalPhase !== DEFAULT_TWO_DOSER_FINAL_PHASE) {
+      p.set("fp", state.twoDoserFinalPhase);
+    }
+  }
   if (state.stockTankVolumeGal !== DEFAULT_STOCK_TANK_VOLUME_GAL) {
     p.set("tv", formatStockTankVolume(state.stockTankVolumeGal));
   }
@@ -2958,6 +3120,12 @@ function loadFromURL() {
   if (state.application === "stock" && p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
     state.doserMode = p.get("d");
     state.method = state.doserMode === "2" ? "2-doser" : "1-1-1";
+  }
+  if (state.doserMode === "2" && p.has("ca")) {
+    state.twoDoserCaStockLbPerGal = normalizeTwoDoserCaStock(p.get("ca"));
+  }
+  if (state.doserMode === "2" && p.has("fp")) {
+    state.twoDoserFinalPhase = normalizeTwoDoserFinalPhase(p.get("fp"));
   }
   if (p.has("tv")) state.stockTankVolumeGal = normalizeStockTankVolume(p.get("tv"));
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
@@ -3008,6 +3176,12 @@ function syncToggleButtons() {
   document.querySelectorAll("#doser-group .toggle-btn").forEach(b => {
     b.classList.toggle("active", b.dataset.val === state.doserMode);
   });
+  document.querySelectorAll("#twodoser-ca-stock-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", Number(b.dataset.val) === state.twoDoserCaStockLbPerGal);
+  });
+  document.querySelectorAll("#twodoser-final-phase-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.twoDoserFinalPhase);
+  });
   document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
   document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
   document.getElementById("si-btn").classList.toggle("active", state.showSi);
@@ -3043,11 +3217,26 @@ function printPage() {
 window.addEventListener("beforeprint", renderBrandedPrint);
 
 function copySummary() {
+  const { html, plain } = buildSummary();
+  copyRichText(html, plain).then(() => {
+    const btn = document.getElementById("btn-copy");
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Summary`;
+    }, 2000);
+  });
+}
+
+// AIDEV-NOTE: Summary product rows use computeFeedRows(), the same source as the live
+// table and branded print. This prevents the controlled 2-doser solver from drifting
+// across output surfaces.
+function buildSummary() {
   const { method, unit, targetEC } = state;
   const isStock = state.application === "stock";
   const is2Doser = state.doserMode === "2";
   const usePhz = state.usePhoszyme;
-  const names = LINE().names;
   const phaseLabels = ["Veg / Moms", "Wk 1–2", "Wk 3–5", "Wk 6–8/9", "Final 1–2 Wks"];
 
   const ts = 'style="border:1px solid #ccc;padding:6px 10px;text-align:center;"';
@@ -3057,7 +3246,9 @@ function copySummary() {
   // ── Config summary ──
   let configParts = [LINE().label];
   if (isStock) {
-    configParts.push(is2Doser ? "2-Doser stock concentrate (CaNO3 | C+ + MKP)" : "1-1-1 stock concentrate · 3-Doser");
+    configParts.push(is2Doser
+      ? `2-Doser stock concentrate (CaNO3 ${formatTwoDoserCaStock()} | C+ + MKP)`
+      : "1-1-1 stock concentrate · 3-Doser");
     configParts.push(`${formatStockTankVolume(state.stockTankVolumeGal)} gal tanks`);
   } else {
     configParts.push("Direct to reservoir");
@@ -3085,7 +3276,7 @@ function copySummary() {
   // Recipe row
   html += `<tr><td ${tl}>Recipe</td>`;
   PHASES.forEach(p => {
-    const recipe = is2Doser ? (p === "Veg" ? "Veg" : "Swell") : state.phaseRecipe[p];
+    const recipe = getPhaseRecipeLabel(p);
     html += `<td ${ts}>${recipe}</td>`;
   });
   html += `</tr>`;
@@ -3095,57 +3286,18 @@ function copySummary() {
   PHASES.forEach(p => html += `<td ${ts}><b>${formatTargetEC(targetEC[p])}</b></td>`);
   html += `</tr>`;
 
-  // Part A / CaNO3 row
-  html += `<tr><td ${tl}>${names.partA}</td>`;
-  PHASES.forEach(phase => {
-    if (is2Doser && phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
-    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-    const r = calcDosage(phase, "partA", method, unit, eEC);
-    html += `<td ${ts}>${r.display}</td>`;
+  computeFeedRows().forEach(row => {
+    html += `<tr><td ${tl}>${row.label}</td>`;
+    row.cells.forEach(cell => {
+      html += `<td ${ts}>${!cell || cell.dosage === 0 || cell.display === "–" ? "–" : cell.display}</td>`;
+    });
+    html += `</tr>`;
   });
-  html += `</tr>`;
-
-  if (is2Doser) {
-    // Combined C+ + MKP row
-    const lbl = usePhz ? "C+ + MKP + PhosZyme" : "C+ + MKP";
-    html += `<tr><td ${tl}>${lbl}</td>`;
-    PHASES.forEach(phase => {
-      if (phase === "Veg") { html += `<td ${ts}>–</td>`; return; }
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const resultB = calcDosage(phase, "partB", method, unit, eEC);
-      html += `<td ${ts}>${resultB.display}</td>`;
-    });
-    html += `</tr>`;
-  } else {
-    // Carrier row (or carrier + PhosZyme)
-    const bLbl = usePhz && isStock ? LINE().phzComboLabel : names.partB;
-    html += `<tr><td ${tl}>${bLbl}</td>`;
-    PHASES.forEach(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const resultB = calcDosage(phase, "partB", method, unit, eEC);
-      html += `<td ${ts}>${resultB.display}</td>`;
-    });
-    html += `</tr>`;
-
-    if (usePhz && !isStock) {
-      html += `<tr><td ${tl}>PhosZyme</td>`;
-      PHASES.forEach(phase => {
-        html += `<td ${ts}>${calcPhoszymeDosage(phase, method, unit, targetEC[phase]).display}</td>`;
-      });
-      html += `</tr>`;
-    }
-
-    // Bloom / MKP row
-    html += `<tr><td ${tl}>${names.bloom}</td>`;
-    PHASES.forEach(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      const r = calcDosage(phase, "bloom", method, unit, eEC);
-      html += `<td ${ts}>${r.display}</td>`;
-    });
-    html += `</tr>`;
-  }
 
   html += `</table>`;
+  if (is2Doser && state.twoDoserFinalPhase === "near-ripen") {
+    html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">Near Ripen holds CaNO3 at 31.5% of total EC and assigns the remaining 68.5% to the fixed C+ + MKP tank. It is not canonical three-product Ripen.</p>`;
+  }
   const unreachablePhzPhases = PHASES.filter(phase =>
     !isStock && usePhz && !getPhzAdjustment(phase, targetEC[phase]).achievable
   );
@@ -3253,36 +3405,13 @@ function copySummary() {
   // ── Plain text fallback ──
   let plain = `Front Row Ag Component Plus Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
   plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
+  plain += "Recipe".padEnd(20) + PHASES.map(phase => getPhaseRecipeLabel(phase).padEnd(12)).join("") + "\n";
   plain += "Target EC".padEnd(20) + PHASES.map(p => formatTargetEC(targetEC[p]).padEnd(12)).join("") + "\n\n";
-  plain += names.partA.padEnd(20) + PHASES.map(phase => {
-    if (is2Doser && phase === "Veg") return "–".padEnd(12);
-    const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-    return calcDosage(phase, "partA", method, unit, eEC).display.padEnd(12);
-  }).join("") + "\n";
-
-  if (is2Doser) {
-    const lbl = usePhz ? "C+ +MKP+PhZ" : "C+ + MKP";
-    plain += lbl.padEnd(20) + PHASES.map(phase => {
-      if (phase === "Veg") return "–".padEnd(12);
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
-    }).join("") + "\n";
-  } else {
-    const bLbl = usePhz && isStock ? LINE().phzComboLabel : names.partB;
-    plain += bLbl.padEnd(20) + PHASES.map(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      return calcDosage(phase, "partB", method, unit, eEC).display.padEnd(12);
-    }).join("") + "\n";
-    if (usePhz && !isStock) {
-      plain += "PhosZyme".padEnd(20) + PHASES.map(phase => {
-        return calcPhoszymeDosage(phase, method, unit, targetEC[phase]).display.padEnd(12);
-      }).join("") + "\n";
-    }
-    plain += names.bloom.padEnd(20) + PHASES.map(phase => {
-      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
-      return calcDosage(phase, "bloom", method, unit, eEC).display.padEnd(12);
-    }).join("") + "\n";
-  }
+  computeFeedRows().forEach(row => {
+    plain += row.label.padEnd(20) + row.cells.map(cell =>
+      (!cell || cell.dosage === 0 || cell.display === "–" ? "–" : cell.display).padEnd(12)
+    ).join("") + "\n";
+  });
 
   if (!isStock && usePhz) {
     const unreachable = PHASES.filter(phase => !getPhzAdjustment(phase, targetEC[phase]).achievable);
@@ -3291,7 +3420,12 @@ function copySummary() {
     }
   }
 
-  if (is2Doser) plain += "\nVeg / Moms: run a separate CaNO3 + C+ feed — a combined C+ + MKP tank can't make a zero-MKP Veg recipe.\n";
+  if (is2Doser) {
+    plain += "\nVeg / Moms: run a separate CaNO3 + C+ feed — a combined C+ + MKP tank can't make a zero-MKP Veg recipe.\n";
+    if (state.twoDoserFinalPhase === "near-ripen") {
+      plain += "Near Ripen: CaNO3 supplies 31.5% of total EC; the fixed C+ + MKP tank supplies the remaining 68.5%. This is not canonical three-product Ripen.\n";
+    }
+  }
 
   if (state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic) {
     const met = isMetric(unit);
@@ -3315,15 +3449,7 @@ function copySummary() {
     }
   }
 
-  copyRichText(html, plain).then(() => {
-    const btn = document.getElementById("btn-copy");
-    btn.classList.add("copied");
-    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
-    setTimeout(() => {
-      btn.classList.remove("copied");
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Summary`;
-    }, 2000);
-  });
+  return { html, plain };
 }
 
 // ═══════════════════════════════════════════════
@@ -3412,6 +3538,8 @@ initGate();
 renderRecipeScheduleGroup();
 setupToggle("app-group", null, handleApplicationChange);
 setupToggle("doser-group", null, handleDoserChange);
+setupToggle("twodoser-ca-stock-group", null, handleTwoDoserCaStockChange);
+setupToggle("twodoser-final-phase-group", null, handleTwoDoserFinalPhaseChange);
 setupToggle("ec-preset-group", null, handleECPreset);
 setupToggle("recipe-schedule-group", null, handleRecipeScheduleChange);
 loadTheme();
