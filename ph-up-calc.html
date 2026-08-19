@@ -211,6 +211,15 @@
         }
 
         /* Mode Context */
+        .water-context {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
         .mode-context {
             font-size: 0.85rem;
             color: var(--text-muted);
@@ -395,15 +404,20 @@
         }
 
         #col-ec {
-            width: 160px;
+            width: 90px;
+        }
+
+        #col-target {
+            width: 110px;
+            white-space: nowrap;
         }
 
         #col-gpg {
-            width: 200px;
+            width: 150px;
         }
 
         #col-result {
-            width: 120px;
+            width: 110px;
         }
 
         /* Clickable unit toggle in column header */
@@ -464,7 +478,7 @@
         }
 
         .phase-row td {
-            padding: 12px 0;
+            padding: 12px 0 18px;
             vertical-align: middle;
         }
 
@@ -575,6 +589,30 @@
             color: #e6a23e;
             font-size: 0.75rem;
             display: none;
+        }
+
+        .target-hint {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            height: 0;
+            margin-top: 2px;
+            overflow: visible;
+            line-height: 1.2;
+        }
+
+        .target-hint.over {
+            color: var(--danger);
+            font-weight: 600;
+        }
+
+        .warm-toggle {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-left: 14px;
+            cursor: pointer;
+            user-select: none;
         }
 
         .result-warning.show {
@@ -975,9 +1013,21 @@
                 padding: 16px;
             }
 
-            .phase-table th:nth-child(3),
-            .phase-table td:nth-child(3) {
+            .phase-table th:nth-child(4),
+            .phase-table td:nth-child(4) {
                 display: none;
+            }
+
+            .target-hint {
+                white-space: normal;
+            }
+
+            .phase-name {
+                padding-right: 6px;
+            }
+
+            td.phase-input-cell + td.phase-input-cell {
+                padding-left: 6px;
             }
 
             .ec-input {
@@ -985,6 +1035,7 @@
             }
 
             #col-ec,
+            #col-target,
             #col-gpg,
             #col-result {
                 width: auto;
@@ -1009,21 +1060,21 @@
 
         <div class="header">
             <h1><span>Front Row Ag</span> &middot; pH Up Calculator</h1>
-            <p class="subtitle">Find your recommended starting dosage for Front Row pH Up.</p>
+            <p class="subtitle">Find your target pH and the Front Row pH Up dose that gets you there.</p>
         </div>
 
         <!-- Warning Section -->
         <div class="collapsible warning-section">
             <div class="collapsible-header" onclick="toggleCollapsible(this)">
                 <div class="collapsible-icon">&#9888;</div>
-                <div class="collapsible-title">pH Up Overuse Warning</div>
+                <div class="collapsible-title">Why Each Recipe Has a pH Ceiling</div>
                 <svg class="collapsible-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
             </div>
             <div class="collapsible-content">
-                <strong style="color: var(--danger);">&#9888; Overuse of pH Up can result in catastrophic clogs, blockages, and PLANT DEATH.</strong>
-                If you are using more than the recommended amounts, contact your Sales Rep or Retailer for assistance.
+                <strong style="color: var(--danger);">&#9888; Above a certain pH, calcium phosphate starts falling out of solution &mdash; that's the scale that clogs lines and emitters and can kill plants.</strong>
+                Where that line sits depends on the recipe and EC: flower recipes carry 3&ndash;4&times; the phosphate of Veg, so at high-strength ECs they meet the line around pH 5.7&ndash;5.8 while Veg still has room at 5.9. Each row below shows its own ceiling and defaults to a target 0.1 below it (never above 5.9). If you need more pH Up than the row recommends, don't push the target up &mdash; check your meter calibration, measure at the dripper, and contact your Sales Rep or Retailer.
             </div>
         </div>
 
@@ -1037,7 +1088,7 @@
                 </svg>
             </div>
             <div class="collapsible-content">
-                Always measure pH at the dripper or in the batch/bay tank. It is EXPECTED and NORMAL for pH readings to be LOW at the fertigation skid—especially in high flow situations. If testing in a batch tank, allow at least 10-15 minutes between pH adjustment and checking values.
+                Calibrate your meter the same day (pH 4.0 and 7.0 buffers), then measure at the dripper or in the batch/bay tank. It is EXPECTED and NORMAL for pH readings to be LOW at the fertigation skid—especially in high flow situations. If testing in a batch tank, allow at least 10-15 minutes between pH adjustment and checking values &mdash; and note that a fresh tank on alkaline source water reads 0.2-0.3 lower than the lines will, because dissolved CO2 hasn't gassed off yet.
             </div>
         </div>
 
@@ -1051,9 +1102,9 @@
                 </svg>
             </div>
             <div class="collapsible-content">
-                <p style="margin-bottom: 12px;">This calculator provides pH Up dosing recommendations based on your recipe and target EC. It's built on regression equations generated from 131 real-world data points, giving you precise starting points for dialing in your pH. All recommendations target a final pH of <strong>5.9</strong>.</p>
+                <p style="margin-bottom: 12px;">This calculator recommends a <strong>target pH per recipe</strong> and the pH Up dose that reaches it. Doses are built on regression equations from 131 real-world trial data points; targets come from a chemistry model of the FRA recipes that finds the pH where calcium phosphate starts forming at your EC. Each row defaults to 0.1 below that ceiling (never above 5.9) &mdash; you can edit the target, and the row will warn you if you set it at or over the line.</p>
 
-                <p style="margin-bottom: 12px; padding: 10px; background: rgba(230, 62, 62, 0.1); border-radius: 6px; border-left: 3px solid var(--danger);"><strong style="color: var(--danger);">Important: RO water only.</strong> These recommendations assume you're starting with RO water. If your source water has alkalinity (tap water, well water), you will need <em>less</em> pH Up than shown. Using the full recommended amount with alkaline source water will cause problems.</p>
+                <p style="margin-bottom: 12px; padding: 10px; background: rgba(230, 62, 62, 0.1); border-radius: 6px; border-left: 3px solid var(--danger);"><strong style="color: var(--danger);">Important: doses assume RO water.</strong> If your source water has alkalinity (tap or well water), enter it above — every 19 ppm of alkalinity (as CaCO3) supplies the same base as 0.1 g/gal of pH Up, and the calculator subtracts it. Water above roughly 40 ppm needs no pH Up at all at flower ECs; more than that and you're into pH Down territory (see the pH Down calculator).</p>
 
                 <p style="margin-bottom: 8px;"><strong>Features:</strong></p>
                 <ul style="margin-left: 16px; margin-bottom: 12px;">
@@ -1079,7 +1130,7 @@
             <div class="collapsible-content">
                 <p style="margin-bottom: 10px;">As RO membranes age and approach their replacement threshold, they allow more carbonate and alkalinity to pass through. This gradually raises the natural buffering capacity of your source water — a phenomenon called <strong style="color: var(--text);">alkalinity creep</strong>.</p>
                 <p style="margin-bottom: 10px;">The practical effect: your pH Up demand drops over time without any change to your feed recipe. If you notice you're using less pH Up than usual, your membranes may be degrading.</p>
-                <p><strong style="color: var(--text);">What to do:</strong> You can lower your standing pH target slightly as membranes age to account for the extra alkalinity passing through. When membranes are eventually replaced, pH Up demand will jump back up to baseline — so recalculate after any membrane change.</p>
+                <p><strong style="color: var(--text);">What to do:</strong> Don't change your pH target &mdash; the right target depends on the recipe and EC, not the water. Instead, measure your permeate's alkalinity (a simple KH drop kit works) and enter it in the source-water field above; the calculator subtracts what the water now supplies. When membranes are replaced, alkalinity drops back to zero and pH Up demand returns to baseline &mdash; re-measure and update the field.</p>
             </div>
         </div>
 
@@ -1128,6 +1179,17 @@
                 </div>
             </div>
 
+            <!-- AIDEV-NOTE: Source-water alkalinity credit. The regressions are RO-water doses; each 19 ppm of
+                 source alkalinity (as CaCO3) supplies the same base as 0.1 g/gal K2CO3, so the dose is reduced by
+                 alk/19*0.1 g/gal, floored at 0. Derived 2026-08-19 from PHREEQC speciation validated against the
+                 same trial data these regressions came from (FRA docs/alkalinity-ph-and-calcium-phosphate.md). -->
+            <div class="water-context" id="context-alk">
+                <span class="label">Source water alkalinity:</span>
+                <input type="number" class="setting-input" id="source-alk" value="0" min="0" max="200" step="5">
+                <span class="setting-unit">ppm as CaCO3 (0 for RO)</span>
+                <label class="warm-toggle"><input type="checkbox" id="warm-lines"> Lines run warm (&gt;77&nbsp;&deg;F in the room)</label>
+            </div>
+
             <div class="section-title">Enter your target EC values for each recipe:</div>
 
             <div class="preset-buttons">
@@ -1141,6 +1203,7 @@
                     <tr>
                         <th>Recipe</th>
                         <th id="col-ec">EC</th>
+                        <th id="col-target">Target&nbsp;pH</th>
                         <th id="col-gpg">g/gal</th>
                         <th id="col-result">
                             <span class="action-col-label" id="action-label">use this</span>
@@ -1186,7 +1249,9 @@
                 </svg>
             </div>
             <div class="collapsible-content tech-content">
-                <p style="margin-bottom: 12px;">These recommendations are based on regression analysis of 131 trial data points, targeting a final pH of 5.9.</p>
+                <p style="margin-bottom: 12px;">Doses are based on regression analysis of 131 trial data points measured to a final pH of 5.9 in RO water. Two adjustments sit on top of the regressions:</p>
+                <p style="margin-bottom: 8px;"><strong>1. Per-recipe pH ceiling.</strong> The pH at which calcium phosphate reaches saturation for each recipe, from a chemistry model (PHREEQC speciation) of the FRA formulations validated against the same trial data (Aug 2026): <code>ceiling = a &minus; b&times;log10(EC)</code> at typical room temperature, with Veg a=7.26/b=2.38, Stretch 6.69/1.92, Stack 6.63/1.88, Swell 6.55/1.85, Ripen 6.65/1.89 (&plusmn;0.02 pH over EC 1.4&ndash;3.4). Warm lines (&gt;77 &deg;F) sit ~0.08 lower. Default row target = ceiling &minus; 0.1, capped at 5.9.</p>
+                <p style="margin-bottom: 12px;"><strong>2. Dose scaling by target pH.</strong> The dose to reach a target other than 5.9 is the regression value times a factor that is the same for all five recipes (&plusmn;0.03): 5.5&rarr;0.43, 5.6&rarr;0.54, 5.7&rarr;0.67, 5.8&rarr;0.82, 5.9&rarr;1.00, 6.0&rarr;1.21 (interpolated between, capped at 6.0). A source-water alkalinity credit of 0.1 g/gal per 19 ppm (as CaCO3) is subtracted last, floored at zero.</p>
                 <table class="equation-table">
                     <thead>
                         <tr>
@@ -1307,7 +1372,7 @@
             tbody.innerHTML = phases.map((phase, index) => `
                 <tr class="phase-row" data-row="${index}">
                     <td class="phase-name">
-                        <select class="recipe-select" id="recipe-${index}" onchange="calculateAll()">
+                        <select class="recipe-select" id="recipe-${index}" onchange="targetManual[${index}] = false; calculateAll()">
                             ${phases.map(p => `<option value="${p.id}" ${p.id === phase.id ? 'selected' : ''}>${p.name}</option>`).join('')}
                         </select>
                     </td>
@@ -1315,9 +1380,18 @@
                         <div class="ec-input-wrapper">
                             <input type="number" class="ec-input" id="ec-${index}"
                                    step="0.1" min="0" max="5" value="${phase.ecHigh}"
-                                   oninput="calculateAll()">
+                                   oninput="targetManual[${index}] = false; calculateAll()">
                             <span class="ec-unit">EC</span>
                         </div>
+                    </td>
+                    <td class="phase-input-cell">
+                        <div class="ec-input-wrapper">
+                            <input type="number" class="ec-input" id="target-${index}"
+                                   step="0.1" min="5.5" max="6.5"
+                                   oninput="targetManual[${index}] = true; calculateAll()">
+                            <span class="ec-unit">pH</span>
+                        </div>
+                        <div class="target-hint" id="ceiling-${index}"></div>
                     </td>
                     <td class="result-cell">
                         <span class="gpg-value" id="gpg-${index}">--</span>
@@ -1350,6 +1424,8 @@
             });
 
             document.getElementById('reservoir-size').addEventListener('input', calculateAll);
+            document.getElementById('source-alk').addEventListener('input', () => { calculateAll(); updateURL(); });
+            document.getElementById('warm-lines').addEventListener('change', calculateAll);
             document.getElementById('custom-stock').addEventListener('input', calculateAll);
         }
 
@@ -1454,6 +1530,55 @@
             return g.toFixed(3);
         }
 
+        // AIDEV-NOTE: pH target engine (2026-08-19). The 131-point regressions above are doses to pH 5.9 in RO.
+        // Two layers sit on top of them, both from PHREEQC speciation of the FRA recipes validated against the
+        // same trial data (FRA repo: docs/alkalinity-ph-and-calcium-phosphate.md):
+        //   1. CEILINGS[recipe]: the pH at which calcium phosphate reaches saturation, as a - b*log10(EC),
+        //      fit within ±0.02 pH over EC 1.4-3.4 at 72F; warm lines (>77F) sit ~0.08 lower.
+        //      Default row target = min(5.9, ceiling - 0.1) rounded down to 0.1.
+        //   2. TARGET_MULT: dose scaling vs the 5.9 regression, identical across all five recipes to ±0.03.
+        // Source-water alkalinity credit: 19 ppm as CaCO3 supplies the same base as 0.1 g/gal K2CO3.
+        const CEILINGS = {
+            veg:     { a: 7.263, b: 2.375 },
+            stretch: { a: 6.693, b: 1.918 },
+            stack:   { a: 6.628, b: 1.884 },
+            swell:   { a: 6.554, b: 1.849 },
+            ripen:   { a: 6.647, b: 1.893 }
+        };
+        const TARGET_MULT = [[5.5, 0.43], [5.6, 0.54], [5.7, 0.67], [5.8, 0.82], [5.9, 1.00], [6.0, 1.21]];
+        const DOSE_CEILING_GPG = 0.25; // standards ceiling for K2CO3 in final feed
+        const GPG_PER_PPM_ALK = 0.1 / 19;
+
+        function ceilingFor(phaseId, ec) {
+            const c = CEILINGS[phaseId];
+            const warm = document.getElementById('warm-lines').checked;
+            return c.a - c.b * Math.log10(ec) - (warm ? 0.08 : 0);
+        }
+        function defaultTarget(phaseId, ec) {
+            return Math.min(5.9, Math.floor((ceilingFor(phaseId, ec) - 0.1) * 10) / 10);
+        }
+        function doseMultiplier(target) {
+            const t = Math.min(6.0, Math.max(5.5, target));
+            for (let i = 1; i < TARGET_MULT.length; i++) {
+                const [t0, m0] = TARGET_MULT[i - 1], [t1, m1] = TARGET_MULT[i];
+                if (t <= t1) return m0 + (m1 - m0) * (t - t0) / (t1 - t0);
+            }
+            return TARGET_MULT[TARGET_MULT.length - 1][1];
+        }
+        function getAlkCredit() {
+            const alk = parseFloat(document.getElementById('source-alk').value);
+            return isNaN(alk) || alk < 0 ? 0 : alk * GPG_PER_PPM_ALK;
+        }
+        const targetManual = [false, false, false, false, false];
+        function getTarget(i) {
+            const el = document.getElementById(`target-${i}`);
+            const v = parseFloat(el.value);
+            return isNaN(v) ? 5.9 : v;
+        }
+        function doseFor(phase, ec, target) {
+            return Math.max(0, phase.calc(ec) * doseMultiplier(target) - getAlkCredit());
+        }
+
         function calculateAll() {
             const reservoirSize = parseFloat(document.getElementById('reservoir-size').value) || 100;
             const stockConc = getStockConcentration();
@@ -1471,15 +1596,28 @@
                 const resultUnitEl = document.getElementById(`result-unit-${i}`);
                 const warnEl = document.getElementById(`warn-${i}`);
 
+                const targetEl = document.getElementById(`target-${i}`);
+                const ceilEl = document.getElementById(`ceiling-${i}`);
+
                 if (isNaN(ec) || ec <= 0) {
                     gpgEl.textContent = '--';
                     resultEl.textContent = '--';
+                    targetEl.value = '';
+                    ceilEl.textContent = '';
                     warnEl.classList.remove('show');
                     continue;
                 }
 
-                // Calculate g/gal using selected recipe's formula
-                const gpg = Math.max(0, phase.calc(ec));
+                const ceiling = ceilingFor(selectedRecipeId, ec);
+                if (!targetManual[i] || targetEl.value === '') {
+                    targetEl.value = defaultTarget(selectedRecipeId, ec).toFixed(1);
+                    targetManual[i] = false;
+                }
+                const target = getTarget(i);
+                ceilEl.textContent = `ceiling ${ceiling.toFixed(2)}`;
+                ceilEl.classList.toggle('over', target >= ceiling);
+
+                const gpg = doseFor(phase, ec, target);
                 gpgEl.textContent = gpg.toFixed(3);
 
                 // Calculate result based on mode
@@ -1504,12 +1642,17 @@
                     }
                 }
 
-                // Show warning if outside range
-                if (ec < phase.ecMin || ec > phase.ecMax) {
-                    warnEl.classList.add('show');
-                } else {
-                    warnEl.classList.remove('show');
+                // Row warning, most important first
+                let warnText = '';
+                if (target >= ceiling) {
+                    warnText = `Over the calcium-phosphate line at this EC (ceiling ~${ceiling.toFixed(2)})`;
+                } else if (gpg > DOSE_CEILING_GPG) {
+                    warnText = 'Above the 0.25 g/gal pH Up ceiling';
+                } else if (ec < phase.ecMin || ec > phase.ecMax) {
+                    warnText = 'Outside tested range';
                 }
+                warnEl.textContent = warnText;
+                warnEl.classList.toggle('show', warnText !== '');
             }
 
             updateURL();
@@ -1531,6 +1674,9 @@
             let modeLabel = currentMode === 'dtr'
                 ? `Direct to Reservoir (${reservoirSize} gal)`
                 : `Stock Concentrate (${stockConc} g/gal)`;
+            const alkPpm = parseFloat(document.getElementById('source-alk').value) || 0;
+            if (alkPpm > 0) modeLabel += ` · source alkalinity ${alkPpm} ppm as CaCO3`;
+            if (document.getElementById('warm-lines').checked) modeLabel += ' · warm lines';
 
             // Build markdown table
             let lines = [
@@ -1542,12 +1688,12 @@
 
             // Table header
             if (currentMode === 'dtr') {
-                lines.push('| Recipe | EC | g/gal | Total |');
-                lines.push('|--------|---:|------:|------:|');
+                lines.push('| Recipe | EC | Target pH | g/gal | Total |');
+                lines.push('|--------|---:|----------:|------:|------:|');
             } else {
                 const unitLabel = injectionUnit === 'mlgal' ? 'ml/gal' : '%';
-                lines.push(`| Recipe | EC | g/gal | ${unitLabel} |`);
-                lines.push('|--------|---:|------:|------:|');
+                lines.push(`| Recipe | EC | Target pH | g/gal | ${unitLabel} |`);
+                lines.push('|--------|---:|----------:|------:|------:|');
             }
 
             // Table rows
@@ -1559,7 +1705,8 @@
                 const ec = parseFloat(document.getElementById(`ec-${i}`).value);
                 if (isNaN(ec) || ec <= 0) continue;
 
-                const gpg = Math.max(0, phase.calc(ec));
+                const target = getTarget(i);
+                const gpg = doseFor(phase, ec, target);
 
                 let resultStr;
                 if (currentMode === 'dtr') {
@@ -1573,14 +1720,14 @@
                     }
                 }
 
-                lines.push(`| ${phase.name} | ${ec.toFixed(1)} | ${gpg.toFixed(3)} | ${resultStr} |`);
+                lines.push(`| ${phase.name} | ${ec.toFixed(1)} | ${target.toFixed(1)} | ${gpg.toFixed(3)} | ${resultStr} |`);
             }
 
             // Add abbreviated warnings/tips
             lines.push('');
-            lines.push('> **⚠️ Warning:** Overuse of pH Up can cause clogs, blockages, and plant death. If using more than recommended, contact your Sales Rep.');
+            lines.push('> **⚠️ Ceiling:** Each row targets just under the pH where calcium phosphate starts forming for that recipe and EC. Pushing past the listed target risks clogs and scale — the high-phosphorus flower recipes have the least room.');
             lines.push('>');
-            lines.push('> **💡 Tip:** Always measure pH at the dripper or batch tank, not at the skid. Allow 10-15 min after adjusting before rechecking.');
+            lines.push('> **💡 Tip:** Calibrate your meter the same day and measure pH at the dripper or batch tank, not at the skid. Allow 10-15 min after adjusting before rechecking.');
             lines.push('');
             lines.push('---');
             lines.push('*Generated at [phup.frontrowag.com](https://phup.frontrowag.com)*');
@@ -1606,6 +1753,9 @@
         function updateURL() {
             const params = new URLSearchParams();
             params.set('mode', currentMode);
+            const alkVal = document.getElementById('source-alk').value;
+            if (alkVal && parseFloat(alkVal) > 0) params.set('alk', alkVal);
+            if (document.getElementById('warm-lines').checked) params.set('warm', '1');
 
             if (currentMode === 'dtr') {
                 params.set('res', document.getElementById('reservoir-size').value);
@@ -1624,6 +1774,7 @@
                 const ec = document.getElementById(`ec-${i}`).value;
                 params.set(`r${i}`, recipeSelect.value);
                 if (ec) params.set(`e${i}`, ec);
+                if (targetManual[i]) params.set(`t${i}`, document.getElementById(`target-${i}`).value);
             }
 
             const newURL = `${window.location.pathname}?${params.toString()}`;
@@ -1643,6 +1794,12 @@
 
             if (params.has('res')) {
                 document.getElementById('reservoir-size').value = params.get('res');
+            }
+            if (params.has('alk')) {
+                document.getElementById('source-alk').value = params.get('alk');
+            }
+            if (params.get('warm') === '1') {
+                document.getElementById('warm-lines').checked = true;
             }
 
             if (params.has('conc')) {
@@ -1668,6 +1825,11 @@
                 }
                 if (params.has(`e${i}`)) {
                     document.getElementById(`ec-${i}`).value = params.get(`e${i}`);
+                    hasCustomSettings = true;
+                }
+                if (params.has(`t${i}`)) {
+                    document.getElementById(`target-${i}`).value = params.get(`t${i}`);
+                    targetManual[i] = true;
                     hasCustomSettings = true;
                 }
             }
