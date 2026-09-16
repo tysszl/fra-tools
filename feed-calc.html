@@ -1460,11 +1460,11 @@ const FRA_NUTRITION_CORE = (() => {
   const lines = deepFreeze({
     "3part": {
       productsByRole: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
-      ecPerGram: { "Part A": 0.306, "Part B": 0.255, Bloom: 0.200 },
+      ecPerGram: { "Part A": 0.306, "Part B": 0.255, Bloom: 0.204 },
       recipes: {
         Veg: { "Part A": 0.6428571428571, "Part B": 0.3571428571429, Bloom: 0 },
         Stretch: { "Part A": 0.55, "Part B": 0.29, Bloom: 0.16 },
-        Stack: { "Part A": 0.5021882, "Part B": 0.2789934, Bloom: 0.2188184 },
+        Stack: { "Part A": 0.5, "Part B": 0.2777778, Bloom: 0.2222222 },
         Swell: { "Part A": 0.441, "Part B": 0.234, Bloom: 0.325 },
         Ripen: { "Part A": 0.35, "Part B": 0.30, Bloom: 0.35 },
       },
@@ -1706,8 +1706,10 @@ const FRA_NUTRITION_CORE = (() => {
 // ── 2-doser Tank 2 charge ────────────────────────────────────────────────────
 // Bloom is the fixed anchor at 50 lb per 50 gal — 2 whole 25-lb bags, and 1.00 lb/gal is
 // the same concentration the standard 1-1-1 build uses. Part B is the only dial: it sets
-// how close the combined tank sits to the Swell recipe, which needs Bloom:PartB = 85:48
-// by weight. 28 lb gives 1.7857, within 0.84%.
+// how close the combined tank sits to the Swell recipe, which needs Bloom:PartB = 125:72
+// (1.7361) by weight. 28 lb gives 1.7857, 2.86% off. It was 0.84% off before Bloom's
+// EC/g moved 0.200 → 0.204 (Sep 16 2026); 29 lb would be 0.69% off. Re-rounding is an
+// open R&D question, so the build is unchanged.
 //
 // Everything downstream derives from these three numbers — stock rates, both injection
 // rates, validation ECs, the chart, and the print output.
@@ -1743,7 +1745,7 @@ const LINES = {
     // AIDEV-NOTE: "2-doser" is its own standardized build, not a variant of 3-2-2 — the
     // same pattern cplus-calc.html uses. Tank 1 holds Part A alone; Tank 2 holds Part B and
     // Bloom together, so the tank's Bloom:PartB weight ratio IS the recipe and cannot be
-    // re-split per phase. Swell requires 85:48 = 1.7708 by weight (0.325/0.200 over
+    // re-split per phase. Swell requires 125:72 = 1.7361 by weight (0.325/0.204 over
     // 0.234/0.255 — an exact rational).
     //
     // The two tanks intentionally run at DIFFERENT injection rates. Tank 1 is identical to

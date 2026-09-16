@@ -245,11 +245,11 @@ describe("shared nutrition core contract", () => {
     expect(nutritionCore.lines).toEqual({
       "3part": {
         productsByRole: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
-        ecPerGram: { "Part A": 0.306, "Part B": 0.255, Bloom: 0.200 },
+        ecPerGram: { "Part A": 0.306, "Part B": 0.255, Bloom: 0.204 },
         recipes: {
           Veg: { "Part A": 0.6428571428571, "Part B": 0.3571428571429, Bloom: 0 },
           Stretch: { "Part A": 0.55, "Part B": 0.29, Bloom: 0.16 },
-          Stack: { "Part A": 0.5021882, "Part B": 0.2789934, Bloom: 0.2188184 },
+          Stack: { "Part A": 0.5, "Part B": 0.2777778, Bloom: 0.2222222 },
           Swell: { "Part A": 0.441, "Part B": 0.234, Bloom: 0.325 },
           Ripen: { "Part A": 0.35, "Part B": 0.30, Bloom: 0.35 },
         },
@@ -818,8 +818,8 @@ describe("FRA Swell recipe math", () => {
     const doses = Object.fromEntries(fra!.products.map(product => [product.name, product.usage]));
     expect(doses["Part A"]).toBeCloseTo(4.323529, 6);
     expect(doses["Part B"]).toBeCloseTo(2.752941, 6);
-    expect(doses.Bloom).toBeCloseTo(4.875, 6);
-    expect(api.calcRecipe(fra).rawCost).toBeCloseTo(0.10295, 5);
+    expect(doses.Bloom).toBeCloseTo(4.779412, 6);
+    expect(api.calcRecipe(fra).rawCost).toBeCloseTo(0.102106, 5);
   });
 
   test("the usage calculator executes current 3-Part potency and recipes", () => {
@@ -827,12 +827,12 @@ describe("FRA Swell recipe math", () => {
     const fra = api.BASE_CONFIG.fra;
     expect(fra.ecPerGram["Part A"]).toBe(0.306);
     expect(fra.recipes.Veg).toEqual({ "Part A": 0.6428571428571, "Part B": 0.3571428571429, Bloom: 0 });
-    expect(fra.recipes.Stack).toEqual({ "Part A": 0.5021882, "Part B": 0.2789934, Bloom: 0.2188184 });
+    expect(fra.recipes.Stack).toEqual({ "Part A": 0.5, "Part B": 0.2777778, Bloom: 0.2222222 });
     expect(fra.flowerRecipe).toBe("Swell");
 
     expect(api.calcProductAmount("Part A", "flower", 1, 3) * 454).toBeCloseTo(4.323529, 6);
     expect(api.calcProductAmount("Part B", "flower", 1, 3) * 454).toBeCloseTo(2.752941, 6);
-    expect(api.calcProductAmount("Bloom", "flower", 1, 3) * 454).toBeCloseTo(4.875, 6);
+    expect(api.calcProductAmount("Bloom", "flower", 1, 3) * 454).toBeCloseTo(4.779412, 6);
   });
 });
 
@@ -893,13 +893,14 @@ describe("additive handling", () => {
 // recipe share while reporting EC as the sum of Part B's AND Bloom's shares. Rate and EC
 // described different tanks, and charts ran 14.1% under target. These pin the fix.
 describe("3-Part 2-doser combined tank", () => {
-  const EC_PER_GRAM = { partA: 0.306, partB: 0.255, bloom: 0.2 };
+  const EC_PER_GRAM = { partA: 0.306, partB: 0.255, bloom: 0.204 };
   const SWELL = { partA: 0.441, partB: 0.234, bloom: 0.325 };
   const G_PER_LB = 454;
   const ML_PER_GAL = 3785;
   const HIGH = { Veg: 3, Stretch: 3, Stack: 2.7, Swell: 2.4, Ripen: 1.8 };
-  // exact Swell requirement, as a rational: (0.325/0.200) / (0.234/0.255) = 85/48
-  const EXACT_RATIO = 85 / 48;
+  // exact Swell requirement, as a rational: (0.325/0.204) / (0.234/0.255) = 125/72.
+  // Was 85/48 (1.7708) under the retired Bloom 0.200 coefficient (R&D Sep 16 2026).
+  const EXACT_RATIO = 125 / 72;
 
   function twoDoser(partBLb?: number) {
     const { api } = createThreePartRuntime();
@@ -915,10 +916,10 @@ describe("3-Part 2-doser combined tank", () => {
     return api;
   }
 
-  test("Swell's required Bloom:Part B weight ratio is exactly 85:48", () => {
+  test("Swell's required Bloom:Part B weight ratio is exactly 125:72", () => {
     expect((SWELL.bloom / EC_PER_GRAM.bloom) / (SWELL.partB / EC_PER_GRAM.partB))
       .toBeCloseTo(EXACT_RATIO, 12);
-    expect(EXACT_RATIO).toBeCloseTo(1.770833, 6);
+    expect(EXACT_RATIO).toBeCloseTo(1.736111, 6);
   });
 
   test("Tank 1 is byte-identical to the standard 3-2-2 Part A tank", () => {
@@ -985,10 +986,14 @@ describe("3-Part 2-doser combined tank", () => {
     },
   );
 
-  test("28 lb rounding costs under 1% on the recipe split", () => {
+  // AIDEV-NOTE: Bloom 0.204 (Sep 16 2026) moved Swell's exact ratio to 1.7361, so the
+  // unchanged 50 lb Bloom + 28 lb Part B build now sits 2.86% off the recipe split (was
+  // 0.84%). Total EC still lands on target; only the B:Bloom split drifts. Whether to
+  // re-round Part B (29 lb = 0.69%) is open with R&D — this pins the current build.
+  test("28 lb build sits 2.86% off the Swell recipe split (re-round pending R&D)", () => {
     const api = twoDoser();
     const rates = api.LINES["3part"].stockRates["2-doser"];
-    expect(Math.abs((rates.bloom / rates.partB) / EXACT_RATIO - 1)).toBeLessThan(0.01);
+    expect((rates.bloom / rates.partB) / EXACT_RATIO - 1).toBeCloseTo(0.028571, 5);
   });
 
   test("the 25 lb build is reachable by changing only the Part B charge", () => {
