@@ -255,6 +255,13 @@
   .facility-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
   .facility-input:focus { outline: none; border-color: var(--accent); }
 
+  .custom-stock-table { border-collapse: collapse; margin-top: 8px; color: var(--text-dim); font-size: 0.92rem; }
+  .custom-stock-table th { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); text-align: left; padding: 4px 14px 4px 0; }
+  .custom-stock-table td { padding: 4px 14px 4px 0; vertical-align: middle; white-space: nowrap; }
+  .custom-stock-table td:last-child { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+  .custom-stock-table .facility-input { width: 96px; }
+  @media (max-width: 480px) { .custom-stock-table th, .custom-stock-table td { padding-right: 8px; } .custom-stock-table .facility-input { width: 76px; } }
+
   .stock-volume-row {
     display: flex;
     align-items: center;
@@ -1201,11 +1208,20 @@
         <button class="toggle-btn" data-val="custom">Custom</button>
       </div>
       <div id="custom-stock-block" style="display:none">
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-gal-input" min="10" max="100000" step="0.1" value="50" onchange="handleStockTankVolumeChange(this.value)"><span>gal per stock tank (all three tanks)</span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-partA" min="1" step="0.5" value="75" onchange="handleCustomLbsChange('partA', this.value)"><span>lb Part A per tank</span><span class="config-note" id="custom-rate-partA"></span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-partB" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('partB', this.value)"><span>lb Part B per tank</span><span class="config-note" id="custom-rate-partB"></span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-bloom" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('bloom', this.value)"><span>lb Bloom per tank</span><span class="config-note" id="custom-rate-bloom"></span></div>
-        <p class="config-note">Internal only. Enter the stock tank size and the pounds charged to each tank; lb/gal, injection rates and validation ECs recalculate. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.</p>
+        <div class="config-spacer"></div>
+        <div class="section-label">Stock Tank Size</div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-gal-input" min="10" max="100000" step="0.1" value="50" onchange="handleStockTankVolumeChange(this.value)"><span>gal per tank, all three tanks</span></div>
+        <div class="config-spacer"></div>
+        <div class="section-label">Fertilizer Per Tank</div>
+        <table class="custom-stock-table">
+          <thead><tr><th>Tank</th><th>Product</th><th>lb charged</th><th>lb / gal</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Part A</td><td><input type="number" class="facility-input" id="custom-lbs-partA" min="1" step="0.5" value="75" onchange="handleCustomLbsChange('partA', this.value)"></td><td id="custom-rate-partA"></td></tr>
+            <tr><td>2</td><td>Part B</td><td><input type="number" class="facility-input" id="custom-lbs-partB" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('partB', this.value)"></td><td id="custom-rate-partB"></td></tr>
+            <tr><td>3</td><td>Bloom</td><td><input type="number" class="facility-input" id="custom-lbs-bloom" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('bloom', this.value)"></td><td id="custom-rate-bloom"></td></tr>
+          </tbody>
+        </table>
+        <p class="config-note">Internal only. lb/gal, injection rates and validation ECs recalculate from these entries. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.</p>
       </div>
       <div class="info-drawer" id="method-drawer">
         <div class="info-drawer-content">
@@ -2807,7 +2823,7 @@ function syncStockConfigControls() {
     ["partA", "partB", "bloom"].forEach(role => {
       const el = document.getElementById("custom-lbs-" + role);
       if (el !== document.activeElement) el.value = String(state.customLbs[role]);
-      document.getElementById("custom-rate-" + role).textContent = `= ${formatLbPerGal(rates[role])} lb/gal`;
+      document.getElementById("custom-rate-" + role).textContent = formatLbPerGal(rates[role]);
     });
   }
   const volInput = document.getElementById("stock-volume-input");
