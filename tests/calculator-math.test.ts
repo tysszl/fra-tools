@@ -274,7 +274,7 @@ describe("shared nutrition core contract", () => {
       mkdirSync(join(tempRoot, "src"));
       writeFileSync(join(tempRoot, "scripts", "sync-nutrition-core.ts"), readFileSync(new URL("../scripts/sync-nutrition-core.ts", import.meta.url)));
       writeFileSync(join(tempRoot, "src", "nutrition-core.js"), "const TEST_CORE = 1;\n");
-      ["feed-calc.html", "cplus-calc.html", "usage-calc.html", "cost-calc.html"].forEach(fileName => {
+      ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html", "cost-calc.html"].forEach(fileName => {
         writeFileSync(join(tempRoot, fileName), `<script>\n${GENERATED_START}\nold\n${GENERATED_END}\n</script>\n`);
       });
 
