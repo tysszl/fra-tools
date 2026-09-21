@@ -1288,7 +1288,7 @@
       <div class="info-drawer-content">
         <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the carrier's weight — 5 lb per 50-lb tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is Part B (or the combined B + Bloom tank in 2-doser mode). PhosZyme is not calcium-compatible, so it never goes in a tank with Part A. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Toggle it on if your feed program includes PhosZyme.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
-        <p><strong>pH Up</strong> is used as needed to raise pH into the 5.5–6.0 target range. Maximum 0.2 g/gal total in the mix. Always add last, after all nutrients are mixed, and allow 5–15 minutes of reaction time before re-measuring.</p>
+        <p><strong>pH Up</strong> is used as needed to raise pH into the target range measured at the dripper: <strong>5.5–6.0</strong> for Veg, Ripen and the standard-strength flower recipes, and <strong>5.5–5.8</strong> for Stretch, Stack and Swell run at high-strength ECs. Lines running above 25 °C (77 °F) want the low end of the range. Maximum 0.2–0.25 g/gal total in the mix, and high-strength flower should stop short of it at 0.15–0.2 g/gal. Always add last, after all nutrients are mixed, in 0.05 g/gal increments, and allow 5–15 minutes of reaction time before re-measuring.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
         <p><strong>Triologic</strong> is a microbial inoculant containing Mycorrhization Helper Bacteria. It amplifies mycorrhizal colonization when applied as a weekly hand-water drench alongside a separate mycorrhizal inoculant.</p>
       </div>
@@ -2307,7 +2307,7 @@ const BP_ADDITIVES = [
   ["Front Row Si", "0.5–2 mL/gal", "Foliar, 1x/week, Veg through Wk 3 of flower (stem strength / stress)."],
   ["Triologic", "1–2 mL/gal", "Use 1x per week."],
   ["BioFlo", "30 mL/gal", "As needed to clear biofilm from irrigation lines."],
-  ["Front Row pH Up", "0.05–0.25 g/gal", "Mix 5–15 minutes."]
+  ["Front Row pH Up", "0.05–0.25 g/gal", "Target 5.5–6.0 at the dripper; 5.5–5.8 on high-strength flower. Mix 5–15 minutes."]
 ];
 const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
 
@@ -2839,11 +2839,16 @@ function renderSupplements() {
 
   // pH Up — shown when toggled on
   if (state.showPhUp) {
-    const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
+    const maxRate = met
+      ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)}`
+      : "0.2–0.25";
+    const stopRate = met
+      ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}`
+      : "0.15–0.2";
     const phupUnit = met ? "g/L" : "g/gal";
     html += `<div class="supp-item">
       <div class="supp-name" style="color:var(--phup)">pH Up</div>
-      <div class="supp-detail">Target pH 5.5–6.0. As needed, ${maxRate} ${phupUnit} max total. Always add last.</div>
+      <div class="supp-detail">Target pH at the dripper: 5.5–6.0 for Veg, Ripen and standard-strength flower; 5.5–5.8 for high-strength Stretch, Stack and Swell. As needed, ${maxRate} ${phupUnit} max total (stop at ${stopRate} on high-strength flower). Always add last.</div>
     </div>`;
   }
 
@@ -3213,9 +3218,14 @@ function buildSummary() {
       html += `<p style="margin:2px 0;font-size:13px;">Si — Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.</p>`;
     }
     if (state.showPhUp) {
-      const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) : "0.2";
+      const maxRate = met
+        ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)}`
+        : "0.2–0.25";
+      const stopRate = met
+        ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}`
+        : "0.15–0.2";
       const phupUnit = met ? "g/L" : "g/gal";
-      html += `<p style="margin:2px 0;font-size:13px;">pH Up — As needed, ${maxRate} ${phupUnit} max total. Always add last.</p>`;
+      html += `<p style="margin:2px 0;font-size:13px;">pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} ${phupUnit} max total; stop at ${stopRate} on high-strength flower. Always add last.</p>`;
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
@@ -3331,8 +3341,13 @@ function buildSummary() {
       plain += `Si — Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.\n`;
     }
     if (state.showPhUp) {
-      const maxRate = met ? (0.2 / CONSTANTS.L_per_gal).toFixed(2) + " g/L" : "0.2 g/gal";
-      plain += `pH Up — As needed, ${maxRate} max total. Always add last.\n`;
+      const maxRate = met
+        ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
+        : "0.2–0.25 g/gal";
+      const stopRate = met
+        ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
+        : "0.15–0.2 g/gal";
+      plain += `pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} max total; stop at ${stopRate} on high-strength flower. Always add last.\n`;
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";

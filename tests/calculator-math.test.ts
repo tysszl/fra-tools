@@ -532,7 +532,7 @@ describe("shared nutrition core contract", () => {
 
     const printHtml = runtime.getElement("branded-print").innerHTML;
     expect(printHtml).toContain("0.13–0.53 mL/L");
-    expect(printHtml).toContain("0.05 g/L");
+    expect(printHtml).toContain("0.05–0.07 g/L");
     expect(printHtml).toContain("Heavy: 8 mL/L; Maint.: 4 mL/L");
     expect(printHtml).toContain("Weekly: 0.25 mL/L; Transplant: 0.5 mL/L");
     expect(printHtml).toContain("Si (mL/L)");
