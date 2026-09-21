@@ -3654,17 +3654,16 @@ const I18N_PATTERNS = {
     [/^Tank 1 \(Part A\) (.+) gal · Tank 2 \(B \+ Bloom\) (.+) gal$/, "Tanque 1 (Part A) $1 gal · Tanque 2 (B + Bloom) $2 gal"],
     [/^Each of the three stock tanks: (.+) gal$/, "Cada uno de los tres tanques madre: $1 gal"],
     [/^Feed Schedule \((.+)\)$/, "Programa de alimentación ($1)"],
-    [/^(.+) Stock Concentrate Rates$/, "Dosis de concentrado madre · $1"],
-    [/^(.+) Stock Concentrate$/, "Concentrado madre · $1"],
-    [/^(.+) stock concentrate$/, "concentrado madre $1"],
-    [/^(.+) gal tanks$/, "tanques de $1 gal"],
+    [/^(.+) Stock Concentrate Rates$/, (m, seg) => `Dosis de concentrado madre · ${seg(m[1])}`],
+    [/^(.+) Stock Concentrate$/, (m, seg) => `Concentrado madre · ${seg(m[1])}`],
+    [/^(.+) stock concentrate$/, (m, seg) => `concentrado madre ${seg(m[1])}`],
+    [/^([\d.]+) gal tanks$/, "tanques de $1 gal"],
+    [/^([\d.]+) \/ ([\d.]+) gal tanks$/, "tanques de $1 / $2 gal"],
     [/^All part values in (.+)\. Sub-values are each part's EC contribution\.$/, "Todos los valores de las partes en $1. Los subvalores son el aporte de EC de cada parte."],
     [/^(.+) EC$/, "$1 EC"],
     [/^PhosZyme contributes (.+) EC by itself\. (.+) cannot reach the selected target at the fixed (.+) g\/gal rate; minimum final EC is (.+)\.$/, "PhosZyme aporta $1 EC por sí solo. $2 no puede alcanzar el objetivo seleccionado a la dosis fija de $3 g/gal; la EC final mínima es $4."],
     [/^= (.+) lb\/gal$/, "= $1 lb/gal"],
-    [/^USA · (.+)$/, "EE. UU. · $1"],
-    [/^(.+) · 2-Doser$/, "$1 · 2 dosificadores"],
-    [/^(.+) · 3-Doser$/, "$1 · 3 dosificadores"]
+    [/^USA$/, "EE. UU."]
   ]
 };
 
@@ -3683,8 +3682,15 @@ function translateString(text, lang) {
   if (!key) return text;
   const dict = I18N[lang] || {};
   if (Object.prototype.hasOwnProperty.call(dict, key)) return dict[key];
+  const seg = s => translateString(s, lang);
   for (const [re, repl] of (I18N_PATTERNS[lang] || [])) {
-    if (re.test(key)) return key.replace(re, repl);
+    if (re.test(key)) return key.replace(re, typeof repl === "function" ? (...m) => repl(m, seg) : repl);
+  }
+  // Config lines are joined with " · "; translate each segment on its own.
+  if (key.includes(" · ")) {
+    const parts = key.split(" · ");
+    const out = parts.map(seg => translateString(seg, lang));
+    if (out.some((seg, i) => seg !== parts[i])) return out.join(" · ");
   }
   return text;
 }
