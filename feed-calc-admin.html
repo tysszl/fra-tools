@@ -1,0 +1,3473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Front Row Ag · Feed Calculator — Internal Admin</title>
+<!-- Brand fonts for the printed chart. Montserrat + Atkinson Hyperlegible are
+     the actual FRA brand faces (per the designed chart PDFs); Oswald stands in
+     for the commercial condensed display face. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Montserrat:wght@600;700;800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --card-border: #2a2a2a;
+    --accent: #3ee6b6;
+    --accent-dim: rgba(62,230,182,0.15);
+    --text: #e8e8e8;
+    --text-dim: #c0c0c0;
+    --text-muted: #a0a0a0;
+    --input-bg: #1c1c1c;
+    --input-border: #3a3a3a;
+    --danger: #e63e3e;
+    --part-a: #8bb83a;
+    --part-b: #4488dd;
+    --bloom: #d44040;
+    --phoszyme: #d45e78;
+    --b-bloom: #8866cc;
+    --si: #b8a030;
+    --phup: #8855bb;
+    --bioflo: #3a9b6a;
+    --triologic: #d4c040;
+  }
+
+  /* ── Light Mode ──────────────────────── */
+  body.light {
+    --bg: #f5f6f8;
+    --card: #ffffff;
+    --card-border: #e2e5ea;
+    --accent: #1a7a5a;
+    --accent-dim: rgba(26,122,90,0.12);
+    --text: #1a1d23;
+    --text-dim: #474c53;
+    --text-muted: #5a6069;
+    --input-bg: #ffffff;
+    --input-border: #d0d4da;
+    --danger: #c53030;
+    --part-a: #4a8a00;
+    --part-b: #2266bb;
+    --bloom: #bb2020;
+    --phoszyme: #b03050;
+    --b-bloom: #6644aa;
+    --si: #8a7a20;
+    --phup: #6644aa;
+    --bioflo: #1a7a4a;
+    --triologic: #9a8520;
+  }
+  body.light .card {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  body.light .stock-table .val-col { background: rgba(26,122,90,0.04); }
+  body.light .stock-table td.val-col:last-child,
+  body.light .stock-table th.val-col:last-child { border-right-color: rgba(26,122,90,0.25); }
+  body.light .stock-table td.val-col-first,
+  body.light .stock-table th.val-col-first { border-left-color: rgba(26,122,90,0.25); }
+  body.light .stock-table tr:last-child .val-col { border-bottom-color: rgba(26,122,90,0.25); }
+  body.light .validation-group-label {
+    border-color: rgba(26,122,90,0.25);
+    background: rgba(26,122,90,0.04);
+  }
+  body.light .info-drawer-content {
+    background: rgba(26,122,90,0.05);
+    border-color: rgba(26,122,90,0.15);
+  }
+  body.light .unit-badge { color: #fff; }
+  body.light .toggle-btn.active {
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    border-color: var(--accent);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  /* ── Focus States ──────────────────────── */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .toggle-btn:focus-visible,
+  .btn:focus-visible,
+  .configuration-toggle:focus-visible,
+  .theme-toggle:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 4px var(--accent-dim);
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 20px 16px 40px;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ── Header ───────────────────────────── */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-top: 8px;
+  }
+  /* AIDEV-NOTE: Two logo files, one per theme — never a CSS filter. invert(1) turns the
+     black wordmark white but also flips the red droplet to cyan, and the droplet is
+     always red. logo-dark.png = black wordmark for light mode; logo-white.png = white
+     wordmark for dark mode. Both keep the red droplet. */
+  .header-logo {
+    display: block;
+    width: 190px;
+    height: auto;
+    margin: 0 auto 12px;
+  }
+  .header-logo--light { display: none; }
+  body.light .header-logo--dark { display: none; }
+  body.light .header-logo--light { display: block; }
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .header h1 span { color: #fff; }
+  body.light .header h1 span { color: #1a1d23; }
+  .header p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    margin-top: 4px;
+  }
+
+  /* ── Cards ────────────────────────────── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 24px 24px 20px;
+    margin-bottom: 16px;
+    transition: background-color 0.3s, border-color 0.3s, box-shadow 0.3s;
+  }
+  .card h2 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+
+  .configuration-toggle {
+    appearance: none;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .configuration-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .configuration-toggle-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .configuration-toggle-note {
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    font-weight: 400;
+  }
+  .configuration-body { padding-top: 20px; }
+
+  /* ── Toggle Buttons ───────────────────── */
+  .toggle-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .toggle-btn {
+    background: var(--input-bg);
+    color: var(--text);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .toggle-btn:hover { border-color: var(--accent); }
+  .toggle-btn.active {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .toggle-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .toggle-btn:disabled:hover {
+    border-color: var(--input-border);
+  }
+  .toggle-btn.active:disabled {
+    border-color: var(--accent);
+  }
+
+  /* ── Section Labels ───────────────────── */
+  .section-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+  .config-spacer { height: 16px; }
+
+  .facility-row { margin-bottom: 16px; }
+  .facility-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.88rem;
+    padding: 8px 12px;
+    font-family: inherit;
+  }
+  .facility-input::placeholder { color: var(--text-muted); font-size: 0.82rem; }
+  .facility-input:focus { outline: none; border-color: var(--accent); }
+
+  .stock-volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+  .stock-volume-input { width: 120px; }
+
+  /* ── Feed Schedule Table ──────────────── */
+  .feed-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .feed-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    text-align: center;
+    border-bottom: none;
+  }
+  .feed-table th:first-child { text-align: right; }
+  .feed-table .header-row-last th {
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .feed-table td {
+    padding: 14px 8px;
+    text-align: center;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.92rem;
+  }
+  .feed-table td:first-child {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+  .feed-table tr:last-child td { border-bottom: none; }
+  .feed-table tbody tr { transition: background-color 0.15s; }
+  .feed-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+  body.light .feed-table tbody tr:hover { background: rgba(0,0,0,0.03); }
+
+  .val { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 1.05rem; }
+  .val-a { color: var(--part-a); }
+  .val-b { color: var(--part-b); }
+  .val-bloom { color: var(--bloom); }
+  .val-phz { color: var(--phoszyme); }
+  .val-total { color: var(--text); }
+
+  .unit-hint {
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--text-muted);
+  }
+  .ec-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+    font-variant-numeric: tabular-nums;
+  }
+  .unit-sub {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 2px;
+  }
+
+  .phase-ec {
+    display: inline-block;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    color: var(--text);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .component-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .dot-a { background: var(--part-a); }
+  .dot-b { background: var(--part-b); }
+  .dot-bloom { background: var(--bloom); }
+  .dot-phz { background: var(--phoszyme); }
+  .val-bbloom { color: var(--b-bloom); }
+  .dot-bbloom { background: var(--b-bloom); }
+
+  .dash { color: var(--text-muted); font-weight: 400; }
+
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 -2px;
+    padding: 0 2px;
+  }
+  @media (max-width: 600px) {
+    .table-scroll {
+      mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+    }
+    .table-scroll:not(.scrolled-end) {
+      mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+      -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 20px), transparent);
+    }
+    .table-scroll.scrolled-end {
+      mask-image: none;
+      -webkit-mask-image: none;
+    }
+  }
+
+  .unit-badge {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #0d2920;
+    background: var(--accent);
+    border-radius: 6px;
+    padding: 4px 12px;
+    margin-left: 10px;
+    vertical-align: middle;
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Custom EC Inputs ─────────────────── */
+  .ec-input {
+    width: 48px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 1px 4px;
+    font-family: inherit;
+    font-variant-numeric: tabular-nums;
+    outline: none;
+    transition: border-color 0.15s;
+    -moz-appearance: textfield;
+  }
+  .ec-input::-webkit-inner-spin-button,
+  .ec-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .ec-input:focus {
+    border-color: var(--accent);
+  }
+
+  .phase-ec.editable {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    padding: 2px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .phase-ec.editable .ec-input {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    width: 32px;
+    font-size: 0.75rem;
+    padding: 0;
+  }
+  .phase-ec.editable .ec-input:focus {
+    border: none;
+  }
+  .phase-ec.editable .ec-label {
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
+  /* ── Recipe Select ────────────────────── */
+  .recipe-select {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 5px;
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: inherit;
+    padding: 2px 8px;
+    outline: none;
+    cursor: pointer;
+  }
+  .recipe-select:focus {
+    border-color: var(--accent);
+  }
+  .recipe-select.modified {
+    color: var(--text);
+  }
+  .recipe-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* ── Stock Tank Table ─────────────────── */
+  .stock-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .stock-table th {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    padding: 6px 10px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .stock-table th:first-child, .stock-table th:nth-child(2):not(.validation-group-label) { text-align: left; }
+  .stock-table td {
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 1px solid var(--card-border);
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .stock-table td:first-child,
+  .stock-table td:nth-child(2) {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  /* AIDEV-NOTE: PhosZyme sub-row has no tank cell (rowspan from Part B covers it),
+     so nth-child shifts — reset the 2nd td back to normal data styling */
+  .stock-table tr.phz-sub td:nth-child(2) {
+    text-align: center;
+    font-weight: normal;
+    font-size: 0.9rem;
+  }
+  .stock-table tr:last-child td { border-bottom: none; }
+  .validation-ec { color: var(--danger); font-weight: 700; font-size: 1rem; }
+
+  .stock-table .val-col {
+    background: rgba(62,230,182,0.03);
+  }
+  .stock-table td.val-col:last-child,
+  .stock-table th.val-col:last-child {
+    border-right: 1px solid rgba(62,230,182,0.25);
+  }
+  .stock-table td.val-col-first,
+  .stock-table th.val-col-first {
+    border-left: 1px solid rgba(62,230,182,0.25);
+  }
+  .stock-table tr:last-child .val-col {
+    border-bottom: 1px solid rgba(62,230,182,0.25);
+  }
+  .validation-group-label {
+    text-align: center;
+    color: var(--accent);
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 10px 2px;
+    border-bottom: none !important;
+    border-left: 1px solid rgba(62,230,182,0.25);
+    border-right: 1px solid rgba(62,230,182,0.25);
+    border-top: 1px solid rgba(62,230,182,0.25);
+    border-radius: 6px 6px 0 0;
+    background: rgba(62,230,182,0.03);
+  }
+  .validation-group-spacer {
+    padding: 0;
+    border-bottom: none !important;
+  }
+
+  /* ── Mixing Instructions ──────────────── */
+  .instructions-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    padding: 2px 0;
+    user-select: none;
+  }
+  .instructions-toggle h2 { margin-bottom: 0; }
+  .chevron {
+    transition: transform 0.2s;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+  }
+  .chevron.open { transform: rotate(180deg); }
+  .instructions-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .instructions-body.open { max-height: 300px; }
+  .instructions-body ol {
+    padding: 14px 0 4px 20px;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+  }
+  .instructions-body li {
+    margin-bottom: 6px;
+    line-height: 1.5;
+  }
+
+  /* ── Supplemental Products Reference ────── */
+  .supp-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .supp-body.open { max-height: 400px; }
+  .supp-list { padding: 14px 0 4px; }
+  .supp-item { margin-bottom: 12px; }
+  .supp-item:last-child { margin-bottom: 0; }
+  .supp-name { font-weight: 600; font-size: 0.88rem; }
+  .supp-detail {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-top: 2px;
+  }
+
+  /* ── Bottom Buttons ───────────────────── */
+  .btn-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .btn {
+    flex: 1;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 0.88rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 16px; height: 16px; }
+  .copied {
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+  }
+
+  /* ── Footer ───────────────────────────── */
+  .footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    margin-top: 24px;
+    padding-bottom: 12px;
+  }
+  .footer a { color: var(--accent); text-decoration: none; }
+  .footer a:hover { text-decoration: underline; }
+
+.tools-link {
+    display: flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto 0;
+    padding: 10px 14px;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 0.84rem;
+    font-weight: 600;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+  }
+  .tools-link:hover,
+  .tools-link:focus-visible {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    outline: none;
+  }
+
+  /* ── Info Drawers ────────────────────── */
+  .section-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+  .section-label-row .section-label {
+    margin: 0;
+  }
+  .info-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    font-family: inherit;
+    padding: 0;
+    line-height: 1;
+  }
+  .info-btn:hover,
+  .info-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-dim);
+  }
+  .info-drawer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, margin 0.3s ease;
+    margin-bottom: 0;
+  }
+  .info-drawer.open {
+    max-height: 500px;
+    margin-bottom: 12px;
+  }
+  .info-drawer-content {
+    background: rgba(62,230,182,0.04);
+    border: 1px solid rgba(62,230,182,0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 8px;
+  }
+  .info-drawer-content p {
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin: 0;
+  }
+  .info-drawer-content p + p {
+    margin-top: 10px;
+  }
+  .info-drawer-content strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .config-note {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+    margin-top: 8px;
+  }
+  .config-note[hidden] {
+    display: none;
+  }
+
+  /* ── Theme Toggle ────────────────────── */
+  .theme-toggle {
+    position: absolute;
+    top: 12px;
+    right: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+  }
+  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .theme-toggle svg { width: 16px; height: 16px; }
+
+  /* ── Responsive ───────────────────────── */
+  @media (max-width: 600px) {
+    body { padding: 12px 8px 30px; }
+    .card { padding: 16px 14px; }
+    .feed-table th, .feed-table td { padding: 10px 4px; font-size: 0.82rem; }
+    .val { font-size: 0.95rem; }
+    .phase-header { font-size: 0.7rem; }
+    .toggle-btn { padding: 7px 12px; font-size: 0.82rem; }
+  }
+
+  /* ── Print Header (hidden on screen) ── */
+  .print-header { display: none; }
+
+  /* ── Print ────────────────────────────── */
+  @media print {
+    @page { margin: 0.4in 0.5in; size: letter; }
+    body { background: #fff; color: #000; padding: 0; font-size: 11px; }
+    .container { max-width: 100%; padding: 0; }
+
+    /* Kill transitions, shadows, masks in print */
+    *, *::before, *::after {
+      transition: none !important;
+      box-shadow: none !important;
+      mask-image: none !important;
+      -webkit-mask-image: none !important;
+    }
+
+    /* Hide interactive elements */
+    .header, #config-card, .btn-row, .footer, .screen-only, .info-drawer { display: none !important; }
+    .table-scroll { overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+    .instructions-body, .supp-body { overflow: visible !important; }
+
+    /* Show print header */
+    .print-header {
+      display: block;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #222;
+    }
+    .print-header-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .print-logo {
+      height: 42px;
+      width: auto;
+    }
+    .print-header-right { flex: 1; }
+    .print-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .print-facility {
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      margin-top: 1px;
+    }
+    .print-facility:empty { display: none; }
+    .print-config {
+      font-size: 10px;
+      color: #444;
+      margin-top: 1px;
+    }
+
+    /* Cards: no dark bg, clean borders */
+    .card {
+      background: #fff;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 6px 0;
+      margin-bottom: 4px;
+      break-inside: avoid;
+    }
+    .card h2 { font-size: 13px; color: #000; margin-bottom: 6px; }
+
+    /* Feed table header row labels — make first column stand out */
+    .feed-table thead th:first-child {
+      font-weight: 700;
+      color: #000;
+      text-align: right;
+      padding-right: 10px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      background: #f5f5f5;
+    }
+
+    /* Feed table compact */
+    .feed-table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      border: 2px solid #333 !important;
+    }
+    .feed-table th, .feed-table td {
+      padding: 4px 6px; font-size: 11px;
+      border: 1px solid #888 !important;
+      vertical-align: middle;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .feed-table th { color: #333; }
+    .feed-table .header-row-last th { padding-bottom: 4px; }
+    .val { font-size: 13px; }
+    .ec-sub { font-size: 9px; color: #555; }
+    .unit-badge { font-size: 11px; border: none; color: #fff; background: #222; border-radius: 4px; padding: 2px 8px; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .phase-ec, .phase-ec.editable { background: none; border: none; color: #000; font-size: 11px; padding: 0; font-weight: 600; }
+    .phase-ec.editable .ec-input { color: #000; background: none; border: none; font-size: 11px; }
+    .phase-ec.editable .ec-label { color: #000; font-size: 11px; }
+    .recipe-select, .recipe-select.modified {
+      font-size: 10px; color: #000; font-weight: 600;
+      -webkit-appearance: none; appearance: none;
+      background: none; border: none; padding: 0;
+      pointer-events: none;
+      text-align: center; width: 100%;
+    }
+    .component-dot { width: 6px; height: 6px; }
+
+    /* Keep product colors in print */
+    .val-a { color: #4a8a00 !important; }
+    .val-b { color: #2266bb !important; }
+    .val-bloom { color: #bb2020 !important; }
+    .val-phz { color: #b03050 !important; }
+    .val-bbloom { color: #6644aa !important; }
+    .dot-a { background: #4a8a00 !important; }
+    .dot-b { background: #2266bb !important; }
+    .dot-bloom { background: #bb2020 !important; }
+    .dot-phz { background: #b03050 !important; }
+    .dot-bbloom { background: #6644aa !important; }
+
+    /* Stock table compact */
+    .stock-table {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      border: 2px solid #333 !important;
+    }
+    .stock-table th, .stock-table td {
+      padding: 4px 6px; font-size: 10px;
+      border: 1px solid #888 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .stock-table th { color: #333; }
+    .stock-table td[rowspan] { vertical-align: middle; }
+    .stock-table tr.phz-sub td:nth-child(2) { text-align: center; font-weight: normal; font-size: 10px; }
+    .validation-ec { font-size: 12px; color: #cc2020 !important; }
+    .stock-table .val-col { background: #f9f9f9; }
+    .validation-group-label {
+      background: #f9f9f9;
+      border-color: #ccc;
+      color: #444;
+    }
+    .stock-table td.val-col-first,
+    .stock-table th.val-col-first { border-left: 1px solid #ccc; }
+    .stock-table td.val-col:last-child,
+    .stock-table th.val-col:last-child { border-right: 1px solid #ccc; }
+    .stock-table tr:last-child .val-col { border-bottom: 1px solid #ccc; }
+
+    /* Validation label centering in print */
+    .validation-group-label { text-align: center !important; }
+
+    /* Mixing instructions: always open, compact, no emoji */
+    .instructions-body { display: block !important; max-height: none !important; }
+    .chevron { display: none; }
+    .instructions-toggle { cursor: default; }
+    #instructions-card h2 { font-size: 13px; color: #000; }
+    .screen-only { display: none !important; }
+    #instructions-list { font-size: 10px; padding-left: 18px; color: #333; }
+    #instructions-list li { margin-bottom: 1px; }
+
+    /* Supplemental products: always open, compact 2-col grid in print */
+    .supp-body { display: block !important; max-height: none !important; }
+    #supp-card h2 { font-size: 13px; }
+    .supp-list {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 16px;
+      padding: 4px 0 0 !important;
+    }
+    .supp-item { margin-bottom: 2px !important; }
+    .supp-name { font-size: 11px; }
+    .supp-detail { font-size: 9px; color: #444; line-height: 1.4; }
+
+    /* PhosZyme footnote */
+    #phz-footnote { font-size: 9px; color: #555; margin-top: 4px !important; }
+
+    /* Print footer */
+    .print-footer {
+      display: block !important;
+      text-align: center;
+      font-size: 8px;
+      color: #555;
+      margin-top: 8px;
+      padding-top: 4px;
+      border-top: 1px solid #ddd;
+    }
+
+    /* Override CSS variables for print (prevent dark-mode light grays on white paper) */
+    :root {
+      --text: #000;
+      --text-dim: #333;
+      --text-muted: #555;
+      --bioflo: #1a6a42;
+    }
+
+    /* Recipe titles: ensure centered in print (skip first-column label) */
+    .feed-table thead tr:nth-child(2) th:not(:first-child) { text-align: center !important; }
+
+    /* 2-doser tint in print */
+    .stock-table tr[style*="rgba(136,102,204"] { background: #f5f3fa !important; }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     FEED CHART — print styling layer (design system v2)
+     Recreates the FRA brand sheet in pure HTML/CSS — no pasted
+     header images. Brand colors are sampled from the designed
+     chart assets; typography matches the brand PDF (Montserrat
+     for labels, Atkinson Hyperlegible for body; Oswald stands
+     in for the commercial condensed display face). Every visual
+     decision flows from the tokens on #branded-print.
+     Layout: page 1 = the program (masthead, hero chart, EC
+             reference), page 2 = the procedure (mixing steps,
+             visual guide, stock rates).
+     ══════════════════════════════════════════════════════════ */
+  #branded-print { display: none; }
+
+  @media print {
+    /* Swap the interactive calculator for the branded sheet */
+    .container > *:not(#branded-print) { display: none !important; }
+    #branded-print { display: block !important; }
+
+    /* ── Design tokens ── */
+    #branded-print {
+      --red: #ab3431;          /* brand red — display titles, accents  */
+      --red-deep: #832a27;     /* deep red — section bands, chart head */
+      --green: #4e703f;        /* unit band green                      */
+      --ink: #1c1c1c;          /* body text                            */
+      --muted: #676767;        /* captions, footer                     */
+      --hair: #d6d2cc;         /* light table borders                  */
+      --grid: #bdb9b2;         /* chart cell borders                   */
+      --tint: #f4f2ee;         /* warm fill — label col, table heads   */
+      --ec-tint: #edf1e8;      /* green-cast fill — target EC row      */
+      --a: #4a8a00; --b: #2266bb; --bloom: #bb2020; --bbloom: #6644aa;
+      --s1: 4px; --s2: 8px; --s3: 12px; --s4: 18px;   /* spacing scale */
+      --disp: "Oswald", "Arial Narrow", "Helvetica Neue", sans-serif;
+      --label: "Montserrat", "Helvetica Neue", Arial, sans-serif;
+      font-family: "Atkinson Hyperlegible", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      line-height: 1.35;
+    }
+    #branded-print * {
+      box-shadow: none !important;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+
+    /* ── Page + vertical rhythm ── */
+    /* Fixed page height (letter minus @page margins, with rounding slack)
+       + flex column so the footer pins to the bottom of every sheet. */
+    .fc-page { box-sizing: border-box; width: 100%; height: var(--print-page-height, 10.1in); display: flex; flex-direction: column; page-break-after: always; break-after: page; }
+    .fc-page:last-child { page-break-after: auto; break-after: auto; }
+    .fc-page > * + * { margin-top: var(--s4); }      /* space major sections */
+    .fc-stack > * + * { margin-top: var(--s3); }     /* space items in a column */
+
+    /* iOS AirPrint scales the declared @page box differently from desktop
+       Chromium. The full 10.1in flex page then fragments its auto-pushed footer
+       onto a footer-only continuation page. Keep the desktop height unchanged
+       and reserve additional vertical slack only in WebKit's iOS print path. */
+    @supports (-webkit-touch-callout: none) {
+      #branded-print { --print-page-height: 9.6in; }
+    }
+
+    /* ── Masthead (shared page header — brand lockup in HTML) ── */
+    .fc-masthead { display: flex; align-items: center; gap: var(--s4); }
+    .fc-masthead__logo { height: 56px; width: auto; flex: none; }
+    .fc-masthead__titles { flex: 1; text-align: right; line-height: 1.04; }
+    .fc-masthead__main { font-family: var(--disp); font-weight: 700; font-size: 30px; color: var(--red); text-transform: uppercase; letter-spacing: 0.01em; }
+    .fc-masthead__sub { font-family: var(--disp); font-weight: 600; font-size: 16px; color: var(--ink); text-transform: uppercase; letter-spacing: 0.16em; margin-top: 2px; }
+    .fc-masthead__qr { flex: none; }
+    .fc-masthead__qr img { height: 58px; width: auto; display: block; }
+
+    /* Green unit band under the masthead */
+    .fc-unitband { display: flex; justify-content: space-between; align-items: center; background: var(--green); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.09em; padding: 5px 14px; border-radius: 3px; margin-top: var(--s2) !important; }
+
+    /* ── Section band (deep red, one rounded end) ── */
+    .fc-band { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; padding: 5px 14px; font-size: 10px; border-radius: 3px 14px 14px 3px; margin-bottom: var(--s2); }
+
+    /* ── Small red heading ── */
+    .fc-h { color: var(--red); font-family: var(--label); font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 var(--s1); }
+
+    /* ── Hero feed chart ── */
+    .fc-chartwrap { border: 1.5px solid #3a3a3a; border-radius: 6px; overflow: hidden; }
+    .fc-chart { border-collapse: collapse; width: 100%; }
+    .fc-chart td { border: 1px solid var(--grid); padding: 13px 6px; text-align: center; vertical-align: middle; }
+    .fc-chart tr td:first-child { border-left: none; }
+    .fc-chart tr td:last-child { border-right: none; }
+    .fc-chart tr:first-child td { border-top: none; }
+    .fc-chart tr:last-child td { border-bottom: none; }
+    .fc-chart__label { text-align: right !important; font-family: var(--label); font-weight: 700; font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.04em; color: #575757; background: var(--tint); white-space: nowrap; padding-right: 10px !important; }
+    /* Product row labels take their part color (mirrors the value colors) */
+    .fc-chart__label--a { color: var(--a); font-size: 11px; }
+    .fc-chart__label--b { color: var(--b); font-size: 11px; }
+    .fc-chart__label--bloom { color: var(--bloom); font-size: 11px; }
+    .fc-chart__label--bbloom { color: var(--bbloom); font-size: 11px; }
+    .fc-chart__phase { background: var(--red-deep); color: #fff; font-family: var(--label); font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em; padding: 9px 6px; border-color: var(--red-deep) !important; }
+    .fc-chart__recipe { font-family: var(--disp); font-weight: 600; font-size: 18px; }
+    .fc-chart__ec { font-family: var(--disp); font-weight: 600; font-size: 19px; background: var(--ec-tint); }
+    .fc-chart__val { font-family: var(--disp); font-weight: 600; font-size: 21px; }
+    .fc-chart__val--a { color: var(--a); }
+    .fc-chart__val--b { color: var(--b); }
+    .fc-chart__val--bloom { color: var(--bloom); }
+    .fc-chart__val--bbloom { color: var(--bbloom); }
+    .fc-sub { font-size: 8.5px; color: var(--muted); margin-top: 2px; }
+
+    /* ── Captions ── */
+    .fc-caption { font-size: 9.5px; color: var(--muted); margin-top: 5px; }
+    .fc-caption--italic { font-style: italic; }
+
+    /* ── Reference grid + tables ── */
+    .fc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+    .fc-table { border-collapse: collapse; width: 100%; font-size: 10px; }
+    .fc-table th, .fc-table td { border: 1px solid var(--hair); padding: 4.5px 8px; text-align: left; vertical-align: top; }
+    .fc-table thead th { background: var(--tint); color: #3f3f3f; font-family: var(--label); font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: 0.05em; }
+    .fc-table tbody tr:nth-child(even) { background: #faf9f7; }
+    .fc-table .nowrap { white-space: nowrap; }
+
+    /* ── Prose block (EC considerations) ── */
+    .fc-prose p { font-size: 10px; line-height: 1.5; margin: 0; }
+
+    /* ── Stock rates table: proportional fixed columns, centered numbers ── */
+    .fc-table--rates { table-layout: fixed; }
+    .fc-table--rates th { white-space: nowrap; padding-left: 6px; padding-right: 6px; }
+    .fc-table--rates th, .fc-table--rates td { text-align: center; }
+    .fc-table--rates th:nth-child(2), .fc-table--rates td:nth-child(2) { text-align: left; }
+    .fc-table--rates th:nth-child(1) { width: 9%; }
+    .fc-table--rates th:nth-child(2) { width: 14%; }
+    .fc-table--rates th:nth-child(3) { width: 8%; }
+    .fc-table--rates th:nth-child(4) { width: 8%; }
+    .fc-table--rates th:nth-child(5) { width: 14%; }
+    .fc-table--rates th:nth-child(6) { width: 15%; }
+    .fc-table--rates th:nth-child(7) { width: 16%; }
+    .fc-table--rates th:nth-child(8) { width: 16%; }
+
+    /* ── Validation steps (right third, beside the stock rates table) ── */
+    .fc-valsteps ol { margin: 0; padding-left: 16px; }
+    .fc-valsteps li { font-size: 9.5px; line-height: 1.4; margin-bottom: 4px; }
+    .fc-valsteps li::marker { color: var(--red); font-weight: 700; font-family: var(--label); }
+
+    /* ── Mixing steps + notes (page 2) ── */
+    .fc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s4); align-items: start; }
+    .fc-steps { border: 2px solid var(--red); border-radius: 10px; padding: var(--s3) var(--s4); }
+    .fc-steps ol { margin: 0; padding-left: 20px; }
+    .fc-steps li { font-size: 10.5px; margin-bottom: var(--s2); line-height: 1.4; }
+    .fc-steps li::marker { color: var(--red); font-weight: 700; font-family: var(--label); }
+    .fc-notes ul { margin: 0; padding-left: 16px; }
+    .fc-notes li { font-size: 10.5px; margin-bottom: var(--s2); line-height: 1.4; }
+
+    /* ── Visual guide art (cropped illustration, band added in HTML) ── */
+    .fc-art { width: 94%; height: auto; display: block; margin: 0 auto; }
+
+    /* ── Mixing-page density (page 2 carries more content than page 1) ── */
+    .fc-page--mix { --s4: 15px; }
+    .fc-page--mix .fc-grid { grid-template-columns: 2fr 1fr; }
+    .fc-page--mix .fc-steps li, .fc-page--mix .fc-notes li { margin-bottom: 6px; }
+
+    /* ── Facility notes (flexes to absorb leftover page-1 height as ruled lines) ── */
+    .fc-notesarea { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; }
+    .fc-notesarea__lines { flex: 1; background: repeating-linear-gradient(to bottom, #fff 0, #fff 27px, var(--hair) 27px, var(--hair) 28px); }
+
+    /* ── Footer (margin-top:auto pins it to the sheet bottom) ── */
+    .fc-foot { text-align: center; margin-top: auto; padding-top: var(--s2); border-top: 1px solid var(--hair); font-family: var(--label); font-weight: 600; font-size: 7.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  }
+</style>
+</head>
+<body>
+<style>@media print{#admin-banner{display:none!important}}</style>
+<div id="admin-banner" style="background:#7a1f1f;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:6px 12px;text-align:center">Internal admin copy — custom stock strength and tank volume. Do not share this link with customers.</div>
+
+<div class="container">
+
+  <!-- Theme Toggle (hidden in print) -->
+  <button class="theme-toggle screen-only" onclick="toggleTheme()" aria-label="Toggle light/dark mode">
+    <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+  </button>
+
+  <!-- Print Header (hidden on screen, shown in print) -->
+  <div class="print-header" id="print-header">
+    <div class="print-header-row">
+      <div class="print-header-left">
+        <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="print-logo">
+      </div>
+      <div class="print-header-right">
+        <div class="print-title">Feed Calculator</div>
+        <div class="print-facility" id="print-facility"></div>
+        <div class="print-config" id="print-config-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <img src="assets/feed-chart/logo-white.png" alt="Front Row Ag" class="header-logo header-logo--dark">
+    <img src="assets/feed-chart/logo-dark.png" alt="" aria-hidden="true" class="header-logo header-logo--light">
+    <h1><span>Front Row Ag</span> · Feed Calculator</h1>
+    <p>Stock concentrate mixing rates & feed schedules</p>
+  </div>
+
+  <!-- Configuration Card -->
+  <div class="card" id="config-card">
+    <button type="button" class="configuration-toggle" id="configuration-toggle" aria-expanded="false" aria-controls="configuration-body" onclick="toggleConfiguration()">
+      <span class="configuration-toggle-text">
+        <span class="configuration-toggle-title">Customize your feed chart</span>
+        <span class="configuration-toggle-note">Facility, application, dosers, units, EC, and supplements</span>
+      </span>
+      <span class="chevron" id="configuration-chevron" aria-hidden="true">▾</span>
+    </button>
+    <div class="configuration-body" id="configuration-body" hidden>
+
+    <div class="facility-row">
+      <input type="text" class="facility-input" id="facility-input" placeholder="Facility name (optional — appears on printed chart)" oninput="updateFacility()">
+    </div>
+
+    <div class="section-label-row">
+      <div class="section-label">Application</div>
+      <button class="info-btn" onclick="toggleDrawer('app-drawer', this)" aria-label="What's the difference between stock concentrate and direct to reservoir?">?</button>
+    </div>
+    <div class="toggle-group" id="app-group">
+      <button class="toggle-btn active" data-val="stock">Stock Concentrate</button>
+      <button class="toggle-btn" data-val="direct">Direct to Reservoir</button>
+    </div>
+    <div class="info-drawer" id="app-drawer">
+      <div class="info-drawer-content">
+        <p><strong>Stock Concentrate</strong> is the standard commercial setup. Fertilizer is pre-mixed into concentrated stock tanks, then injected into the irrigation line by dosing equipment (injectors). The calculator shows how much product to add to each stock tank and the injection rates for your dosers.</p>
+        <p><strong>Direct to Reservoir</strong> is for facilities that mix nutrients directly into a reservoir or batch tank at working strength — no stock tanks or injectors involved. The calculator shows how much product to add per gallon (or per liter) of final solution.</p>
+      </div>
+    </div>
+
+    <div id="method-section">
+      <div id="method-block">
+      <div class="config-spacer"></div>
+      <div class="section-label-row">
+        <div class="section-label">Mixing Method</div>
+        <button class="info-btn" onclick="toggleDrawer('method-drawer', this)" aria-label="What do these mixing methods mean?">?</button>
+      </div>
+      <div class="toggle-group" id="method-group">
+        <button class="toggle-btn active" data-val="3-2-2">3-2-2</button>
+        <button class="toggle-btn" data-val="1-1-1">1-1-1</button>
+        <button class="toggle-btn" data-val="custom">Custom</button>
+      </div>
+      <div id="custom-stock-block" style="display:none">
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partA" min="0.25" max="1.87" step="0.01" value="1.50" onchange="handleCustomRateChange('partA', this.value)"><span>lb/gal Part A</span></div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partB" min="0.25" max="1.25" step="0.01" value="1.00" onchange="handleCustomRateChange('partB', this.value)"><span>lb/gal Part B</span></div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-bloom" min="0.25" max="1.25" step="0.01" value="1.00" onchange="handleCustomRateChange('bloom', this.value)"><span>lb/gal Bloom</span></div>
+        <p class="config-note">Internal only. Stock strength per tank; injection rates and validation ECs recalculate. Capped at the densest published build (4-3-3: Part A 1.87, Part B and Bloom 1.25 lb/gal). Solubility above the standard 3-2-2 strengths is not verified here.</p>
+      </div>
+      <div class="info-drawer" id="method-drawer">
+        <div class="info-drawer-content">
+          <p><strong>3:2:2</strong> is the standard mixing method. Three 25-pound bags of Part A go into a 50-gallon stock tank (75 lbs total at 1.5 lbs/gal). Part B and Bloom each get two 25-pound bags into 50 gallons (50 lbs each at 1 lb/gal). Because Part A is more concentrated, the injection rates come out equal across all three parts — which simplifies day-to-day dosing.</p>
+          <p><strong>1:1:1</strong> means everything is mixed at 1 pound per gallon — 50 pounds of each part into 50-gallon stock tanks. This is a lower concentration than 3:2:2 and is used by facilities that prefer a uniform weight ratio. Injection rates will differ between parts since each contributes a different share of the total EC.</p>
+        </div>
+      </div>
+      </div>
+      <div class="config-spacer"></div>
+      <div class="section-label-row">
+        <div class="section-label">Dosers</div>
+        <button class="info-btn" onclick="toggleDrawer('doser-drawer', this)" aria-label="What's the difference between 3-doser and 2-doser?">?</button>
+      </div>
+      <div class="toggle-group" id="doser-group">
+        <button class="toggle-btn active" data-val="3">3-Doser</button>
+        <button class="toggle-btn" data-val="2">2-Doser</button>
+      </div>
+      <div class="info-drawer" id="doser-drawer">
+        <div class="info-drawer-content">
+          <p><strong>3-Doser:</strong> Three separate stock tanks — Part A, Part B, and Bloom each get their own injector. This is the standard setup and allows full flexibility with per-phase recipe adjustments.</p>
+          <p><strong>2-Doser:</strong> Two stock tanks — Part A in one, and Part B + Bloom combined in the other. Used in facilities with only two injectors. A combined tank fixes the Part B–to–Bloom ratio, so all flower phases run the Swell recipe, and the tank is mixed at that ratio rather than 1:1. Tank 1 is the same Part A tank as the standard 3-2-2 build. <strong>The two tanks run at different injection rates</strong> — set each doser to the rate shown in its own row, then confirm with EC/PPM validation.</p>
+        </div>
+      </div>
+
+      <div id="stock-volume-block">
+        <div class="config-spacer"></div>
+        <div class="section-label">Stock Tank Size</div>
+        <div class="stock-volume-row">
+          <input type="number" class="facility-input stock-volume-input" id="stock-volume-input" min="10" max="100000" step="0.1" value="50" oninput="handleStockTankVolumeInput(this.value)" onchange="handleStockTankVolumeChange(this.value)">
+          <span>gal per stock tank</span>
+        </div>
+        <p class="config-note" id="stock-volume-derived"></p>
+        <p class="config-note">Applied to both stock tanks. The 50 gal default fits a standard 55-gallon barrel. Tank 2 is the more dilute tank and runs at a higher injection rate, so it empties roughly 1.7x faster than Tank 1 — size up or plan refills accordingly.</p>
+      </div>
+    </div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label">Output Units</div>
+    <div class="toggle-group" id="unit-group">
+      <button class="toggle-btn active" data-val="mL/gal">mL/gal</button>
+      <button class="toggle-btn" data-val="injection %">injection %</button>
+      <button class="toggle-btn" data-val="ratio">ratio</button>
+      <button class="toggle-btn" data-val="mL/L">mL/L</button>
+    </div>
+
+    <div class="config-spacer"></div>
+    <div class="section-label">EC Presets</div>
+    <div class="toggle-group" id="ec-preset-group">
+      <button class="toggle-btn active" data-val="high">High Strength</button>
+      <button class="toggle-btn" data-val="standard">Standard</button>
+      <button class="toggle-btn" data-val="custom">Custom</button>
+    </div>
+
+    <div id="recipe-schedule-section">
+    <div class="config-spacer"></div>
+    <div class="section-label-row">
+      <div class="section-label">Recipe Schedule</div>
+      <button class="info-btn" onclick="toggleDrawer('recipe-schedule-drawer', this)" aria-label="What do the recipe schedule options mean?">?</button>
+    </div>
+    <div class="toggle-group" id="recipe-schedule-group">
+      <button class="toggle-btn active" data-val="commercial">Commercial (Stack → Swell)</button>
+      <button class="toggle-btn" data-val="standard">Standard Progression</button>
+      <button class="toggle-btn" data-val="swell-flower">Swell Through Flower</button>
+      <button class="toggle-btn" data-val="custom" disabled>Custom</button>
+    </div>
+    <div class="info-drawer" id="recipe-schedule-drawer">
+      <div class="info-drawer-content">
+        <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. The Swell phase steps down through mid-flower: weeks 3–5 run at the higher Swell EC (2.7 High / 2.2 Standard), weeks 6–8/9 at the lower Swell EC (2.4 High / 2.0 Standard), before Ripen. Custom EC values override this.</p>
+        <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
+        <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
+        <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
+      </div>
+    </div>
+    </div>
+    <p class="config-note" id="recipe-schedule-note" hidden>2-Doser mode locks every phase to the Swell recipe — the combined tank is weighed to Swell's Part B–to–Bloom ratio and can't be re-split per phase — so the recipe schedule options are hidden.</p>
+    <p class="config-note" id="phz-target-warning" hidden style="color:#b03050"></p>
+
+    <div class="config-spacer"></div>
+    <div class="section-label-row">
+      <div class="section-label">Supplements</div>
+      <button class="info-btn" onclick="toggleDrawer('supplements-drawer', this)" aria-label="What are these supplements?">?</button>
+    </div>
+    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+      <button class="toggle-btn" id="phz-btn" onclick="togglePhz()">+ PhosZyme</button>
+      <button class="toggle-btn" id="si-btn" onclick="toggleSi()">+ Si</button>
+      <button class="toggle-btn" id="phup-btn" onclick="togglePhUp()">+ pH Up</button>
+      <button class="toggle-btn active" id="bioflo-btn" onclick="toggleBioFlo()">+ BioFlo</button>
+      <button class="toggle-btn active" id="triologic-btn" onclick="toggleTriologic()">+ Triologic</button>
+    </div>
+    <div class="info-drawer" id="supplements-drawer">
+      <div class="info-drawer-content">
+        <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the carrier's weight — 5 lb per 50-lb tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is Part B (or the combined B + Bloom tank in 2-doser mode). PhosZyme is not calcium-compatible, so it never goes in a tank with Part A. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Toggle it on if your feed program includes PhosZyme.</p>
+        <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
+        <p><strong>pH Up</strong> is used as needed to raise pH into the target range measured at the dripper: <strong>5.5–6.0</strong> for Veg, Ripen and the standard-strength flower recipes, and <strong>5.5–5.8</strong> for Stretch, Stack and Swell run at high-strength ECs. Lines running above 25 °C (77 °F) want the low end of the range. Maximum 0.2–0.25 g/gal total in the mix, and high-strength flower should stop short of it at 0.15–0.2 g/gal. Always add last, after all nutrients are mixed, in 0.05 g/gal increments, and allow 5–15 minutes of reaction time before re-measuring.</p>
+        <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
+        <p><strong>Triologic</strong> is a microbial inoculant containing Mycorrhization Helper Bacteria. It amplifies mycorrhizal colonization when applied as a weekly hand-water drench alongside a separate mycorrhizal inoculant.</p>
+      </div>
+    </div>
+
+    </div>
+  </div>
+
+  <!-- Feed Schedule Card -->
+  <div class="card">
+    <h2>Feed Schedule <span class="unit-badge" id="unit-badge"></span></h2>
+    <div class="table-scroll">
+    <table class="feed-table" id="feed-table">
+      <thead>
+        <tr>
+          <th style="width:18%">Phase</th>
+          <th>Veg / Moms</th>
+          <th>Wk 1–2</th>
+          <th>Wk 3–5</th>
+          <th>Wk 6–8/9</th>
+          <th>Final 1–2 Wks</th>
+        </tr>
+        <tr>
+          <th>Recipe</th>
+          <th><select class="recipe-select" id="recipe-veg" onchange="handleRecipeChange('Veg',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-stretch" onchange="handleRecipeChange('Stretch',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-stack" onchange="handleRecipeChange('Stack',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-swell" onchange="handleRecipeChange('Swell',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+          <th><select class="recipe-select" id="recipe-ripen" onchange="handleRecipeChange('Ripen',this.value)"><option>Veg</option><option>Stretch</option><option>Stack</option><option>Swell</option><option>Ripen</option></select></th>
+        </tr>
+        <tr class="header-row-last">
+          <th>Target EC</th>
+          <th><div class="phase-ec" id="ec-veg"></div></th>
+          <th><div class="phase-ec" id="ec-stretch"></div></th>
+          <th><div class="phase-ec" id="ec-stack"></div></th>
+          <th><div class="phase-ec" id="ec-swell"></div></th>
+          <th><div class="phase-ec" id="ec-ripen"></div></th>
+        </tr>
+      </thead>
+      <tbody id="feed-body"></tbody>
+    </table>
+    </div>
+    <p id="twodoser-veg-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
+      Veg / Moms is not served in 2-doser: a combined B + Bloom tank can't deliver a zero-Bloom Veg recipe. Run veg / moms on a separate Part A + Part B feed.
+    </p>
+    <p id="twodoser-rate-note" hidden style="font-size:0.75rem; color:var(--text-dim); margin-top:6px; font-style:italic;">
+      The two tanks run at different injection rates — set each doser to the rate shown in its own row above. Tank 2 is the more dilute tank and runs faster. Confirm with EC/PPM validation.
+    </p>
+    <div class="btn-row">
+      <button class="btn" id="btn-copy" onclick="copySummary()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy Summary
+      </button>
+      <button class="btn" id="btn-share" onclick="shareLink()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        Share Link
+      </button>
+      <button class="btn" onclick="printPage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save PDF
+      </button>
+    </div>
+    <p class="screen-only" style="font-size:0.72rem; color:var(--text-muted); margin-top:8px; text-align:center;">Tip: Choose "Save as PDF" in the print dialog to download a clean one-page PDF.</p>
+  </div>
+
+  <!-- Supplemental Products Reference (collapsible) -->
+  <div class="card" id="supp-card">
+    <div class="instructions-toggle" onclick="toggleSupplements()">
+      <h2>Supplemental Products</h2>
+      <span class="chevron" id="supp-chevron">▾</span>
+    </div>
+    <div class="supp-body" id="supp-body">
+      <div class="supp-list" id="supp-list"></div>
+    </div>
+  </div>
+
+  <!-- Stock Tank Card -->
+  <div class="card" id="stock-card">
+    <h2 id="stock-title">Stock Concentrate Rates</h2>
+    <div class="table-scroll">
+    <table class="stock-table" id="stock-table">
+      <thead>
+        <tr>
+          <th colspan="5" class="validation-group-spacer"></th>
+          <th colspan="3" class="validation-group-label">Validation</th>
+        </tr>
+        <tr>
+          <th>Tank</th>
+          <th>Part</th>
+          <th id="vol-header">gal</th>
+          <th id="wt-header">lbs</th>
+          <th id="conc-header">lbs/gal</th>
+          <th id="sample-header" class="val-col val-col-first">mL / 5gal</th>
+          <th id="ec-gal-header" class="val-col">EC/g/gal</th>
+          <th class="val-col">Valid. EC</th>
+        </tr>
+      </thead>
+      <tbody id="stock-body"></tbody>
+    </table>
+    </div>
+    <p id="phz-footnote" style="font-size:0.75rem; color:var(--text-dim); margin-top:10px; font-style:italic;">
+      * When mixed with Part B stock solution, PhosZyme will increase the validation EC.
+    </p>
+  </div>
+
+  <!-- Mixing Instructions Card (collapsible) -->
+  <div class="card" id="instructions-card">
+    <div class="instructions-toggle" onclick="toggleInstructions()">
+      <h2><span class="screen-only">📋 </span>Mixing Instructions</h2>
+      <span class="chevron" id="chevron">▾</span>
+    </div>
+    <div class="instructions-body" id="instructions-body">
+      <ol id="instructions-list"></ol>
+    </div>
+  </div>
+
+  <a class="tools-link screen-only" href="index.html">Back to All Calculator Tools</a>
+
+  <div class="footer">
+    <a href="https://www.FrontRowAg.com" target="_blank">Front Row Ag</a> · Feed Calculator
+  </div>
+
+  <!-- Print Footer (hidden on screen, shown in print) -->
+  <div class="print-footer" style="display:none;">
+    frontrowag.com · Generated by Front Row Ag Feed Calculator
+  </div>
+
+  <!-- ── Branded print chart (hidden on screen; rendered only for print) ── -->
+  <div id="branded-print" aria-hidden="true"></div>
+
+</div>
+
+<script>
+// BEGIN GENERATED: nutrition-core
+const FRA_NUTRITION_CORE = (() => {
+  "use strict";
+
+  function deepFreeze(value) {
+    if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+    Object.values(value).forEach(deepFreeze);
+    return Object.freeze(value);
+  }
+
+  const fieldUnits = deepFreeze({
+    gramsPerPound: 454,
+    millilitersPerGallon: 3785,
+    litersPerGallon: 3.785,
+  });
+
+  const feedUnitFactors = deepFreeze({
+    "g/gal": 1,
+    "mL/gal": fieldUnits.millilitersPerGallon / fieldUnits.gramsPerPound,
+    "injection %": 100 / fieldUnits.gramsPerPound,
+    ratio: null,
+    "g/L": 1 / fieldUnits.litersPerGallon,
+    "mL/L": (fieldUnits.millilitersPerGallon / fieldUnits.gramsPerPound) / fieldUnits.litersPerGallon,
+  });
+
+  const phoszymeInputs = {
+    ecPerGram: 0.220,
+    directGramsPerGallon: 0.4,
+    stockCarrierRatio: 0.10,
+  };
+  const phoszyme = deepFreeze({
+    ...phoszymeInputs,
+    directEc: Number((phoszymeInputs.directGramsPerGallon * phoszymeInputs.ecPerGram).toFixed(3)),
+  });
+
+  const lines = deepFreeze({
+    "3part": {
+      productsByRole: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
+      ecPerGram: { "Part A": 0.306, "Part B": 0.255, Bloom: 0.204 },
+      recipes: {
+        Veg: { "Part A": 0.6428571428571, "Part B": 0.3571428571429, Bloom: 0 },
+        Stretch: { "Part A": 0.55, "Part B": 0.29, Bloom: 0.16 },
+        Stack: { "Part A": 0.5, "Part B": 0.2777778, Bloom: 0.2222222 },
+        Swell: { "Part A": 0.441, "Part B": 0.234, Bloom: 0.325 },
+        Ripen: { "Part A": 0.35, "Part B": 0.30, Bloom: 0.35 },
+      },
+    },
+    cplus: {
+      productsByRole: { partA: "CaNO3", partB: "C+", bloom: "MKP" },
+      ecPerGram: { CaNO3: 0.317, "C+": 0.283, MKP: 0.195 },
+      recipes: {
+        Veg: { CaNO3: 0.60, "C+": 0.40, MKP: 0 },
+        Stack: { CaNO3: 0.496, "C+": 0.32, MKP: 0.184 },
+        Swell: { CaNO3: 0.3684, "C+": 0.3294, MKP: 0.3022 },
+        Ripen: { CaNO3: 0.315, "C+": 0.30, MKP: 0.385 },
+      },
+    },
+  });
+
+  const roleLineCache = {};
+
+  function getLine(lineId) {
+    const line = lines[lineId];
+    if (!line) throw new Error(`Unknown FRA nutrition line: ${lineId}`);
+    return line;
+  }
+
+  function getRecipe(lineId, recipeName) {
+    const recipe = getLine(lineId).recipes[recipeName];
+    if (!recipe) throw new Error(`Unknown ${lineId} recipe: ${recipeName}`);
+    return recipe;
+  }
+
+  function getRoleLine(lineId) {
+    if (roleLineCache[lineId]) return roleLineCache[lineId];
+    const line = getLine(lineId);
+    const roles = Object.keys(line.productsByRole);
+    const ecPerGram = Object.fromEntries(
+      roles.map(role => [role, line.ecPerGram[line.productsByRole[role]]]),
+    );
+    ecPerGram.phoszyme = phoszyme.ecPerGram;
+    const recipes = Object.fromEntries(
+      Object.entries(line.recipes).map(([recipeName, recipe]) => [
+        recipeName,
+        Object.fromEntries(roles.map(role => [role, recipe[line.productsByRole[role]]])),
+      ]),
+    );
+    roleLineCache[lineId] = deepFreeze({
+      productsByRole: line.productsByRole,
+      ecPerGram,
+      recipes,
+      recipeNames: Object.keys(line.recipes),
+    });
+    return roleLineCache[lineId];
+  }
+
+  function doseGramsPerGallon(lineId, recipeName, productName, targetEc) {
+    const line = getLine(lineId);
+    const recipe = getRecipe(lineId, recipeName);
+    if (!(productName in line.ecPerGram)) {
+      throw new Error(`Unknown ${lineId} product: ${productName}`);
+    }
+    const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+    return normalizedTarget * recipe[productName] / line.ecPerGram[productName];
+  }
+
+  function doseRoleGramsPerGallon(lineId, recipeName, role, targetEc) {
+    const productName = getLine(lineId).productsByRole[role];
+    if (!productName) throw new Error(`Unknown ${lineId} role: ${role}`);
+    return doseGramsPerGallon(lineId, recipeName, productName, targetEc);
+  }
+
+  function getPhoszymeAdjustment({ lineId, recipeName, targetEc, application, included = true }) {
+    const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+    if (!included) {
+      return { baseTargetEc: normalizedTarget, phoszymeEc: 0, achievable: true, minimumFinalEc: 0 };
+    }
+
+    if (application === "direct") {
+      return {
+        baseTargetEc: Math.max(0, normalizedTarget - phoszyme.directEc),
+        phoszymeEc: phoszyme.directEc,
+        achievable: normalizedTarget >= phoszyme.directEc,
+        minimumFinalEc: phoszyme.directEc,
+      };
+    }
+
+    if (application !== "stock") throw new Error(`Unknown PhosZyme application: ${application}`);
+    const line = getLine(lineId);
+    const recipe = getRecipe(lineId, recipeName);
+    const carrier = line.productsByRole.partB;
+    const overheadFraction = recipe[carrier]
+      * phoszyme.stockCarrierRatio
+      * (phoszyme.ecPerGram / line.ecPerGram[carrier]);
+    const baseTargetEc = normalizedTarget / (1 + overheadFraction);
+    return {
+      baseTargetEc,
+      phoszymeEc: baseTargetEc * overheadFraction,
+      achievable: true,
+      minimumFinalEc: 0,
+    };
+  }
+
+  function formatDirectPhoszymeWarning(phases) {
+    if (!phases.length) return "";
+    return `PhosZyme contributes ${phoszyme.directEc.toFixed(3)} EC by itself. ${phases.join(", ")} cannot reach the selected target at the fixed ${phoszyme.directGramsPerGallon.toFixed(1)} g/gal rate; minimum final EC is ${phoszyme.directEc.toFixed(3)}.`;
+  }
+
+  function getFeedUnitDecimals(unit) {
+    if (unit === "mL/gal") return 0;
+    if (unit === "mL/L" || unit === "g/gal" || unit === "g/L") return 1;
+    return 2;
+  }
+
+  function formatFeedDoseFromInjectionPercent(injectionPercent, unit) {
+    const normalizedPercent = Math.max(0, Number(injectionPercent) || 0);
+    if (!(normalizedPercent > 0)) return { dosage: 0, display: "–" };
+    if (unit === "ratio") {
+      const ratio = Math.round(100 / normalizedPercent);
+      return { dosage: ratio, display: `1:${ratio}` };
+    }
+    if (!Object.hasOwn(feedUnitFactors, unit) || feedUnitFactors[unit] === null) {
+      throw new Error(`Unknown feed unit: ${unit}`);
+    }
+    const gramsPerGallonAtOnePoundStock = normalizedPercent / 100 * fieldUnits.gramsPerPound;
+    const dosage = gramsPerGallonAtOnePoundStock * feedUnitFactors[unit];
+    const decimals = getFeedUnitDecimals(unit);
+    return { dosage: +dosage.toFixed(decimals), display: dosage.toFixed(decimals) };
+  }
+
+  function createFeedMathAdapter({
+    lineId,
+    getRecipeName,
+    getApplication,
+    isPhoszymeIncluded,
+    getStockConcentration,
+  }) {
+    function getPhoszymeAdjustmentForPhase(phase, targetEc) {
+      return getPhoszymeAdjustment({
+        lineId,
+        recipeName: getRecipeName(phase),
+        targetEc,
+        application: getApplication(),
+        included: isPhoszymeIncluded(),
+      });
+    }
+
+    function getAdjustedTargetEc(phase, targetEc) {
+      return getPhoszymeAdjustmentForPhase(phase, targetEc).baseTargetEc;
+    }
+
+    function getPhoszymeEc(phase, targetEc) {
+      return getPhoszymeAdjustmentForPhase(phase, targetEc).phoszymeEc;
+    }
+
+    function calculateEcContribution(phase, role, targetEc) {
+      const normalizedTarget = Math.max(0, Number(targetEc) || 0);
+      return getRoleLine(lineId).recipes[getRecipeName(phase)][role] * normalizedTarget;
+    }
+
+    function calculateDosage(phase, role, method, unit, targetEc) {
+      const ec = calculateEcContribution(phase, role, targetEc);
+      if (ec === 0) return { dosage: 0, ec: 0, display: "–" };
+
+      const gramsPerGallon = doseRoleGramsPerGallon(
+        lineId,
+        getRecipeName(phase),
+        role,
+        targetEc,
+      );
+      const stockConcentration = getStockConcentration(method, role);
+      const injectionPercent = gramsPerGallon / stockConcentration
+        * (100 / fieldUnits.gramsPerPound);
+      return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit), ec };
+    }
+
+    function calculatePhoszymeDosage(phase, method, unit, finalTargetEc) {
+      const adjustment = getPhoszymeAdjustmentForPhase(phase, finalTargetEc);
+      if (!isPhoszymeIncluded()) return { dosage: 0, ec: 0, display: "–" };
+
+      if (getApplication() === "direct" && (unit === "g/gal" || unit === "g/L")) {
+        const dosage = unit === "g/L"
+          ? phoszyme.directGramsPerGallon / fieldUnits.litersPerGallon
+          : phoszyme.directGramsPerGallon;
+        const decimals = unit === "g/L" ? 3 : 1;
+        return {
+          dosage: +dosage.toFixed(decimals),
+          ec: phoszyme.directEc,
+          display: dosage.toFixed(decimals),
+        };
+      }
+
+      const carrier = calculateDosage(
+        phase,
+        "partB",
+        method,
+        unit,
+        adjustment.baseTargetEc,
+      );
+      if (carrier.dosage === 0) return { dosage: 0, ec: 0, display: "–" };
+      return { dosage: carrier.dosage, ec: adjustment.phoszymeEc, display: carrier.display };
+    }
+
+    return deepFreeze({
+      getPhoszymeAdjustment: getPhoszymeAdjustmentForPhase,
+      getAdjustedTargetEc,
+      getPhoszymeEc,
+      calculateEcContribution,
+      calculateDosage,
+      calculatePhoszymeDosage,
+    });
+  }
+
+  return deepFreeze({
+    fieldUnits,
+    feedUnitFactors,
+    phoszyme,
+    lines,
+    getLine,
+    getRecipe,
+    getRoleLine,
+    doseGramsPerGallon,
+    doseRoleGramsPerGallon,
+    getPhoszymeAdjustment,
+    formatDirectPhoszymeWarning,
+    formatFeedDoseFromInjectionPercent,
+    createFeedMathAdapter,
+  });
+})();
+// END GENERATED: nutrition-core
+
+// ═══════════════════════════════════════════════
+// DATA — extracted from Ref sheet
+// ═══════════════════════════════════════════════
+
+// AIDEV-NOTE: phoszyme_ratio 0.12 → 0.10 (R&D/Marketing Jun 10 2026): monoammonium
+// (PhosZyme) target ≤0.4 g/gal applied. At 0.12 the co-injected dose hit ~0.50 g/gal at
+// high-strength Veg (3.0 EC). 0.10 = 5 lb per 50-lb Part B tank (round-number field
+// additions, Tyler Jun 10) → worst case ~0.41 at high-strength Veg, a deliberate ~2%
+// allowance at that one brief phase; every other recipe lands well under 0.4. DTR mode
+// is independently fixed at PHOSZYME_FIXED_G_GAL (0.4).
+// ── 2-doser Tank 2 charge ────────────────────────────────────────────────────
+// Bloom is the fixed anchor at 50 lb per 50 gal — 2 whole 25-lb bags, and 1.00 lb/gal is
+// the same concentration the standard 1-1-1 build uses. Part B is the only dial: it sets
+// how close the combined tank sits to the Swell recipe, which needs Bloom:PartB = 125:72
+// (1.7361) by weight. 28 lb gives 1.7857, 2.86% off. It was 0.84% off before Bloom's
+// EC/g moved 0.200 → 0.204 (Sep 16 2026); 29 lb would be 0.69% off. Re-rounding is an
+// open R&D question, so the build is unchanged.
+//
+// Everything downstream derives from these three numbers — stock rates, both injection
+// rates, validation ECs, the chart, and the print output.
+const TWO_DOSER_TANK_GAL = 50;
+const TWO_DOSER_BLOOM_LB = 50;
+const TWO_DOSER_PART_B_LB = 28;
+
+const NUTRITION_LINE_ID = "3part";
+const CORE_LINE = FRA_NUTRITION_CORE.getRoleLine(NUTRITION_LINE_ID);
+const CONSTANTS = {
+  g_per_lb: FRA_NUTRITION_CORE.fieldUnits.gramsPerPound,
+  mL_per_gal: FRA_NUTRITION_CORE.fieldUnits.millilitersPerGallon,
+  pct_mult: 100,
+  phoszyme_ratio: FRA_NUTRITION_CORE.phoszyme.stockCarrierRatio,
+  L_per_gal: FRA_NUTRITION_CORE.fieldUnits.litersPerGallon
+};
+
+// AIDEV-NOTE: This public page is the 3-Part line only. The Component Plus line
+// moved to cplus-calc.html (commercially gated, unlinked) on Jun 11 2026 — old
+// ?line=cplus links silently fall back to 3-Part here. The calculation engine
+// keys on structural roles (docs/feed-recipes.md "pseudo-Part A pattern"):
+// partA = calcium delivery, partB = PhosZyme carrier, bloom = P-heavy bulk.
+const LINES = {
+  "3part": {
+    label: "3-Part",
+    names: CORE_LINE.productsByRole,
+    stockNames: { partA: "A", partB: "B", bloom: "Bloom" },
+    fullNames: { partA: "Part A", partB: "Part B", bloom: "Bloom" },
+    phzComboLabel: "B + PhosZyme",
+    ecPerGram: CORE_LINE.ecPerGram,
+    recipes: CORE_LINE.recipes,
+    recipeNames: CORE_LINE.recipeNames,
+    // AIDEV-NOTE: "2-doser" is its own standardized build, not a variant of 3-2-2 — the
+    // same pattern cplus-calc.html uses. Tank 1 holds Part A alone; Tank 2 holds Part B and
+    // Bloom together, so the tank's Bloom:PartB weight ratio IS the recipe and cannot be
+    // re-split per phase. Swell requires 125:72 = 1.7361 by weight (0.325/0.204 over
+    // 0.234/0.255 — an exact rational).
+    //
+    // The two tanks intentionally run at DIFFERENT injection rates. Tank 1 is identical to
+    // the standard 3-2-2 Part A tank (1.50 lb/gal, validation 2.75, 8.01 mL/gal per 1.0 EC),
+    // which leaves Tank 2 free to be dilute: Bloom at its standard 1.00 lb/gal puts the
+    // combined tank near 187 g/L, below the C+ two-product tank and below the densest single
+    // tank this line specs. Both tanks stay inside the 0.2-2.0% injector band across the
+    // whole chart. Requiring one shared rate instead would force Tank 2 past 300 g/L.
+    stockRates: {
+      "4-3-3": { partA: 1.87, partB: 1.25, bloom: 1.25 },
+      "3-2-2": { partA: 1.50, partB: 1.00, bloom: 1.00 },
+      "1-1-1": { partA: 1.00, partB: 1.00, bloom: 1.00 },
+      "2-doser": {
+        partA: 1.50,
+        partB: TWO_DOSER_PART_B_LB / TWO_DOSER_TANK_GAL,
+        bloom: TWO_DOSER_BLOOM_LB / TWO_DOSER_TANK_GAL
+      }
+    },
+    tankVolumes: {
+      "4-3-3": { tankA: 53.5, tankB: 60 },
+      "3-2-2": { tankA: 50, tankB: 50 },
+      "1-1-1": { tankA: 50, tankB: 50 },
+      "2-doser": { tankA: TWO_DOSER_TANK_GAL, tankB: TWO_DOSER_TANK_GAL }
+    },
+    defaultMethod: "3-2-2",
+    schedules: {
+      commercial:     { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
+      standard:       { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
+      "swell-flower": { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" }
+    }
+  }
+};
+
+function LINE() { return LINES[state.line]; }
+function ecPerGram() { return LINE().ecPerGram; }
+
+const PHASES = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
+function formatTargetEC(value) { return Number(value).toFixed(1); }
+
+// AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Stack Through
+// Flower" was removed the same day — replaced by "Swell Through Flower" as the
+// single-recipe flower option. Old ?rs=stack-flower links fall back to the default.
+// Per-line phaseRecipe maps live in LINES[line].schedules (C+ has no Stretch recipe).
+const RECIPE_SCHEDULE_OPTIONS = {
+  commercial:     { label: "Commercial (Stack → Swell)", selectable: true },
+  standard:       { label: "Standard Progression", selectable: true },
+  "swell-flower": { label: "Swell Through Flower", selectable: true },
+  custom:         { label: "Custom", printLabel: "Custom Recipe Schedule", selectable: false },
+  "locked-swell": { label: "Swell Recipe Locked", selectable: false, lockedOnly: true }
+};
+
+function getRecipeSchedules() { return LINE().schedules; }
+
+const RECIPE_SCHEDULE_LABELS = Object.fromEntries(
+  Object.entries(RECIPE_SCHEDULE_OPTIONS)
+    .map(([key, option]) => [key, option.printLabel || option.label])
+);
+
+const EC_PRESETS = {
+  high:     { Veg: 3.0, Stretch: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
+  standard: { Veg: 2.6, Stretch: 2.4, Stack: 2.2, Swell: 2.0, Ripen: 1.4 }
+};
+
+const UNIT_FACTORS = FRA_NUTRITION_CORE.feedUnitFactors;
+
+// Front Row SI: rate (mL/gal) varies inversely with feed EC
+// Applied through day 21 of flower (phases: Veg, Stretch, Stack)
+const SI_RATE_TABLE = [
+  { below: 2.3, rate: 0.5 },
+  { below: 2.7, rate: 0.375 },
+  { below: 3.1, rate: 0.25 },
+  { below: 3.5, rate: 0.125 }
+];
+
+// pH Up (Potassium Carbonate): as-needed, small increments
+const PHUP_INCREMENT_G_GAL = 0.05;
+
+const STOCK_UNITS  = ["mL/gal", "injection %", "ratio", "mL/L"];
+const DIRECT_UNITS = ["g/gal", "g/L"];
+
+const VALID_APPS    = ["stock", "direct"];
+const VALID_UNITS   = Object.keys(UNIT_FACTORS);
+const VALID_PRESETS = ["high", "standard", "custom"];
+const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
+const VALID_DOSERS  = ["3", "2"];
+const VALID_PHZ     = ["yes", "no"];
+const VALID_METHODS = ["4-3-3", "3-2-2", "1-1-1", "custom"];
+// ADMIN: custom stock strength (lb/gal) per tank; bounds = densest published build (4-3-3).
+const CUSTOM_RATE_LIMITS = { partA: [0.25, 1.87], partB: [0.25, 1.25], bloom: [0.25, 1.25] };
+const DEFAULT_CUSTOM_RATES = { partA: 1.50, partB: 1.00, bloom: 1.00 };
+function normalizeCustomRate(role, value) {
+  const parsed = Number(value);
+  const [lo, hi] = CUSTOM_RATE_LIMITS[role];
+  if (!Number.isFinite(parsed)) return DEFAULT_CUSTOM_RATES[role];
+  return Math.round(Math.min(Math.max(parsed, lo), hi) * 100) / 100;
+}
+function getStockRates(method) {
+  return method === "custom" ? state.customRates : LINE().stockRates[method];
+}
+
+// 2-doser stock tank sizing. Tank 1 holds Part A, Tank 2 holds Part B + Bloom and is
+// filled 5% higher so both tanks land on the same injection rate at whole-bag-friendly
+// Part A and Part B weights. Defaults fit a standard 55-gal barrel.
+const DEFAULT_STOCK_TANK_VOLUME_GAL = 50;
+// Both 2-doser tanks are the same size. The build gets its correctness from the
+// CHARGE in Tank 2, not from tank geometry — volume only scales capacity.
+const TANK2_VOLUME_FACTOR = 1.0;
+const MIN_STOCK_TANK_VOLUME_GAL = 10;
+const MAX_STOCK_TANK_VOLUME_GAL = 100000;
+
+const INSTRUCTIONS = [
+  "Start with clean stock tanks marked at target volume.",
+  "Add RO water to 50% of target volume; begin agitating tank.",
+  "Add fertilizer over 5 minutes, while continuing to agitate tank.",
+  "Add RO water to target volume; mix for 10 more minutes.",
+  "Validate and adjust stock tank as necessary."
+];
+
+// AIDEV-NOTE: Reservoir instructions are dynamic — Part B step changes
+// based on PhosZyme toggle, and pH Up step only appears when toggled on.
+// AIDEV-NOTE: pH adjustment order matters — pH Down goes BEFORE fertilizers
+// (acidic, aids dissolution), pH Up goes AFTER fertilizers (alkaline, add last).
+// AIDEV-NOTE: DTR fill method — fill reservoir to 90% of final volume, dissolve products in order, then top off with water to target EC/PPM before final pH adjustment (R&D May 27 2026). Stock-tank prep is separate and fills to target VOLUME.
+function getReservoirInstructions(usePhz, usePhUp, met) {
+  const n = LINE().fullNames;
+  const bStep = usePhz ? `Add ${n.partB} and PhosZyme; agitate 3–5 minutes.` : `Add ${n.partB}; agitate 3–5 minutes.`;
+  const steps = [
+    "Fill reservoir to 90% of intended final volume; begin agitation.",
+    "If using pH down: add pH down to target range before adding fertilizer.",
+    `Add ${n.partA}; agitate 3–5 minutes.`,
+    bStep,
+    `Add ${n.bloom}; agitate 3–5 minutes.`,
+    "Check EC/PPM, then slowly top off with water until your target EC/PPM is reached.",
+    "If using pH up: add pH up to target range after EC/PPM is on target.",
+    "Validate pH/EC and adjust as necessary."
+  ];
+  return steps;
+}
+
+// AIDEV-NOTE: The two tank-addition steps are one list item so the step
+// numbers line up with the 3-step visual guide on the printed chart
+// (print renders stock steps from 0: prep=0, water=1, fertilizer=2, fill=3).
+const INSTRUCTIONS_2DOSER = [
+  "Start with two clean stock tanks marked at target volume.",
+  "Add RO water to 50% of target volume in each tank; begin agitating.",
+  "Tank 1: Add Part A over 5 minutes while agitating. Tank 2: Add Part B, then PhosZyme, then Bloom over 5 minutes while agitating — Bloom is the largest addition and dissolves slowest.",
+  "Add RO water to target volume in each tank; mix for 10 more minutes.",
+  "Validate and adjust each stock tank as necessary.",
+  "Set each doser to its own injection rate from the chart; confirm final solution EC/PPM."
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+
+let state = {
+  line: "3part",
+  application: "stock",
+  method: "3-2-2",
+  doserMode: "3",
+  // 2-doser only: stock tank volume in gallons, applied to both tanks.
+  // 3-doser keeps the fixed per-method tankVolumes above.
+  stockTankVolumeGal: DEFAULT_STOCK_TANK_VOLUME_GAL,
+  customRates: { ...DEFAULT_CUSTOM_RATES },
+  lastThreeDoserMethod: "3-2-2",
+  usePhoszyme: false,
+  showSi: false,
+  showPhUp: false,
+  showBioFlo: false,
+  showTriologic: false,
+  unit: "mL/gal",
+  ecPreset: "high",
+  recipeSchedule: "commercial",
+  targetEC: { ...EC_PRESETS.high },
+  phaseRecipe: { ...LINES["3part"].schedules.commercial },
+  lastThreeDoserSchedule: {
+    recipeSchedule: "commercial",
+    phaseRecipe: { ...LINES["3part"].schedules.commercial }
+  }
+};
+
+// ═══════════════════════════════════════════════
+// CALCULATION ENGINE
+// ═══════════════════════════════════════════════
+
+function isMetric(unit) {
+  return unit === "g/L" || unit === "mL/L";
+}
+
+// "3-2-2" / "1-1-1" in 3-doser; the 2-doser build has no mixing-method choice, so it
+// labels itself. Keeps state.method === "2-doser" from printing as "2-doser 2-Doser".
+// Bloom:Part B by weight as the tank is actually charged. This is the recipe the
+// combined tank can physically deliver, and it is fixed for the whole flower cycle.
+function tankBloomToPartBRatio() {
+  const rates = getStockRates(state.method);
+  return rates.bloom / rates.partB;
+}
+
+// The effective target EC to hand the Part B dosing math so that Part B AND the Bloom
+// riding with it sum to the tank's combined share of the real target EC.
+function twoDoserTankTargetEc(phase, targetEc) {
+  const recipe = getRecipe(phase);
+  const share = recipe.partB + recipe.bloom;
+  if (!(share > 0) || !(recipe.partB > 0)) return targetEc;
+  const ecPerGramB = ecPerGram().partB + ecPerGram().bloom * tankBloomToPartBRatio();
+  return targetEc * share * ecPerGram().partB / (recipe.partB * ecPerGramB);
+}
+
+// AIDEV-NOTE: 2-doser prints mL/gal to one decimal. Whole-mL rounding is fine at the
+// 3-doser rates but not here: Tank 1 at Ripen is 14.4 mL/gal, and rounding that to 14
+// costs 2.9% of its EC, with Tank 2 rounding the same direction on top. One decimal keeps
+// the rate a grower actually dials consistent with the EC printed beside it (worst case
+// 0.2%). Other units already carry enough precision.
+function twoDoserRateDisplay(role, targetEc, phase, unit, fallback) {
+  if (unit !== "mL/gal") return fallback;
+  const recipe = getRecipe(phase);
+  const conc = getStockConc(state.method, role);
+  if (!(conc > 0) || !(recipe[role] > 0)) return fallback;
+  const gramsPerGallon = targetEc * recipe[role] / ecPerGram()[role];
+  return (gramsPerGallon / conc * UNIT_FACTORS["mL/gal"]).toFixed(1);
+}
+
+function stockConfigLabel() {
+  if (state.doserMode !== "2" && state.method === "custom") {
+    const r = state.customRates;
+    return `Custom ${r.partA.toFixed(2)}/${r.partB.toFixed(2)}/${r.bloom.toFixed(2)} lb/gal`;
+  }
+  return state.doserMode === "2" ? "2-Doser" : state.method;
+}
+
+function normalizeStockTankVolume(value) {
+  const parsed = Number(value);
+  // AIDEV-NOTE: 10 gal floor. Tank charges print to 0.1 lb, so below ~10 gal that rounding
+  // distorts the Bloom:PartB ratio the whole build depends on (at 1 gal, Part B's 0.56 lb
+  // charge prints as 0.6 and a customer following the table mixes 1.667 instead of 1.786).
+  if (!Number.isFinite(parsed) || parsed < MIN_STOCK_TANK_VOLUME_GAL) return DEFAULT_STOCK_TANK_VOLUME_GAL;
+  return Math.round(Math.min(parsed, MAX_STOCK_TANK_VOLUME_GAL) * 10) / 10;
+}
+
+function formatStockTankVolume(value) {
+  const normalized = normalizeStockTankVolume(value);
+  return Number.isInteger(normalized) ? String(normalized) : normalized.toFixed(1);
+}
+
+// 3-doser keeps the fixed per-method tank volumes; 2-doser scales both tanks off the
+// user's Tank 1 volume, holding concentrations — and therefore injection rates — constant.
+function getTankVolumes(method) {
+  if (state.doserMode !== "2" && method === "custom") {
+    const v = normalizeStockTankVolume(state.stockTankVolumeGal);
+    return { tankA: v, tankB: v };
+  }
+  if (state.doserMode !== "2") return LINE().tankVolumes[method];
+  const tankA = normalizeStockTankVolume(state.stockTankVolumeGal);
+  return { tankA, tankB: Math.round(tankA * TANK2_VOLUME_FACTOR * 10) / 10 };
+}
+
+function getStockConc(method, component) {
+  if (state.application === "direct") return 1;
+  return getStockRates(method)[component];
+}
+
+function getStockConcDisplay(method, component, unit) {
+  const base = getStockRates(method)[component];
+  if (isMetric(unit)) {
+    return Math.round(base * CONSTANTS.g_per_lb / CONSTANTS.L_per_gal);
+  }
+  return base;
+}
+
+function getRecipe(phase) {
+  return LINE().recipes[getPhaseRecipeName(phase)];
+}
+
+// AIDEV-NOTE: Recipe schedules change recipe ratios; target EC follows the EC preset.
+// The commercial chart's mid-flower steps down: weeks 3-5 (Stack column, Swell recipe) run
+// at the Stack preset EC, weeks 6-8/9 (Swell column, Swell recipe) at the lower Swell preset
+// EC — 2.4 High / 2.0 Standard — matching the 322/DTR charts (Matthew, Jun 16 2026; reverts
+// the Jun 10 flat-mid-flower override). Custom EC values always win.
+function syncTargetECToPreset() {
+  if (state.ecPreset !== "high" && state.ecPreset !== "standard") return;
+  state.targetEC = { ...EC_PRESETS[state.ecPreset] };
+}
+
+function applyRecipeSchedule(schedule) {
+  if (!getRecipeSchedules()[schedule]) return;
+  state.recipeSchedule = schedule;
+  state.phaseRecipe = { ...getRecipeSchedules()[schedule] };
+  rememberThreeDoserSchedule();
+  syncTargetECToPreset();
+}
+
+function getRecipeScheduleLabel() {
+  if (state.doserMode === "2") return "Swell Recipe Locked";
+  return RECIPE_SCHEDULE_LABELS[state.recipeSchedule];
+}
+
+function getPhaseRecipeName(phase) {
+  return state.doserMode === "2" ? "Swell" : state.phaseRecipe[phase];
+}
+
+function recipesEqual(a, b) {
+  return PHASES.every(phase => a[phase] === b[phase]);
+}
+
+function deriveRecipeSchedule(phaseRecipe) {
+  const matched = Object.entries(getRecipeSchedules()).find(([, recipe]) => recipesEqual(phaseRecipe, recipe));
+  return matched ? matched[0] : "custom";
+}
+
+function rememberThreeDoserSchedule() {
+  if (state.doserMode === "2") return;
+  state.lastThreeDoserSchedule = {
+    recipeSchedule: state.recipeSchedule,
+    phaseRecipe: { ...state.phaseRecipe }
+  };
+}
+
+function restoreThreeDoserSchedule() {
+  state.recipeSchedule = state.lastThreeDoserSchedule.recipeSchedule;
+  state.phaseRecipe = { ...state.lastThreeDoserSchedule.phaseRecipe };
+}
+
+const FEED_MATH = FRA_NUTRITION_CORE.createFeedMathAdapter({
+  lineId: NUTRITION_LINE_ID,
+  getRecipeName: getPhaseRecipeName,
+  getApplication: () => state.application,
+  isPhoszymeIncluded: () => state.usePhoszyme,
+  getStockConcentration: getStockConc
+});
+const getPhzAdjustment = FEED_MATH.getPhoszymeAdjustment;
+const getPhzAdjustedTargetEC = FEED_MATH.getAdjustedTargetEc;
+const getPhzEcContribution = FEED_MATH.getPhoszymeEc;
+const calcEcContribution = FEED_MATH.calculateEcContribution;
+const calcDosage = FEED_MATH.calculateDosage;
+const calcPhoszymeDosage = FEED_MATH.calculatePhoszymeDosage;
+
+// Front Row SI: rate in mL/gal based on feed EC (varies inversely)
+function calcSiRate(ec) {
+  for (const { below, rate } of SI_RATE_TABLE) {
+    if (ec < below) return rate;
+  }
+  if (ec < 3.5) return 0.125;
+  return 0;
+}
+
+function calcStockTanks(method, unit) {
+  const met = isMetric(unit);
+  const vols = getTankVolumes(method);
+  const rates = getStockRates(method);
+  const names = LINE().stockNames;
+
+  const volA = met ? Math.round(vols.tankA * CONSTANTS.L_per_gal) : vols.tankA;
+  const volB = met ? Math.round(vols.tankB * CONSTANTS.L_per_gal) : vols.tankB;
+
+  const wtA = met ? +(volA * getStockConcDisplay(method, "partA", unit) / 1000).toFixed(1) : +(vols.tankA * rates.partA).toFixed(1);
+  const wtB = met ? +(volB * getStockConcDisplay(method, "partB", unit) / 1000).toFixed(1) : +(vols.tankB * rates.partB).toFixed(1);
+  const wtPhz = +(wtB * CONSTANTS.phoszyme_ratio).toFixed(1);
+  const wtBloom = met ? +(volB * getStockConcDisplay(method, "bloom", unit) / 1000).toFixed(1) : +(vols.tankB * rates.bloom).toFixed(1);
+
+  const sampleVol = met ? 400 : 250;
+
+  function ecPerUnit_raw(ecBase) {
+    return met ? ecBase * CONSTANTS.L_per_gal : ecBase;
+  }
+
+  const concA = getStockConcDisplay(method, "partA", unit);
+  const concB = getStockConcDisplay(method, "partB", unit);
+  const concPhz = met ? Math.round(concB * CONSTANTS.phoszyme_ratio) : +(concB * CONSTANTS.phoszyme_ratio).toFixed(2);
+  const concBloom = getStockConcDisplay(method, "bloom", unit);
+
+  const sampleDilution = met ? 20 : 5;
+  function valEC(conc, ecBase) {
+    return +(conc * ecPerUnit_raw(ecBase) * (sampleVol / sampleDilution / 1000)).toFixed(2);
+  }
+  function valEC_imp(rateLbs, ecBase) {
+    return +(rateLbs * CONSTANTS.g_per_lb * ecBase * (sampleVol / 5 / CONSTANTS.mL_per_gal)).toFixed(2);
+  }
+
+  const valA    = met ? valEC(concA, ecPerGram().partA)       : valEC_imp(rates.partA, ecPerGram().partA);
+  const valB    = met ? valEC(concB, ecPerGram().partB)       : valEC_imp(rates.partB, ecPerGram().partB);
+  const valPhz  = met ? valEC(concPhz, ecPerGram().phoszyme)  : valEC_imp(rates.partB * CONSTANTS.phoszyme_ratio, ecPerGram().phoszyme);
+  const valBlm  = met ? valEC(concBloom, ecPerGram().bloom)   : valEC_imp(rates.bloom, ecPerGram().bloom);
+
+  return {
+    volUnit: met ? "L" : "gal",
+    wtUnit: met ? "kg" : "lbs",
+    concUnit: met ? "g / L" : "lbs / gal",
+    sampleUnit: met ? "mL / 20L" : "mL / 5gal",
+    ecUnit: met ? "EC / g / L" : "EC / g / gal",
+    rows: [
+      { key: "partA", tank: 1, part: names.partA,  vol: volA, wt: wtA,    conc: concA,    sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().partA).toFixed(3)    : ecPerGram().partA,    valEC: valA,   cls: "val-a" },
+      { key: "partB", tank: 2, part: names.partB,  vol: volB, wt: wtB,    conc: concB,    sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().partB).toFixed(3)    : ecPerGram().partB,    valEC: valB,   cls: "val-b" },
+      { key: "phz",  tank: "–", part: "PhosZyme*", vol: volB, wt: wtPhz,  conc: concPhz,  sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().phoszyme).toFixed(3) : ecPerGram().phoszyme, valEC: valPhz, cls: "val-phz" },
+      { key: "bloom", tank: 3, part: names.bloom,  vol: volB, wt: wtBloom, conc: concBloom, sample: sampleVol, ecG: met ? ecPerUnit_raw(ecPerGram().bloom).toFixed(3)   : ecPerGram().bloom,   valEC: valBlm, cls: "val-bloom" }
+    ]
+  };
+}
+
+// ═══════════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════════
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand("copy");
+  document.body.removeChild(ta);
+  return Promise.resolve();
+}
+
+function copyRichText(html, plain) {
+  if (navigator.clipboard && navigator.clipboard.write && window.isSecureContext) {
+    return navigator.clipboard.write([
+      new ClipboardItem({
+        "text/html": new Blob([html], { type: "text/html" }),
+        "text/plain": new Blob([plain], { type: "text/plain" })
+      })
+    ]);
+  }
+  // Fallback: copy plain text
+  return copyToClipboard(plain);
+}
+
+// ═══════════════════════════════════════════════
+// SHARED FEED-ROW MODEL
+// Single source of truth for BOTH the on-screen feed table
+// and the branded print chart, so their numbers can never
+// drift. Each row: { label, dotCls, valCls,
+// cells: [ {display,dosage,ec} | null ] }  (null cell = dash).
+// ═══════════════════════════════════════════════
+function computeFeedRows() {
+  const { method, unit, targetEC } = state;
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const names = LINE().names;
+  const rows = [];
+
+  // Part A — always present
+  rows.push({
+    label: names.partA, dotCls: "dot-a", valCls: "val-a",
+    cells: PHASES.map(phase => {
+      if (is2Doser && phase === "Veg") return null;
+      const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+      const r = calcDosage(phase, "partA", method, unit, eEC);
+      const display = is2Doser ? twoDoserRateDisplay("partA", eEC, phase, unit, r.display) : r.display;
+      return { display, dosage: r.dosage, ec: r.ec };
+    })
+  });
+
+  if (is2Doser) {
+    rows.push({
+      label: usePhz ? "B + Bloom + PhosZyme" : "B + Bloom", dotCls: "dot-bbloom", valCls: "val-bbloom",
+      cells: PHASES.map(phase => {
+        if (phase === "Veg") return null;
+        const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+        // AIDEV-NOTE: One tank, one rate, two products. The rate is set so the TANK
+        // delivers its combined share of target EC — NOT so Part B hits its own recipe
+        // share. Those coincide only when the tanked Bloom:B ratio is exactly the
+        // recipe's; with whole-pound rounding it isn't, and dosing off Part B alone
+        // would let Bloom drag total EC off target (at the 25-lb build, +4.2%).
+        // Bloom's EC likewise comes from what the tank delivers, never from its recipe
+        // share. Mixing those two views — a rate from one and an EC from the other —
+        // makes the chart describe a tank that isn't the one being mixed.
+        const t2EC = twoDoserTankTargetEc(phase, eEC);
+        const resultB = calcDosage(phase, "partB", method, unit, t2EC);
+        const gramsB = (t2EC * getRecipe(phase).partB) / ecPerGram().partB;
+        const partBEc = gramsB * ecPerGram().partB;
+        const bloomEc = gramsB * tankBloomToPartBRatio() * ecPerGram().bloom;
+        let combinedEc = partBEc + bloomEc;
+        if (usePhz) combinedEc += getPhzEcContribution(phase, targetEC[phase]);
+        const display = twoDoserRateDisplay("partB", t2EC, phase, unit, resultB.display);
+        return { display, dosage: resultB.dosage, ec: combinedEc };
+      })
+    });
+  } else {
+    if (usePhz && state.application === "stock") {
+      rows.push({
+        label: LINE().phzComboLabel, dotCls: "dot-b", valCls: "val-b",
+        cells: PHASES.map(phase => {
+          const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+          const resultB = calcDosage(phase, "partB", method, unit, eEC);
+          const phzEc = getPhzEcContribution(phase, targetEC[phase]);
+          return { display: resultB.display, dosage: resultB.dosage, ec: resultB.ec + phzEc };
+        })
+      });
+    } else {
+      rows.push({
+        label: names.partB, dotCls: "dot-b", valCls: "val-b",
+        cells: PHASES.map(phase => {
+          const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+          const r = calcDosage(phase, "partB", method, unit, eEC);
+          return { display: r.display, dosage: r.dosage, ec: r.ec };
+        })
+      });
+    }
+    if (usePhz && state.application === "direct") {
+      rows.push({
+        label: "PhosZyme", dotCls: "dot-phz", valCls: "val-phz",
+        cells: PHASES.map(phase => {
+          const r = calcPhoszymeDosage(phase, method, unit, targetEC[phase]);
+          return { display: r.display, dosage: r.dosage, ec: r.ec };
+        })
+      });
+    }
+    rows.push({
+      label: names.bloom, dotCls: "dot-bloom", valCls: "val-bloom",
+      cells: PHASES.map(phase => {
+        const eEC = getPhzAdjustedTargetEC(phase, targetEC[phase]);
+        const r = calcDosage(phase, "bloom", method, unit, eEC);
+        return { display: r.display, dosage: r.dosage, ec: r.ec };
+      })
+    });
+  }
+  return rows;
+}
+
+// ═══════════════════════════════════════════════
+// BRANDED PRINT CHART (brand layout in HTML, US units)
+// Renders a 2-page customer-ready feed chart that mirrors
+// the on-screen configuration. Headers, bands, and boxes are
+// coded in HTML/CSS (design system above); the only images
+// are the mixing illustrations (cropped to pure art), the QR,
+// and the logo. Static reference content is transcribed from
+// DTR v5.5; live numbers come from the same engine the
+// on-screen table uses (computeFeedRows, calcStockTanks,
+// ecPerGram) so the printed chart can never drift from the
+// calculator.
+// ═══════════════════════════════════════════════
+const BP_ASSETS = {
+  dtrArt:   "assets/feed-chart/dtr-step-art.png",
+  stockArt: "assets/feed-chart/stock-visual-art.png",
+  qr:       "assets/feed-chart/qr-moreinfo.png",
+  logo:     "assets/feed-chart/logo-dark.png"
+};
+
+const BP_DTR_NOTES = [
+  "When using Front Row Si, reservoirs should be fully used within 48 hours.",
+  "Without Front Row Si, reservoirs should be used within 5–7 days.",
+  "Avoid mixing strong oxidizers, especially peroxides, into reservoirs. If running a sterile reservoir, use calcium hypochlorite at 1–3 g / 100 gallons.",
+  "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
+  "If using PhosZyme, add with Part B."
+];
+// AIDEV-NOTE: 2-doser combines Part B and Bloom in Tank 2, so the "each part in its own
+// tank" wording is wrong there. Both variants validate stock EC identically.
+const BP_STOCK_NOTES = [
+  "Mix each part into its own stock tank; validate stock EC before use and adjust as necessary.",
+  "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
+  "If using PhosZyme, mix it into the Part B stock tank — never with Part A.",
+  "Avoid mixing strong oxidizers, especially peroxides, into stock tanks.",
+  "Set injectors to the listed rates, then confirm final solution EC/PPM at the emitter."
+];
+const BP_STOCK_NOTES_2DOSER = [
+  "Tank 1 holds Part A alone. Tank 2 holds Part B and Bloom together — mix Part B first, then Bloom. Validate each stock tank's EC before use and adjust as necessary.",
+  "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.",
+  "If using PhosZyme, mix it into Tank 2 after Part B and before Bloom — never with Part A.",
+  "Avoid mixing strong oxidizers, especially peroxides, into stock tanks.",
+  "The two tanks run at different injection rates. Set each doser to the rate on its own row, then confirm final solution EC/PPM at the emitter."
+];
+const BP_EC_CONSIDERATIONS = "Given the variance in facility infrastructure, cultivation methods, and cultivars, it's impossible to give a specific EC prescription that applies to all scenarios. Most facilities feed at 2.0–3.0 EC with Front Row Ag, and our \"Standard\" and \"High Strength\" feed charts reflect effective feeding strategies in this range.";
+const BP_FEED_CHART_NOTES = "These feed charts are not a prescription, but an example of the general ranges and relationship of EC and recipes that can be used. Each facility and cultivation methodology will require customization of EC values. See \"EC Considerations.\"";
+const BP_HIGHER_LOWER = [
+  ["Smaller pots", "Larger pots"],
+  ["Frequent irrigation", "Infrequent irrigation"],
+  ["Consistent runoff", "Less runoff"],
+  ["Substrate monitoring", "No substrate monitoring"],
+  ["Higher PPFD", "Lower PPFD"],
+  ["Heavy feeding strains", "Lower feeding strains"],
+  ["Higher CO2", "Lower CO2"],
+  ["Tight environmental control", "Less environmental control"]
+];
+const BP_SI_VS_EC = [["< 2.3", "0.5"], ["2.3–2.7", "0.375"], ["2.7–3.1", "0.25"], ["3.1–3.5", "0.125"], ["> 3.5", "0"]];
+const BP_ADDITIVES = [
+  ["Front Row Si", "0.5–2 mL/gal", "Foliar, 1x/week, Veg through Wk 3 of flower (stem strength / stress)."],
+  ["Triologic", "1–2 mL/gal", "Use 1x per week."],
+  ["BioFlo", "30 mL/gal", "As needed to clear biofilm from irrigation lines."],
+  ["Front Row pH Up", "0.05–0.25 g/gal", "Target 5.5–6.0 at the dripper; 5.5–5.8 on high-strength flower. Mix 5–15 minutes."]
+];
+const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
+
+function fcFoot() {
+  return `<div class="fc-foot">Front Row Ag &middot; order@solsticeag.com &middot; +1 844-420-6883 &middot; frontrowag.com</div>`;
+}
+
+// Shared page header: logo left, display-type title lockup right,
+// optional QR block far right.
+function fcMasthead(main, sub, withQr) {
+  return `<div class="fc-masthead">`
+    + `<img class="fc-masthead__logo" src="${BP_ASSETS.logo}" alt="Front Row Ag">`
+    + `<div class="fc-masthead__titles"><div class="fc-masthead__main">${main}</div><div class="fc-masthead__sub">${sub}</div></div>`
+    + (withQr ? `<div class="fc-masthead__qr"><img src="${BP_ASSETS.qr}" alt="More info QR code"></div>` : "")
+    + `</div>`;
+}
+
+// Green unit band: configuration summary left, facility + date right.
+function fcUnitband(left, right) {
+  return `<div class="fc-unitband"><span>${left}</span><span>${right}</span></div>`;
+}
+
+// Deep-red section band, rounded right end.
+function fcBand(title) {
+  return `<div class="fc-band">${title}</div>`;
+}
+
+// Small red heading above content.
+function fcH(title, body) {
+  return `<div><div class="fc-h">${title}</div>${body}</div>`;
+}
+
+// Plain two-column pair table (one pair per row).
+function fcTwoColTable(h1, h2, pairs) {
+  const body = pairs.map(p => `<tr><td>${p[0]}</td><td>${p[1]}</td></tr>`).join("");
+  return `<table class="fc-table"><thead><tr><th>${h1}</th><th>${h2}</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function fcStockTable() {
+  const stock = calcStockTanks(state.method, state.unit);
+  const usePhz = state.usePhoszyme;
+  const is2Doser = state.doserMode === "2";
+  let rows = "";
+  stock.rows.forEach(r => {
+    if (!usePhz && r.key === "phz") return;
+    const sub = r.key === "phz" || (is2Doser && r.key === "bloom");
+    rows += `<tr><td>${sub ? "" : r.tank}</td><td>${sub ? "+ " + r.part : r.part}</td><td>${r.vol}</td><td>${r.wt}</td><td>${r.conc}</td><td>${r.sample}</td><td>${r.ecG}</td><td><b>${r.valEC}</b></td></tr>`;
+  });
+  if (is2Doser) {
+    const t2 = ["partB", "phz", "bloom"].filter(k => usePhz || k !== "phz");
+    const tot = stock.rows.filter(r => t2.includes(r.key)).reduce((s, r) => s + r.valEC, 0).toFixed(2);
+    rows += `<tr><td></td><td><b>Tank 2 Total</b></td><td></td><td></td><td></td><td></td><td></td><td><b>${tot}</b></td></tr>`;
+  }
+  const table = `<table class="fc-table fc-table--rates"><thead><tr><th>Tank</th><th>Part</th><th>${stock.volUnit}</th><th>${stock.wtUnit}</th><th>${stock.concUnit}</th><th>${stock.sampleUnit}</th><th>${stock.ecUnit}</th><th>Valid. EC</th></tr></thead><tbody>${rows}</tbody></table>`;
+  // Validation procedure — cross-referenced from step 4 of the mixing
+  // instructions (per docs/technical-standards.md: US validation is always
+  // 250 mL of concentrate into 5 gal RO, compare to validation EC).
+  const valSteps = [
+    "Draw 250 mL of concentrate from the stock tank.",
+    "Mix the sample into 5 gallons of RO water.",
+    "Measure EC and compare to the Valid. EC column.",
+    "If the reading is off, adjust the tank and re-validate before use."
+  ];
+  const valBlock = fcH("Validation (Step 4)",
+    `<div class="fc-valsteps"><ol>${valSteps.map(s => `<li>${s}</li>`).join("")}</ol></div>`
+    + (usePhz ? `<div class="fc-caption">PhosZyme in the Part B tank raises that tank's validation EC.</div>` : ""));
+  return `<div class="fc-grid fc-grid--rates"><div>${fcBand(`${stockConfigLabel()} Stock Concentrate Rates`)}${table}</div>${valBlock}</div>`;
+}
+
+function renderBrandedPrint() {
+  const el = document.getElementById("branded-print");
+  if (!el) return;
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const unit = state.unit;
+  const facility = document.getElementById("facility-input").value.trim();
+  const artImg = isStock ? BP_ASSETS.stockArt : BP_ASSETS.dtrArt;
+  const artTitle = isStock ? "Visual Guide: How to Make Stock Concentrate" : "Visual Guide: Mixing Step-by-Step";
+  const notes = isStock
+    ? (state.doserMode === "2" ? BP_STOCK_NOTES_2DOSER : BP_STOCK_NOTES)
+    : BP_DTR_NOTES;
+  const notesTitle = isStock ? "Stock Concentrate Notes" : "Direct to Reservoir Notes";
+
+  // Shared title lockup + unit band (identical system on both pages)
+  const mainTitle = isStock ? "Stock Concentrate" : "Direct to Reservoir";
+  const bandLeft = `USA &middot; ${unit}${isStock ? ` &middot; ${stockConfigLabel()}` : ""}`;
+  const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const bandRight = facility ? `${facility} &middot; ${dateStr}` : dateStr;
+
+  // Mixing steps — same source the on-screen instructions card uses.
+  // Stock steps print from 0 so the numbers line up with the visual guide,
+  // and the validate step points at the Validation procedure below.
+  let steps;
+  if (isStock) {
+    if (is2Doser) steps = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
+    else steps = INSTRUCTIONS;
+    steps = steps.map(s => s.startsWith("Validate and adjust")
+      ? s.replace(/\.$/, "") + " (see Validation, below)."
+      : s);
+  } else {
+    steps = getReservoirInstructions(usePhz, state.showPhUp, isMetric(unit));
+  }
+
+  const recipeNames = PHASES.map(p => getPhaseRecipeName(p));
+  const eg = ecPerGram();
+
+  // The hero feed table (numbers come straight from computeFeedRows so the
+  // printed chart can never drift from the on-screen calculator).
+  const bodyRows = computeFeedRows().map(row => {
+    const suffix = row.valCls.replace("val-", "");
+    const cells = row.cells.map(c => {
+      if (!c || c.dosage === 0 || c.display === "–") return `<td>–</td>`;
+      return `<td><span class="fc-chart__val fc-chart__val--${suffix}">${c.display}</span><div class="fc-sub">${c.ec.toFixed(2)} EC</div></td>`;
+    }).join("");
+    return `<tr><td class="fc-chart__label fc-chart__label--${suffix}">${row.label}</td>${cells}</tr>`;
+  }).join("");
+
+  const chart =
+    `<div class="fc-chartwrap"><table class="fc-chart">`
+    + `<tr><td class="fc-chart__phase" style="text-align:right; padding-right:10px;">Phase</td>${BP_PHASE_LABELS.map(l => `<td class="fc-chart__phase">${l}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Recipe</td>${recipeNames.map(rn => `<td class="fc-chart__recipe">${rn}</td>`).join("")}</tr>`
+    + `<tr><td class="fc-chart__label">Target EC</td>${PHASES.map(p => `<td class="fc-chart__ec">${formatTargetEC(state.targetEC[p])}</td>`).join("")}</tr>`
+    + bodyRows
+    + `</table></div>`;
+
+  const additiveTable =
+    `<table class="fc-table"><thead><tr><th>Additive</th><th>Rate</th><th>Notes</th></tr></thead><tbody>`
+    + BP_ADDITIVES.map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
+    + `</tbody></table>`;
+
+  const ecContribRows = [
+    ["Part A", eg.partA.toFixed(3)],
+    ["Part B", eg.partB.toFixed(3)],
+    ["Bloom", eg.bloom.toFixed(3)]
+  ];
+  if (usePhz) ecContribRows.push(["PhosZyme", eg.phoszyme.toFixed(3)]);
+
+  // ── Page 1 — the feed program (masthead, hero chart, EC reference) ──
+  const p1 =
+    `<div class="fc-page">`
+    + fcMasthead(mainTitle, "Feed Chart", true)
+    + fcUnitband(bandLeft, bandRight)
+    + `<div>`
+    +   chart
+    +   `<div class="fc-caption">All part values in ${unit}. Sub-values are each part's EC contribution.</div>`
+    +   `<div class="fc-caption fc-caption--italic">${BP_FEED_CHART_NOTES}</div>`
+    + `</div>`
+    // Reference zone: Higher/Lower table left, EC Considerations right.
+    // The EC Contribution mini-table joins the right column only on the DTR
+    // sheet — the stock sheet carries that data in the page-2 rates table.
+    + `<div class="fc-grid">`
+    +   fcH("Higher EC vs Lower EC", fcTwoColTable("Higher EC Conditions", "Lower EC Conditions", BP_HIGHER_LOWER))
+    +   `<div class="fc-stack">`
+    +     fcH("EC Considerations", `<div class="fc-prose"><p>${BP_EC_CONSIDERATIONS}</p></div>`)
+    +     (isStock ? "" : fcH("EC Contribution", fcTwoColTable("Part", "EC per g/gal", ecContribRows)))
+    +   `</div>`
+    + `</div>`
+    + `<div class="fc-notesarea"><div class="fc-h">Notes</div><div class="fc-notesarea__lines"></div></div>`
+    + fcFoot()
+    + `</div>`;
+
+  // ── Page 2 — the mixing procedure ──
+  const p2 =
+    `<div class="fc-page fc-page--mix">`
+    + fcMasthead(mainTitle, "Mixing Instructions", false)
+    + fcUnitband(bandLeft, bandRight)
+    + `<div class="fc-cols">`
+    +   fcH("Mixing Instructions", `<div class="fc-steps"><ol${isStock ? ' start="0"' : ""}>${steps.map(s => `<li>${s}</li>`).join("")}</ol></div>`)
+    +   fcH(notesTitle, `<div class="fc-notes"><ul>${notes.map(n => `<li>${n}</li>`).join("")}</ul></div>`)
+    + `</div>`
+    + `<div>${fcBand(artTitle)}<img class="fc-art" src="${artImg}" alt="Mixing steps illustration"></div>`
+    + (isStock ? fcStockTable() : "")
+    + `<div class="fc-grid">`
+    +   fcH("Additive Usage Rates", additiveTable)
+    +   fcH("Si Rate by Feed EC", fcTwoColTable("Feed EC", "Si (mL/gal)", BP_SI_VS_EC))
+    + `</div>`
+    + fcFoot()
+    + `</div>`;
+
+  el.innerHTML = p1 + p2;
+}
+
+function render() {
+  const { method, unit, targetEC } = state;
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  const names = LINE().names;
+  const unreachablePhzPhases = PHASES.filter(phase =>
+    state.application === "direct"
+      && state.usePhoszyme
+      && !getPhzAdjustment(phase, targetEC[phase]).achievable
+  );
+  const phzTargetWarning = document.getElementById("phz-target-warning");
+  phzTargetWarning.hidden = unreachablePhzPhases.length === 0;
+  phzTargetWarning.textContent = FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachablePhzPhases);
+
+  // Unit badge
+  document.getElementById("unit-badge").textContent = unit === "ratio" ? "ratio" : unit;
+
+  syncRecipeScheduleControls();
+  syncStockConfigControls();
+
+  // EC displays
+  PHASES.forEach(p => {
+    const el = document.getElementById(`ec-${p.toLowerCase()}`);
+    el.textContent = `${formatTargetEC(targetEC[p])} EC`;
+    el.classList.remove('editable');
+  });
+
+  // Recipe selects — locked to Swell in 2-doser mode
+  PHASES.forEach(p => {
+    const sel = document.getElementById(`recipe-${p.toLowerCase()}`);
+    if (is2Doser) {
+      sel.value = p === "Veg" ? "Veg" : "Swell";
+      sel.disabled = true;
+      sel.classList.remove('modified');
+    } else {
+      sel.disabled = false;
+      sel.value = state.phaseRecipe[p];
+      sel.classList.toggle('modified', state.phaseRecipe[p] !== p);
+    }
+  });
+
+  // Feed table body — built from the shared row model so the
+  // on-screen table and the branded print chart can never drift.
+  const usePhz = state.usePhoszyme;
+  let html = "";
+  computeFeedRows().forEach(row => {
+    html += `<tr><td><span class="component-dot ${row.dotCls}"></span>${row.label}</td>`;
+    row.cells.forEach(cell => {
+      if (!cell || cell.dosage === 0 || cell.display === "–") {
+        html += `<td><span class="dash">–</span></td>`;
+      } else {
+        html += `<td><div class="val ${row.valCls}">${cell.display}</div><div class="ec-sub">${cell.ec.toFixed(2)} EC</div></td>`;
+      }
+    });
+    html += "</tr>";
+  });
+
+  document.getElementById("feed-body").innerHTML = html;
+  document.getElementById("twodoser-veg-note").hidden = !is2Doser;
+  document.getElementById("twodoser-rate-note").hidden = !is2Doser;
+
+  // ── Supplemental products reference card ──
+  renderSupplements();
+
+  // Stock tank table (only when stock concentrate)
+  if (isStock) {
+    const stock = calcStockTanks(method, unit);
+    const titlePrefix = stockConfigLabel();
+    document.getElementById("stock-title").textContent = `${titlePrefix} Stock Concentrate Rates`;
+    document.getElementById("vol-header").textContent = stock.volUnit;
+    document.getElementById("wt-header").textContent = stock.wtUnit;
+    document.getElementById("conc-header").textContent = stock.concUnit;
+    document.getElementById("sample-header").textContent = stock.sampleUnit;
+    document.getElementById("ec-gal-header").textContent = stock.ecUnit;
+
+    let stockHtml = "";
+    const tank2Keys = usePhz ? ["partB", "phz", "bloom"] : ["partB", "bloom"];
+    const t2Tint = 'background:rgba(136,102,204,0.06);';
+    const t2Border = 'border-left:3px solid var(--b-bloom);';
+
+    // AIDEV-NOTE: When PhosZyme is ON (non-2-doser), the carrier row's tank cell uses
+    // rowspan=2 to visually group both products under "Tank 2" with no dividing border.
+    stock.rows.forEach((r, i) => {
+      // Skip PhosZyme row when PhosZyme is excluded
+      if (!usePhz && r.key === "phz") return;
+
+      const isTank2 = tank2Keys.includes(r.key);
+      // PhosZyme is always a sub-item of Tank 2 (both modes); Bloom only in 2-doser
+      const isSubItem = r.key === "phz" || (is2Doser && r.key === "bloom");
+
+      let tankLabel = r.tank;
+      let partLabel = r.part;
+      const rowStyle = is2Doser && isTank2 ? t2Tint : '';
+      const tdStyle = is2Doser && isTank2 ? t2Border : '';
+
+      if (isSubItem) {
+        tankLabel = "";
+        partLabel = `+ ${r.part}`;
+      }
+
+      // Carrier row spans 2 rows in the tank column when PhosZyme is included (non-2-doser)
+      const bWithPhz = !is2Doser && usePhz && r.key === "partB";
+      const isPhzSubRow = !is2Doser && r.key === "phz";
+
+      let tankCell;
+      if (isPhzSubRow) {
+        // PhosZyme row: skip tank cell entirely (covered by Part B's rowspan)
+        tankCell = "";
+      } else if (bWithPhz) {
+        // Part B row: span 2 rows, vertically centered, no bottom border
+        tankCell = `<td style="${tdStyle}vertical-align:middle" rowspan="2">${tankLabel}</td>`;
+      } else {
+        tankCell = `<td style="${tdStyle}">${tankLabel}</td>`;
+      }
+
+      stockHtml += `<tr style="${rowStyle}"${isPhzSubRow ? ' class="phz-sub"' : ''}>
+        ${tankCell}
+        <td><span class="${r.cls}" style="font-weight:600">${partLabel}</span></td>
+        <td>${r.vol}</td>
+        <td>${r.wt}</td>
+        <td>${r.conc}</td>
+        <td class="val-col val-col-first">${r.sample}</td>
+        <td class="val-col">${r.ecG}</td>
+        <td class="val-col"><span class="validation-ec">${r.valEC}</span></td>
+      </tr>`;
+    });
+
+    // In 2-doser mode: add combined Tank 2 validation row
+    if (is2Doser) {
+      const tank2Rows = stock.rows.filter(r => tank2Keys.includes(r.key));
+      const combinedValEC = tank2Rows.reduce((sum, r) => sum + r.valEC, 0).toFixed(2);
+      stockHtml += `<tr style="border-top:1px solid var(--card-border);${t2Tint}">
+        <td style="${t2Border}"></td>
+        <td><span class="val-bbloom" style="font-weight:600">Tank 2 Total</span></td>
+        <td></td><td></td><td></td>
+        <td class="val-col val-col-first"></td>
+        <td class="val-col"></td>
+        <td class="val-col"><span class="validation-ec" style="color:var(--b-bloom)">${combinedValEC}</span></td>
+      </tr>`;
+    }
+
+    document.getElementById("stock-body").innerHTML = stockHtml;
+
+    // PhosZyme footnote — update text and visibility
+    const footnote = document.getElementById("phz-footnote");
+    if (!usePhz) {
+      footnote.style.display = "none";
+    } else {
+      footnote.style.display = "";
+      footnote.textContent = is2Doser
+        ? "* PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2). The Tank 2 Total reflects all three products."
+        : "* When mixed with Part B stock solution, PhosZyme will increase the validation EC.";
+    }
+
+    // Mixing instructions (stock mode)
+    const instrList = document.getElementById("instructions-list");
+    let instrSet;
+    if (is2Doser) {
+      instrSet = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
+    } else {
+      instrSet = INSTRUCTIONS;
+    }
+    instrList.innerHTML = instrSet.map(s => `<li>${s}</li>`).join("");
+  } else {
+    // Mixing instructions (reservoir mode) — updates on every render for toggle/unit changes
+    const met = isMetric(state.unit);
+    const resInstr = getReservoirInstructions(usePhz, state.showPhUp, met);
+    document.getElementById("instructions-list").innerHTML =
+      resInstr.map(s => `<li>${s}</li>`).join("");
+  }
+
+  // Print config line
+  const printParts = [LINE().label];
+  if (isStock) {
+    printParts.push(`${stockConfigLabel()} Stock Concentrate`);
+    if (is2Doser) printParts.push(`${formatStockTankVolume(getTankVolumes(method).tankA)} / ${formatStockTankVolume(getTankVolumes(method).tankB)} gal tanks`);
+    else printParts.push("3-Doser");
+  } else {
+    printParts.push("Direct to Reservoir");
+  }
+  if (usePhz) printParts.push("PhosZyme Included");
+  if (state.showSi) printParts.push("Si");
+  if (state.showPhUp) printParts.push("pH Up");
+  if (state.showBioFlo) printParts.push("BioFlo");
+  if (state.showTriologic) printParts.push("Triologic");
+  printParts.push(unit);
+  printParts.push(getRecipeScheduleLabel());
+  document.getElementById("print-config-line").textContent = printParts.join(" · ");
+
+  // Branded print chart (mirrors the current config)
+  renderBrandedPrint();
+
+  // URL state
+  updateURL();
+
+  // Restore custom EC inputs if needed
+  if (state.ecPreset === "custom") renderECInputs();
+}
+
+// ═══════════════════════════════════════════════
+// UI INTERACTIONS
+// ═══════════════════════════════════════════════
+
+function setupToggle(groupId, stateKey, callback) {
+  const group = document.getElementById(groupId);
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      group.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      if (callback) callback(btn.dataset.val);
+      else {
+        state[stateKey] = btn.dataset.val;
+        render();
+      }
+    });
+  });
+}
+
+function rebuildUnitGroup() {
+  const units = state.application === "stock" ? STOCK_UNITS : DIRECT_UNITS;
+  const group = document.getElementById("unit-group");
+  group.innerHTML = units.map(u =>
+    `<button class="toggle-btn${u === state.unit ? ' active' : ''}" data-val="${u}">${u}</button>`
+  ).join("");
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      group.querySelectorAll(".toggle-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      state.unit = btn.dataset.val;
+      render();
+    });
+  });
+}
+
+function renderRecipeScheduleGroup() {
+  const group = document.getElementById("recipe-schedule-group");
+  group.innerHTML = Object.entries(RECIPE_SCHEDULE_OPTIONS).map(([key, option]) => {
+    const hidden = option.lockedOnly ? " hidden" : "";
+    const disabled = option.selectable ? "" : " disabled";
+    return `<button class="toggle-btn" data-val="${key}"${hidden}${disabled}>${option.label}</button>`;
+  }).join("");
+}
+
+function applyApplicationState() {
+  const isStock = state.application === "stock";
+  document.getElementById("method-section").style.display = isStock ? "" : "none";
+  document.getElementById("stock-card").style.display = isStock ? "" : "none";
+  // Reset doser mode when switching to direct
+  if (!isStock && state.doserMode === "2") {
+    state.doserMode = "3";
+    state.method = state.lastThreeDoserMethod;
+    restoreThreeDoserSchedule();
+  }
+}
+
+// 2-doser is its own standardized tank build — the mixing-method choice doesn't apply to
+// it, and the tank size input takes that slot. Called from render() so it tracks the doser
+// toggle, not just the application toggle.
+function syncStockConfigControls() {
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  if (!is2Doser) state.lastThreeDoserMethod = state.method;
+  document.getElementById("method-block").style.display = isStock && !is2Doser ? "" : "none";
+  const isCustom = isStock && !is2Doser && state.method === "custom";
+  document.getElementById("stock-volume-block").style.display = isStock && (is2Doser || isCustom) ? "" : "none";
+  document.getElementById("custom-stock-block").style.display = isCustom ? "" : "none";
+  ["partA", "partB", "bloom"].forEach(role => {
+    const el = document.getElementById("custom-rate-" + role);
+    if (el !== document.activeElement) el.value = state.customRates[role].toFixed(2);
+  });
+  const volInput = document.getElementById("stock-volume-input");
+  if (volInput !== document.activeElement) {
+    volInput.value = formatStockTankVolume(state.stockTankVolumeGal);
+  }
+  const vols = getTankVolumes(state.method);
+  document.getElementById("stock-volume-derived").textContent = isCustom
+    ? `Each of the three stock tanks: ${formatStockTankVolume(vols.tankA)} gal`
+    : `Tank 1 (Part A) ${formatStockTankVolume(vols.tankA)} gal · Tank 2 (B + Bloom) ${formatStockTankVolume(vols.tankB)} gal`;
+}
+
+function rebuildRecipeSelects() {
+  const options = LINE().recipeNames.map(n => `<option>${n}</option>`).join("");
+  PHASES.forEach(p => {
+    document.getElementById(`recipe-${p.toLowerCase()}`).innerHTML = options;
+  });
+}
+
+function syncRecipeScheduleControls() {
+  const locked = state.doserMode === "2";
+  const group = document.getElementById("recipe-schedule-group");
+  const activeSchedule = locked ? "locked-swell" : state.recipeSchedule;
+  group.dataset.state = activeSchedule;
+  group.querySelectorAll(".toggle-btn").forEach(btn => {
+    const option = RECIPE_SCHEDULE_OPTIONS[btn.dataset.val];
+    btn.hidden = !!option.lockedOnly && !locked;
+    btn.disabled = locked || !option.selectable;
+    btn.classList.toggle("active", btn.dataset.val === activeSchedule);
+  });
+  // 2-doser: hide the schedule section entirely (no choice exists); the note explains why
+  document.getElementById("recipe-schedule-section").style.display = locked ? "none" : "";
+  document.getElementById("recipe-schedule-note").hidden = !locked;
+}
+
+function handleApplicationChange(val) {
+  state.application = val;
+
+  // Switch to a valid unit for the new application
+  const validUnits = val === "stock" ? STOCK_UNITS : DIRECT_UNITS;
+  if (!validUnits.includes(state.unit)) {
+    if (isMetric(state.unit)) {
+      state.unit = validUnits.find(u => isMetric(u)) || validUnits[0];
+    } else {
+      state.unit = validUnits.find(u => !isMetric(u)) || validUnits[0];
+    }
+  }
+
+  applyApplicationState();
+  rebuildUnitGroup();
+  render();
+}
+
+function toggleInstructions() {
+  document.getElementById("instructions-body").classList.toggle("open");
+  document.getElementById("chevron").classList.toggle("open");
+}
+
+function toggleConfiguration() {
+  const body = document.getElementById("configuration-body");
+  const toggle = document.getElementById("configuration-toggle");
+  const opening = body.hidden;
+  body.hidden = !opening;
+  toggle.setAttribute("aria-expanded", String(opening));
+  document.getElementById("configuration-chevron").classList.toggle("open", opening);
+}
+
+function toggleSupplements() {
+  document.getElementById("supp-body").classList.toggle("open");
+  document.getElementById("supp-chevron").classList.toggle("open");
+}
+
+function renderSupplements() {
+  const met = isMetric(state.unit);
+  let html = "";
+
+  // Si — shown when toggled on
+  if (state.showSi) {
+    const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--si)">Si</div>
+      <div class="supp-detail">Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.</div>
+    </div>`;
+  }
+
+  // pH Up — shown when toggled on
+  if (state.showPhUp) {
+    const maxRate = met
+      ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)}`
+      : "0.2–0.25";
+    const stopRate = met
+      ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}`
+      : "0.15–0.2";
+    const phupUnit = met ? "g/L" : "g/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--phup)">pH Up</div>
+      <div class="supp-detail">Target pH at the dripper: 5.5–6.0 for Veg, Ripen and standard-strength flower; 5.5–5.8 for high-strength Stretch, Stack and Swell. As needed, ${maxRate} ${phupUnit} max total (stop at ${stopRate} on high-strength flower). Always add last.</div>
+    </div>`;
+  }
+
+  // BioFlo — shown when toggled on
+  if (state.showBioFlo) {
+    const heavyRate = met ? "8 mL/L" : "30 mL/gal";
+    const maintRate = met ? "4 mL/L" : "15 mL/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--bioflo)">BioFlo</div>
+      <div class="supp-detail">Line cleaner for biofilm removal. Heavy clean: ${heavyRate}, soak 8–24 hrs. Maintenance: ${maintRate} every 1–2 weeks.</div>
+    </div>`;
+  }
+
+  // Triologic — shown when toggled on
+  if (state.showTriologic) {
+    const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
+    const txRate = met ? "0.5 mL/L" : "2 mL/gal";
+    html += `<div class="supp-item">
+      <div class="supp-name" style="color:var(--triologic)">Triologic</div>
+      <div class="supp-detail">Microbial inoculant — amplifies mycorrhizal colonization. ${stdRate} weekly hand drench. Transplant: ${txRate}.</div>
+    </div>`;
+  }
+
+  document.getElementById("supp-list").innerHTML = html;
+}
+
+function toggleDrawer(drawerId, btn) {
+  const drawer = document.getElementById(drawerId);
+  drawer.classList.toggle("open");
+  btn.classList.toggle("active");
+}
+
+function handleECPreset(val) {
+  state.ecPreset = val;
+  syncTargetECToPreset();
+  render();
+}
+
+function handleRecipeScheduleChange(val) {
+  if (state.doserMode === "2") return;
+  if (!RECIPE_SCHEDULE_OPTIONS[val]?.selectable) return;
+  applyRecipeSchedule(val);
+  render();
+}
+
+function handleRecipeChange(phase, recipeName) {
+  state.phaseRecipe[phase] = recipeName;
+  state.recipeSchedule = deriveRecipeSchedule(state.phaseRecipe);
+  rememberThreeDoserSchedule();
+  syncTargetECToPreset();
+  render();
+}
+
+function handleDoserChange(val) {
+  const previousMode = state.doserMode;
+  state.doserMode = val;
+  if (val === "2" && previousMode !== "2") {
+    rememberThreeDoserSchedule();
+    state.lastThreeDoserMethod = state.method;
+    state.method = "2-doser";
+  }
+  if (val !== "2" && previousMode === "2") {
+    restoreThreeDoserSchedule();
+    state.method = state.lastThreeDoserMethod;
+  }
+  render();
+}
+
+function handleCustomRateChange(role, value) {
+  state.customRates = { ...state.customRates, [role]: normalizeCustomRate(role, value) };
+  document.getElementById("custom-rate-" + role).value = state.customRates[role].toFixed(2);
+  render();
+}
+
+function handleStockTankVolumeInput(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed < MIN_STOCK_TANK_VOLUME_GAL || parsed > MAX_STOCK_TANK_VOLUME_GAL) return;
+  state.stockTankVolumeGal = Math.round(parsed * 10) / 10;
+  render();
+}
+
+function handleStockTankVolumeChange(value) {
+  state.stockTankVolumeGal = normalizeStockTankVolume(value);
+  document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
+  render();
+}
+
+function updateFacility() {
+  const val = document.getElementById("facility-input").value.trim();
+  document.getElementById("print-facility").textContent = val;
+  updateURL();
+}
+
+function togglePhz() {
+  state.usePhoszyme = !state.usePhoszyme;
+  document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
+  render();
+}
+
+function toggleSi() {
+  state.showSi = !state.showSi;
+  document.getElementById("si-btn").classList.toggle("active", state.showSi);
+  render();
+}
+
+function togglePhUp() {
+  state.showPhUp = !state.showPhUp;
+  document.getElementById("phup-btn").classList.toggle("active", state.showPhUp);
+  render();
+}
+
+function toggleBioFlo() {
+  state.showBioFlo = !state.showBioFlo;
+  document.getElementById("bioflo-btn").classList.toggle("active", state.showBioFlo);
+  render();
+}
+
+function toggleTriologic() {
+  state.showTriologic = !state.showTriologic;
+  document.getElementById("triologic-btn").classList.toggle("active", state.showTriologic);
+  render();
+}
+
+function renderECInputs() {
+  PHASES.forEach(p => {
+    const el = document.getElementById(`ec-${p.toLowerCase()}`);
+    if (state.ecPreset === "custom") {
+      el.classList.add('editable');
+      el.innerHTML = `<input type="number" class="ec-input" step="0.1" min="0" max="10" value="${formatTargetEC(state.targetEC[p])}"
+        onchange="state.targetEC['${p}']=parseFloat(this.value)||0; render();" /><span class="ec-label">EC</span>`;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════
+// URL STATE (Share Link)
+// ═══════════════════════════════════════════════
+
+function updateURL() {
+  const p = new URLSearchParams();
+  if (document.body.classList.contains('light')) p.set("t", "light");
+  const fac = document.getElementById("facility-input").value.trim();
+  if (fac) p.set("fac", fac);
+  // Only write params that differ from defaults
+  if (state.application !== "stock") p.set("a", state.application);
+  if (state.application === "stock") {
+    if (state.doserMode === "2") {
+      p.set("d", "2");
+      if (state.stockTankVolumeGal !== DEFAULT_STOCK_TANK_VOLUME_GAL) {
+        p.set("tv", formatStockTankVolume(state.stockTankVolumeGal));
+      }
+    } else if (state.method !== "3-2-2") {
+      p.set("m", state.method);
+      if (state.method === "custom") {
+        p.set("ca", state.customRates.partA.toFixed(2));
+        p.set("cb", state.customRates.partB.toFixed(2));
+        p.set("cbl", state.customRates.bloom.toFixed(2));
+        if (state.stockTankVolumeGal !== DEFAULT_STOCK_TANK_VOLUME_GAL) p.set("tv", formatStockTankVolume(state.stockTankVolumeGal));
+      }
+    }
+  }
+  if (state.usePhoszyme) p.set("phz", "yes");
+  if (state.showSi) p.set("si", "yes");
+  if (state.showPhUp) p.set("phup", "yes");
+  if (state.showBioFlo) p.set("bf", "yes");
+  if (state.showTriologic) p.set("tri", "yes");
+  if (state.unit !== "mL/gal") p.set("u", state.unit);
+  if (state.ecPreset !== "high") p.set("p", state.ecPreset);
+  if (state.ecPreset === "custom") {
+    PHASES.forEach(ph => p.set(`ec_${ph.toLowerCase()}`, state.targetEC[ph]));
+  }
+  if (state.doserMode !== "2") {
+    if (state.recipeSchedule !== "commercial") p.set("rs", state.recipeSchedule);
+    if (state.recipeSchedule === "custom") {
+      PHASES.forEach(ph => {
+        if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
+      });
+    }
+  }
+  const qs = p.toString();
+  history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+}
+
+function loadFromURL() {
+  const p = new URLSearchParams(window.location.search);
+  if (p.has("fac")) {
+    document.getElementById("facility-input").value = p.get("fac");
+    document.getElementById("print-facility").textContent = p.get("fac");
+  }
+  if (p.has("a") && VALID_APPS.includes(p.get("a"))) state.application = p.get("a");
+  if (p.has("m") && VALID_METHODS.includes(p.get("m"))) {
+    state.method = p.get("m");
+    state.lastThreeDoserMethod = p.get("m");
+  }
+  if (p.has("d") && VALID_DOSERS.includes(p.get("d"))) {
+    state.doserMode = p.get("d");
+    if (state.doserMode === "2") state.method = "2-doser";
+  }
+  if (p.has("ca")) state.customRates.partA = normalizeCustomRate("partA", p.get("ca"));
+  if (p.has("cb")) state.customRates.partB = normalizeCustomRate("partB", p.get("cb"));
+  if (p.has("cbl")) state.customRates.bloom = normalizeCustomRate("bloom", p.get("cbl"));
+  if (p.has("tv")) state.stockTankVolumeGal = normalizeStockTankVolume(p.get("tv"));
+  if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
+    state.usePhoszyme = (p.get("phz") === "yes");
+  }
+  if (p.get("si") === "yes") state.showSi = true;
+  if (p.get("phup") === "yes") state.showPhUp = true;
+  if (p.get("bf") === "yes") state.showBioFlo = true;
+  if (p.get("tri") === "yes") state.showTriologic = true;
+  if (p.has("u") && VALID_UNITS.includes(p.get("u"))) state.unit = p.get("u");
+  if (p.has("p") && VALID_PRESETS.includes(p.get("p"))) {
+    state.ecPreset = p.get("p");
+    if (state.ecPreset === "high" || state.ecPreset === "standard") {
+      state.targetEC = { ...EC_PRESETS[state.ecPreset] };
+    } else if (state.ecPreset === "custom") {
+      PHASES.forEach(ph => {
+        const v = parseFloat(p.get(`ec_${ph.toLowerCase()}`));
+        if (v > 0 && v <= 10) state.targetEC[ph] = v;
+      });
+    }
+  }
+  if (p.has("rs") && VALID_RECIPE_SCHEDULES.includes(p.get("rs")) && state.doserMode !== "2") {
+    applyRecipeSchedule(p.get("rs"));
+  }
+  if (state.doserMode !== "2") {
+    PHASES.forEach(ph => {
+      const rp = p.get(`rp_${ph.toLowerCase()}`);
+      if (rp && LINE().recipeNames.includes(rp)) {
+        state.phaseRecipe[ph] = rp;
+      }
+    });
+    state.recipeSchedule = deriveRecipeSchedule(state.phaseRecipe);
+    rememberThreeDoserSchedule();
+  } else {
+    rememberThreeDoserSchedule();
+  }
+  // Validate unit against application
+  const validUnits = state.application === "stock" ? STOCK_UNITS : DIRECT_UNITS;
+  if (!validUnits.includes(state.unit)) {
+    state.unit = validUnits[0];
+  }
+}
+
+function syncToggleButtons() {
+  document.querySelectorAll("#app-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.application);
+  });
+  document.querySelectorAll("#method-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.method);
+  });
+  document.querySelectorAll("#doser-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.doserMode);
+  });
+  document.getElementById("phz-btn").classList.toggle("active", state.usePhoszyme);
+  document.getElementById("si-btn").classList.toggle("active", state.showSi);
+  document.getElementById("phup-btn").classList.toggle("active", state.showPhUp);
+  document.getElementById("bioflo-btn").classList.toggle("active", state.showBioFlo);
+  document.getElementById("triologic-btn").classList.toggle("active", state.showTriologic);
+  document.querySelectorAll("#ec-preset-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.ecPreset);
+  });
+  document.querySelectorAll("#recipe-schedule-group .toggle-btn").forEach(b => {
+    b.classList.toggle("active", b.dataset.val === state.recipeSchedule);
+  });
+}
+
+function shareLink() {
+  const url = window.location.href;
+  copyToClipboard(url).then(() => {
+    const btn = document.getElementById("btn-share");
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg> Share Link`;
+    }, 2000);
+  });
+}
+
+function printPage() {
+  window.print();
+}
+
+// AIDEV-NOTE: Split so the summary can be built and asserted without a clipboard. The
+// product rows come from computeFeedRows() — the same source as the on-screen table and
+// the branded print chart — so all three can never print different rates.
+function copySummary() {
+  const { html, plain } = buildSummary();
+  copyRichText(html, plain).then(() => {
+    const btn = document.getElementById("btn-copy");
+    btn.classList.add("copied");
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!`;
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Summary`;
+    }, 2000);
+  });
+}
+
+function buildSummary() {
+  const { method, unit, targetEC } = state;
+  const isStock = state.application === "stock";
+  const is2Doser = state.doserMode === "2";
+  const usePhz = state.usePhoszyme;
+  const names = LINE().names;
+  const phaseLabels = ["Veg / Moms", "Wk 1–2", "Wk 3–5", "Wk 6–8/9", "Final 1–2 Wks"];
+
+  const ts = 'style="border:1px solid #ccc;padding:6px 10px;text-align:center;"';
+  const th = 'style="border:1px solid #ccc;padding:6px 10px;text-align:center;background:#f5f5f5;font-weight:600;"';
+  const tl = 'style="border:1px solid #ccc;padding:6px 10px;text-align:left;font-weight:600;"';
+
+  // ── Config summary ──
+  let configParts = [LINE().label];
+  if (isStock) {
+    configParts.push(`${stockConfigLabel()} stock concentrate`);
+    if (is2Doser) configParts.push(`${formatStockTankVolume(getTankVolumes(method).tankA)} / ${formatStockTankVolume(getTankVolumes(method).tankB)} gal tanks`);
+    else configParts.push("3-Doser");
+  } else {
+    configParts.push("Direct to reservoir");
+  }
+  if (usePhz) configParts.push("PhosZyme included");
+  if (state.showSi) configParts.push("Si");
+  if (state.showPhUp) configParts.push("pH Up");
+  if (state.showBioFlo) configParts.push("BioFlo");
+  if (state.showTriologic) configParts.push("Triologic");
+  configParts.push(unit);
+  configParts.push(getRecipeScheduleLabel());
+
+  let html = `<h2 style="margin:0 0 4px;">Front Row Ag Feed Chart</h2>`;
+  html += `<p style="color:#666;margin:0 0 12px;">${configParts.join(" · ")}</p>`;
+
+  // ── Feed Schedule Table ──
+  html += `<h3 style="margin:16px 0 6px;">Feed Schedule (${unit})</h3>`;
+  html += `<table style="border-collapse:collapse;font-size:14px;">`;
+
+  // Phase header row
+  html += `<tr><th ${th}>Phase</th>`;
+  phaseLabels.forEach(l => html += `<th ${th}>${l}</th>`);
+  html += `</tr>`;
+
+  // Recipe row
+  html += `<tr><td ${tl}>Recipe</td>`;
+  PHASES.forEach(p => {
+    const recipe = is2Doser ? (p === "Veg" ? "Veg" : "Swell") : state.phaseRecipe[p];
+    html += `<td ${ts}>${recipe}</td>`;
+  });
+  html += `</tr>`;
+
+  // Target EC row
+  html += `<tr><td ${tl}>Target EC</td>`;
+  PHASES.forEach(p => html += `<td ${ts}><b>${formatTargetEC(targetEC[p])}</b></td>`);
+  html += `</tr>`;
+
+  // AIDEV-NOTE: Product rows come from computeFeedRows() — the same source the on-screen
+  // table and the branded print chart use — so Copy Summary can never drift from them.
+  // It previously rebuilt the rows by calling calcDosage(..., "partB", ...) directly, which
+  // bypassed the 2-doser tank solver and copied a materially different rate than the chart
+  // showed (7.5% high on Tank 2 at the whole-bag charge).
+  computeFeedRows().forEach(row => {
+    html += `<tr><td ${tl}>${row.label}</td>`;
+    row.cells.forEach(cell => {
+      html += `<td ${ts}>${!cell || cell.dosage === 0 || cell.display === "–" ? "–" : cell.display}</td>`;
+    });
+    html += `</tr>`;
+  });
+
+  html += `</table>`;
+  const unreachablePhzPhases = PHASES.filter(phase =>
+    !isStock && usePhz && !getPhzAdjustment(phase, targetEC[phase]).achievable
+  );
+  if (unreachablePhzPhases.length) {
+    html += `<p style="color:#b03050;font-weight:600;">${FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachablePhzPhases)}</p>`;
+  }
+
+  // Supplements section (copy summary)
+  const anySupp = state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic;
+  if (anySupp) {
+    const met = isMetric(unit);
+    html += `<p style="margin:12px 0 4px;font-size:13px;font-weight:600;">Supplements</p>`;
+    if (state.showSi) {
+      const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">Si — Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.</p>`;
+    }
+    if (state.showPhUp) {
+      const maxRate = met
+        ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)}`
+        : "0.2–0.25";
+      const stopRate = met
+        ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}`
+        : "0.15–0.2";
+      const phupUnit = met ? "g/L" : "g/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} ${phupUnit} max total; stop at ${stopRate} on high-strength flower. Always add last.</p>`;
+    }
+    if (state.showBioFlo) {
+      const heavyRate = met ? "8 mL/L" : "30 mL/gal";
+      const maintRate = met ? "4 mL/L" : "15 mL/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">BioFlo — Heavy clean: ${heavyRate}. Maintenance: ${maintRate} every 1–2 weeks.</p>`;
+    }
+    if (state.showTriologic) {
+      const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
+      html += `<p style="margin:2px 0;font-size:13px;">Triologic — ${stdRate} weekly hand drench.</p>`;
+    }
+  }
+
+  // ── Stock Concentrate Table (stock mode only) ──
+  if (isStock) {
+    const stock = calcStockTanks(method, unit);
+    const titlePrefix = stockConfigLabel();
+    html += `<h3 style="margin:20px 0 6px;">${titlePrefix} Stock Concentrate Rates</h3>`;
+    html += `<table style="border-collapse:collapse;font-size:14px;">`;
+    html += `<tr><th ${th}>Tank</th><th ${th}>Part</th><th ${th}>${stock.volUnit}</th><th ${th}>${stock.wtUnit}</th><th ${th}>${stock.concUnit}</th>`;
+    html += `<th ${th}>${stock.sampleUnit}</th><th ${th}>${stock.ecUnit}</th><th ${th}>Valid. EC</th></tr>`;
+
+    const tank2Keys = usePhz ? ["partB", "phz", "bloom"] : ["partB", "bloom"];
+    stock.rows.forEach(r => {
+      if (!usePhz && r.key === "phz") return;
+      let tankLabel = r.tank;
+      const isSubItem = is2Doser && (r.key === "phz" || r.key === "bloom");
+      // Non-2-doser: PhosZyme is a sub-item of Tank 2
+      const isPhzSub = !is2Doser && r.key === "phz";
+      if (is2Doser && isSubItem) tankLabel = "";
+      if (isPhzSub) tankLabel = "";
+      const partLabel = (isSubItem || isPhzSub) ? `+ ${r.part}` : r.part;
+      const bg = is2Doser && tank2Keys.includes(r.key) ? 'background:#f9f7fd;' : '';
+
+      // Rowspan for the carrier row when PhosZyme included (non-2-doser)
+      const bWithPhz = !is2Doser && usePhz && r.key === "partB";
+      let tankCell;
+      if (isPhzSub) {
+        tankCell = "";
+      } else if (bWithPhz) {
+        tankCell = `<td ${ts} rowspan="2" style="vertical-align:middle;border-bottom:none;padding:6px 10px;text-align:center;">${tankLabel}</td>`;
+      } else {
+        tankCell = `<td ${ts}>${tankLabel}</td>`;
+      }
+
+      html += `<tr style="${bg}">${tankCell}<td ${tl}>${partLabel}</td>`;
+      html += `<td ${ts}>${r.vol}</td><td ${ts}>${r.wt}</td><td ${ts}>${r.conc}</td>`;
+      html += `<td ${ts}>${r.sample}</td><td ${ts}>${r.ecG}</td>`;
+      html += `<td ${ts}><b>${r.valEC}</b></td></tr>`;
+    });
+
+    // Tank 2 Total row for 2-doser
+    if (is2Doser) {
+      const tank2Rows = stock.rows.filter(r => tank2Keys.includes(r.key));
+      const combinedValEC = tank2Rows.reduce((sum, r) => sum + r.valEC, 0).toFixed(2);
+      html += `<tr style="background:#f9f7fd;"><td ${ts}></td><td ${tl}><b>Tank 2 Total</b></td>`;
+      html += `<td ${ts}></td><td ${ts}></td><td ${ts}></td><td ${ts}></td><td ${ts}></td>`;
+      html += `<td ${ts}><b>${combinedValEC}</b></td></tr>`;
+    }
+    html += `</table>`;
+
+    if (usePhz) {
+      const note = is2Doser
+        ? "PhosZyme is mixed into the combined B + Bloom stock tank (Tank 2)."
+        : "PhosZyme is mixed into the Part B stock tank. It will increase the validation EC.";
+      html += `<p style="font-size:12px;color:#555;margin-top:6px;font-style:italic;">* ${note}</p>`;
+    }
+
+    // ── Mixing Instructions ──
+    let instrSet;
+    if (is2Doser) {
+      instrSet = usePhz ? INSTRUCTIONS_2DOSER : INSTRUCTIONS_2DOSER.map(s => s.replace(", then PhosZyme", ""));
+    } else {
+      instrSet = INSTRUCTIONS;
+    }
+    html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
+    html += `<ol style="font-size:14px;padding-left:20px;">`;
+    instrSet.forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
+    html += `</ol>`;
+  } else {
+    // Direct to Reservoir mixing instructions
+    html += `<h3 style="margin:20px 0 6px;">Mixing Instructions</h3>`;
+    html += `<ol style="font-size:14px;padding-left:20px;">`;
+    getReservoirInstructions(usePhz, state.showPhUp, isMetric(unit)).forEach(s => html += `<li style="margin-bottom:4px;">${s}</li>`);
+    html += `</ol>`;
+  }
+
+  html += `<p style="font-size:11px;color:#555;margin-top:16px;">Generated by Front Row Ag Feed Calculator</p>`;
+
+  // ── Plain text fallback ──
+  let plain = `Front Row Ag Feed Chart\n${configParts.join(" · ")}\n${"─".repeat(50)}\n\n`;
+  plain += "".padEnd(20) + phaseLabels.map(l => l.padEnd(12)).join("") + "\n";
+  plain += "Target EC".padEnd(20) + PHASES.map(p => formatTargetEC(targetEC[p]).padEnd(12)).join("") + "\n\n";
+  computeFeedRows().forEach(row => {
+    plain += row.label.padEnd(20) + row.cells.map(cell =>
+      (!cell || cell.dosage === 0 || cell.display === "–" ? "–" : cell.display).padEnd(12)
+    ).join("") + "\n";
+  });
+
+  if (!isStock && usePhz) {
+    const unreachable = PHASES.filter(phase => !getPhzAdjustment(phase, targetEC[phase]).achievable);
+    if (unreachable.length) {
+      plain += `\nWarning: ${FRA_NUTRITION_CORE.formatDirectPhoszymeWarning(unreachable)}\n`;
+    }
+  }
+
+  if (is2Doser) plain += "\nVeg / Moms: run a separate Part A + Part B feed — a combined B + Bloom tank can't make a zero-Bloom Veg recipe.\n";
+
+  if (state.showSi || state.showPhUp || state.showBioFlo || state.showTriologic) {
+    const met = isMetric(unit);
+    plain += "\nSupplements\n";
+    if (state.showSi) {
+      const foliarRate = met ? "0.13–0.53 mL/L" : "0.5–2 mL/gal";
+      plain += `Si — Foliar: ${foliarRate}, once weekly, veg through week 3 of flower.\n`;
+    }
+    if (state.showPhUp) {
+      const maxRate = met
+        ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
+        : "0.2–0.25 g/gal";
+      const stopRate = met
+        ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
+        : "0.15–0.2 g/gal";
+      plain += `pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} max total; stop at ${stopRate} on high-strength flower. Always add last.\n`;
+    }
+    if (state.showBioFlo) {
+      const heavyRate = met ? "8 mL/L" : "30 mL/gal";
+      const maintRate = met ? "4 mL/L" : "15 mL/gal";
+      plain += `BioFlo — Heavy clean: ${heavyRate}. Maintenance: ${maintRate} every 1–2 weeks.\n`;
+    }
+    if (state.showTriologic) {
+      const stdRate = met ? "0.25 mL/L" : "1 mL/gal";
+      plain += `Triologic — ${stdRate} weekly hand drench.\n`;
+    }
+  }
+
+  return { html, plain };
+}
+
+// ═══════════════════════════════════════════════
+// THEME TOGGLE
+// ═══════════════════════════════════════════════
+
+const ICON_SUN = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+const ICON_MOON = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  localStorage.setItem('fra-feed-theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-icon').innerHTML = isLight ? ICON_MOON : ICON_SUN;
+  updateURL();
+}
+
+function loadTheme() {
+  const p = new URLSearchParams(window.location.search);
+  const urlTheme = p.get('t');
+  const savedTheme = localStorage.getItem('fra-feed-theme');
+  const theme = urlTheme || savedTheme || 'dark';
+  if (theme === 'light') {
+    document.body.classList.add('light');
+    document.getElementById('theme-icon').innerHTML = ICON_MOON;
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+
+renderRecipeScheduleGroup();
+setupToggle("app-group", null, handleApplicationChange);
+setupToggle("method-group", "method");
+setupToggle("doser-group", null, handleDoserChange);
+setupToggle("ec-preset-group", null, handleECPreset);
+setupToggle("recipe-schedule-group", null, handleRecipeScheduleChange);
+loadTheme();
+loadFromURL();
+rebuildRecipeSelects();
+syncTargetECToPreset();
+applyApplicationState();
+rebuildUnitGroup();
+syncToggleButtons();
+render();
+
+// Scroll hint: remove fade when scrolled to end
+document.querySelectorAll('.table-scroll').forEach(el => {
+  el.addEventListener('scroll', () => {
+    const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
+    el.classList.toggle('scrolled-end', atEnd);
+  });
+});
+</script>
+
+</body>
+</html>
