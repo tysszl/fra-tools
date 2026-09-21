@@ -1981,7 +1981,8 @@ function twoDoserRateDisplay(role, targetEc, phase, unit, fallback) {
 function stockConfigLabel() {
   if (state.doserMode !== "2" && state.method === "custom") {
     const r = state.customRates;
-    return `Custom ${r.partA.toFixed(2)}/${r.partB.toFixed(2)}/${r.bloom.toFixed(2)} lb/gal`;
+    const fmt = v => String(Math.round(v * 100) / 100);
+    return `Custom ${fmt(r.partA)}/${fmt(r.partB)}/${fmt(r.bloom)} lb/gal`;
   }
   return state.doserMode === "2" ? "2-Doser" : state.method;
 }
@@ -2790,7 +2791,7 @@ function syncStockConfigControls() {
   document.getElementById("custom-stock-block").style.display = isCustom ? "" : "none";
   ["partA", "partB", "bloom"].forEach(role => {
     const el = document.getElementById("custom-rate-" + role);
-    if (el !== document.activeElement) el.value = state.customRates[role].toFixed(2);
+    if (el !== document.activeElement) el.value = String(state.customRates[role]);
   });
   const volInput = document.getElementById("stock-volume-input");
   if (volInput !== document.activeElement) {
@@ -2957,7 +2958,7 @@ function handleDoserChange(val) {
 
 function handleCustomRateChange(role, value) {
   state.customRates = { ...state.customRates, [role]: normalizeCustomRate(role, value) };
-  document.getElementById("custom-rate-" + role).value = state.customRates[role].toFixed(2);
+  document.getElementById("custom-rate-" + role).value = String(state.customRates[role]);
   render();
 }
 
