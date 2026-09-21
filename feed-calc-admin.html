@@ -1201,10 +1201,11 @@
         <button class="toggle-btn" data-val="custom">Custom</button>
       </div>
       <div id="custom-stock-block" style="display:none">
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-gal-input" min="10" max="100000" step="0.1" value="50" onchange="handleStockTankVolumeChange(this.value)"><span>gal per stock tank (all three tanks)</span></div>
         <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-partA" min="1" step="0.5" value="75" onchange="handleCustomLbsChange('partA', this.value)"><span>lb Part A per tank</span><span class="config-note" id="custom-rate-partA"></span></div>
         <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-partB" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('partB', this.value)"><span>lb Part B per tank</span><span class="config-note" id="custom-rate-partB"></span></div>
         <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-bloom" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('bloom', this.value)"><span>lb Bloom per tank</span><span class="config-note" id="custom-rate-bloom"></span></div>
-        <p class="config-note">Internal only. Enter the pounds charged to each tank and the stock tank size below; lb/gal, injection rates and validation ECs recalculate. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.</p>
+        <p class="config-note">Internal only. Enter the stock tank size and the pounds charged to each tank; lb/gal, injection rates and validation ECs recalculate. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.</p>
       </div>
       <div class="info-drawer" id="method-drawer">
         <div class="info-drawer-content">
@@ -2797,10 +2798,12 @@ function syncStockConfigControls() {
   if (!is2Doser) state.lastThreeDoserMethod = state.method;
   document.getElementById("method-block").style.display = isStock && !is2Doser ? "" : "none";
   const isCustom = isStock && !is2Doser && state.method === "custom";
-  document.getElementById("stock-volume-block").style.display = isStock && (is2Doser || isCustom) ? "" : "none";
+  document.getElementById("stock-volume-block").style.display = isStock && is2Doser ? "" : "none";
   document.getElementById("custom-stock-block").style.display = isCustom ? "" : "none";
   if (isCustom) {
     const rates = getCustomRates();
+    const galEl = document.getElementById("custom-gal-input");
+    if (galEl !== document.activeElement) galEl.value = formatStockTankVolume(state.stockTankVolumeGal);
     ["partA", "partB", "bloom"].forEach(role => {
       const el = document.getElementById("custom-lbs-" + role);
       if (el !== document.activeElement) el.value = String(state.customLbs[role]);
@@ -2989,6 +2992,7 @@ function handleStockTankVolumeInput(value) {
 function handleStockTankVolumeChange(value) {
   state.stockTankVolumeGal = normalizeStockTankVolume(value);
   document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
+  document.getElementById("custom-gal-input").value = formatStockTankVolume(state.stockTankVolumeGal);
   if (state.method === "custom") reclampCustomLbs();
   render();
 }
