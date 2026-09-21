@@ -1201,10 +1201,10 @@
         <button class="toggle-btn" data-val="custom">Custom</button>
       </div>
       <div id="custom-stock-block" style="display:none">
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partA" min="0.25" max="1.87" step="0.01" value="1.50" onchange="handleCustomRateChange('partA', this.value)"><span>lb/gal Part A</span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partB" min="0.25" max="1.25" step="0.01" value="1.00" onchange="handleCustomRateChange('partB', this.value)"><span>lb/gal Part B</span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-bloom" min="0.25" max="1.25" step="0.01" value="1.00" onchange="handleCustomRateChange('bloom', this.value)"><span>lb/gal Bloom</span></div>
-        <p class="config-note">Internal only. Stock strength per tank; injection rates and validation ECs recalculate. Capped at the densest published build (4-3-3: Part A 1.87, Part B and Bloom 1.25 lb/gal). Solubility above the standard 3-2-2 strengths is not verified here.</p>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partA" min="0.25" max="2.5" step="0.01" value="1.50" onchange="handleCustomRateChange('partA', this.value)"><span>lb/gal Part A</span></div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partB" min="0.25" max="2.5" step="0.01" value="1.00" onchange="handleCustomRateChange('partB', this.value)"><span>lb/gal Part B</span></div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-bloom" min="0.25" max="2.5" step="0.01" value="1.00" onchange="handleCustomRateChange('bloom', this.value)"><span>lb/gal Bloom</span></div>
+        <p class="config-note">Internal only. Stock strength per tank; injection rates and validation ECs recalculate. Capped at 2.5 lb/gal per tank. Solubility above the standard 3-2-2 strengths is not verified here; validate stock EC before use.</p>
       </div>
       <div class="info-drawer" id="method-drawer">
         <div class="info-drawer-content">
@@ -1843,8 +1843,8 @@ const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 const VALID_METHODS = ["4-3-3", "3-2-2", "1-1-1", "custom"];
-// ADMIN: custom stock strength (lb/gal) per tank; bounds = densest published build (4-3-3).
-const CUSTOM_RATE_LIMITS = { partA: [0.25, 1.87], partB: [0.25, 1.25], bloom: [0.25, 1.25] };
+// ADMIN: custom stock strength (lb/gal) per tank; 2.5 lb/gal cap per Tyler 2026-09-21.
+const CUSTOM_RATE_LIMITS = { partA: [0.25, 2.5], partB: [0.25, 2.5], bloom: [0.25, 2.5] };
 const DEFAULT_CUSTOM_RATES = { partA: 1.50, partB: 1.00, bloom: 1.00 };
 function normalizeCustomRate(role, value) {
   const parsed = Number(value);
