@@ -1201,10 +1201,10 @@
         <button class="toggle-btn" data-val="custom">Custom</button>
       </div>
       <div id="custom-stock-block" style="display:none">
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partA" min="0.25" max="2.5" step="0.01" value="1.50" onchange="handleCustomRateChange('partA', this.value)"><span>lb/gal Part A</span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-partB" min="0.25" max="2.5" step="0.01" value="1.00" onchange="handleCustomRateChange('partB', this.value)"><span>lb/gal Part B</span></div>
-        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-rate-bloom" min="0.25" max="2.5" step="0.01" value="1.00" onchange="handleCustomRateChange('bloom', this.value)"><span>lb/gal Bloom</span></div>
-        <p class="config-note">Internal only. Stock strength per tank; injection rates and validation ECs recalculate. Capped at 2.5 lb/gal per tank. Solubility above the standard 3-2-2 strengths is not verified here; validate stock EC before use.</p>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-partA" min="1" step="0.5" value="75" onchange="handleCustomLbsChange('partA', this.value)"><span>lb Part A per tank</span><span class="config-note" id="custom-rate-partA"></span></div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-partB" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('partB', this.value)"><span>lb Part B per tank</span><span class="config-note" id="custom-rate-partB"></span></div>
+        <div class="stock-volume-row"><input type="number" class="facility-input stock-volume-input" id="custom-lbs-bloom" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('bloom', this.value)"><span>lb Bloom per tank</span><span class="config-note" id="custom-rate-bloom"></span></div>
+        <p class="config-note">Internal only. Enter the pounds charged to each tank and the stock tank size below; lb/gal, injection rates and validation ECs recalculate. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.</p>
       </div>
       <div class="info-drawer" id="method-drawer">
         <div class="info-drawer-content">
@@ -1843,17 +1843,28 @@ const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 const VALID_METHODS = ["4-3-3", "3-2-2", "1-1-1", "custom"];
-// ADMIN: custom stock strength (lb/gal) per tank; 2.5 lb/gal cap per Tyler 2026-09-21.
-const CUSTOM_RATE_LIMITS = { partA: [0.25, 2.5], partB: [0.25, 2.5], bloom: [0.25, 2.5] };
-const DEFAULT_CUSTOM_RATES = { partA: 1.50, partB: 1.00, bloom: 1.00 };
-function normalizeCustomRate(role, value) {
+// ADMIN: custom stock charge (lb per tank) with the shared stock tank size; lb/gal is
+// derived. 2.5 lb/gal cap per Tyler 2026-09-21, pending Matthew's solubility limits.
+const CUSTOM_MAX_LB_PER_GAL = 2.5;
+const CUSTOM_MIN_LB_PER_GAL = 0.1;
+const DEFAULT_CUSTOM_LBS = { partA: 75, partB: 50, bloom: 50 };
+function customTankGal() { return normalizeStockTankVolume(state.stockTankVolumeGal); }
+function normalizeCustomLbs(role, value) {
   const parsed = Number(value);
-  const [lo, hi] = CUSTOM_RATE_LIMITS[role];
-  if (!Number.isFinite(parsed)) return DEFAULT_CUSTOM_RATES[role];
-  return Math.round(Math.min(Math.max(parsed, lo), hi) * 100) / 100;
+  if (!Number.isFinite(parsed)) return DEFAULT_CUSTOM_LBS[role];
+  const gal = customTankGal();
+  const clamped = Math.min(Math.max(parsed, CUSTOM_MIN_LB_PER_GAL * gal), CUSTOM_MAX_LB_PER_GAL * gal);
+  return Math.round(clamped * 10) / 10;
 }
+function getCustomRates() {
+  const gal = customTankGal();
+  const r = {};
+  ["partA", "partB", "bloom"].forEach(role => { r[role] = Math.round(state.customLbs[role] / gal * 1000) / 1000; });
+  return r;
+}
+function formatLbPerGal(v) { return String(Math.round(v * 100) / 100); }
 function getStockRates(method) {
-  return method === "custom" ? state.customRates : LINE().stockRates[method];
+  return method === "custom" ? getCustomRates() : LINE().stockRates[method];
 }
 
 // 2-doser stock tank sizing. Tank 1 holds Part A, Tank 2 holds Part B + Bloom and is
@@ -1919,7 +1930,7 @@ let state = {
   // 2-doser only: stock tank volume in gallons, applied to both tanks.
   // 3-doser keeps the fixed per-method tankVolumes above.
   stockTankVolumeGal: DEFAULT_STOCK_TANK_VOLUME_GAL,
-  customRates: { ...DEFAULT_CUSTOM_RATES },
+  customLbs: { ...DEFAULT_CUSTOM_LBS },
   lastThreeDoserMethod: "3-2-2",
   usePhoszyme: false,
   showSi: false,
@@ -1980,9 +1991,8 @@ function twoDoserRateDisplay(role, targetEc, phase, unit, fallback) {
 
 function stockConfigLabel() {
   if (state.doserMode !== "2" && state.method === "custom") {
-    const r = state.customRates;
-    const fmt = v => String(Math.round(v * 100) / 100);
-    return `Custom ${fmt(r.partA)}/${fmt(r.partB)}/${fmt(r.bloom)} lb/gal`;
+    const r = getCustomRates();
+    return `Custom ${formatLbPerGal(r.partA)}/${formatLbPerGal(r.partB)}/${formatLbPerGal(r.bloom)} lb/gal`;
   }
   return state.doserMode === "2" ? "2-Doser" : state.method;
 }
@@ -2789,10 +2799,14 @@ function syncStockConfigControls() {
   const isCustom = isStock && !is2Doser && state.method === "custom";
   document.getElementById("stock-volume-block").style.display = isStock && (is2Doser || isCustom) ? "" : "none";
   document.getElementById("custom-stock-block").style.display = isCustom ? "" : "none";
-  ["partA", "partB", "bloom"].forEach(role => {
-    const el = document.getElementById("custom-rate-" + role);
-    if (el !== document.activeElement) el.value = String(state.customRates[role]);
-  });
+  if (isCustom) {
+    const rates = getCustomRates();
+    ["partA", "partB", "bloom"].forEach(role => {
+      const el = document.getElementById("custom-lbs-" + role);
+      if (el !== document.activeElement) el.value = String(state.customLbs[role]);
+      document.getElementById("custom-rate-" + role).textContent = `= ${formatLbPerGal(rates[role])} lb/gal`;
+    });
+  }
   const volInput = document.getElementById("stock-volume-input");
   if (volInput !== document.activeElement) {
     volInput.value = formatStockTankVolume(state.stockTankVolumeGal);
@@ -2956,10 +2970,13 @@ function handleDoserChange(val) {
   render();
 }
 
-function handleCustomRateChange(role, value) {
-  state.customRates = { ...state.customRates, [role]: normalizeCustomRate(role, value) };
-  document.getElementById("custom-rate-" + role).value = String(state.customRates[role]);
+function handleCustomLbsChange(role, value) {
+  state.customLbs = { ...state.customLbs, [role]: normalizeCustomLbs(role, value) };
+  document.getElementById("custom-lbs-" + role).value = String(state.customLbs[role]);
   render();
+}
+function reclampCustomLbs() {
+  ["partA", "partB", "bloom"].forEach(role => { state.customLbs[role] = normalizeCustomLbs(role, state.customLbs[role]); });
 }
 
 function handleStockTankVolumeInput(value) {
@@ -2972,6 +2989,7 @@ function handleStockTankVolumeInput(value) {
 function handleStockTankVolumeChange(value) {
   state.stockTankVolumeGal = normalizeStockTankVolume(value);
   document.getElementById("stock-volume-input").value = formatStockTankVolume(state.stockTankVolumeGal);
+  if (state.method === "custom") reclampCustomLbs();
   render();
 }
 
@@ -3042,9 +3060,9 @@ function updateURL() {
     } else if (state.method !== "3-2-2") {
       p.set("m", state.method);
       if (state.method === "custom") {
-        p.set("ca", state.customRates.partA.toFixed(2));
-        p.set("cb", state.customRates.partB.toFixed(2));
-        p.set("cbl", state.customRates.bloom.toFixed(2));
+        p.set("pa", String(state.customLbs.partA));
+        p.set("pb", String(state.customLbs.partB));
+        p.set("pbl", String(state.customLbs.bloom));
         if (state.stockTankVolumeGal !== DEFAULT_STOCK_TANK_VOLUME_GAL) p.set("tv", formatStockTankVolume(state.stockTankVolumeGal));
       }
     }
@@ -3086,10 +3104,10 @@ function loadFromURL() {
     state.doserMode = p.get("d");
     if (state.doserMode === "2") state.method = "2-doser";
   }
-  if (p.has("ca")) state.customRates.partA = normalizeCustomRate("partA", p.get("ca"));
-  if (p.has("cb")) state.customRates.partB = normalizeCustomRate("partB", p.get("cb"));
-  if (p.has("cbl")) state.customRates.bloom = normalizeCustomRate("bloom", p.get("cbl"));
   if (p.has("tv")) state.stockTankVolumeGal = normalizeStockTankVolume(p.get("tv"));
+  if (p.has("pa")) state.customLbs.partA = normalizeCustomLbs("partA", p.get("pa"));
+  if (p.has("pb")) state.customLbs.partB = normalizeCustomLbs("partB", p.get("pb"));
+  if (p.has("pbl")) state.customLbs.bloom = normalizeCustomLbs("bloom", p.get("pbl"));
   if (p.has("phz") && VALID_PHZ.includes(p.get("phz"))) {
     state.usePhoszyme = (p.get("phz") === "yes");
   }
