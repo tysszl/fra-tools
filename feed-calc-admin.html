@@ -1221,7 +1221,7 @@
             <tr><td>3</td><td>Bloom</td><td><input type="number" class="facility-input" id="custom-lbs-bloom" min="1" step="0.5" value="50" onchange="handleCustomLbsChange('bloom', this.value)"></td><td id="custom-rate-bloom"></td></tr>
           </tbody>
         </table>
-        <p class="config-note">Internal only. lb/gal, injection rates and validation ECs recalculate from these entries. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.</p>
+        <p class="config-note">Internal only. lb/gal, injection rates and validation ECs recalculate from these entries. Capped at Part A 3 lb/gal, Part B and Bloom 2 lb/gal (the 6-4-4 build in 50 gal tanks, Matthew's mixing ceiling). Validate stock EC before use.</p>
       </div>
       <div class="info-drawer" id="method-drawer">
         <div class="info-drawer-content">
@@ -1861,8 +1861,9 @@ const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 const VALID_METHODS = ["4-3-3", "3-2-2", "1-1-1", "custom"];
 // ADMIN: custom stock charge (lb per tank) with the shared stock tank size; lb/gal is
-// derived. 2.5 lb/gal cap per Tyler 2026-09-21, pending Matthew's solubility limits.
-const CUSTOM_MAX_LB_PER_GAL = 2.5;
+// derived. Caps are Matthew's 6-4-4 mixing ceiling in 50 gal tanks (email 2026-09-22/23):
+// Part A 150 lb, Part B and Bloom 100 lb each, field-deployed for undersized injectors.
+const CUSTOM_MAX_LB_PER_GAL = { partA: 3, partB: 2, bloom: 2 };
 const CUSTOM_MIN_LB_PER_GAL = 0.1;
 const DEFAULT_CUSTOM_LBS = { partA: 75, partB: 50, bloom: 50 };
 function customTankGal() { return normalizeStockTankVolume(state.stockTankVolumeGal); }
@@ -1870,7 +1871,7 @@ function normalizeCustomLbs(role, value) {
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return DEFAULT_CUSTOM_LBS[role];
   const gal = customTankGal();
-  const clamped = Math.min(Math.max(parsed, CUSTOM_MIN_LB_PER_GAL * gal), CUSTOM_MAX_LB_PER_GAL * gal);
+  const clamped = Math.min(Math.max(parsed, CUSTOM_MIN_LB_PER_GAL * gal), CUSTOM_MAX_LB_PER_GAL[role] * gal);
   return Math.round(clamped * 10) / 10;
 }
 function getCustomRates() {
