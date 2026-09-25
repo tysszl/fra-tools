@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Front Row Ag · C+ Usage Estimator</title>
 <style>
@@ -601,9 +602,100 @@
       border-top: 1px solid #ddd;
     }
   }
+  /* ── Access Gate ─────────────────────── */
+  /* AIDEV-NOTE: Client-side commercial gate — friction, not security. The page is
+     static HTML on a public host, so the gate's job is to keep internal pricing and usage
+     tools out of casual customer view, not to defeat a determined reader of the source. */
+  body.gate-locked .container { display: none; }
+  #gate-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #gate-overlay[hidden] { display: none; }
+  .gate-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 32px 28px;
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+  }
+  .gate-card h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+  .gate-card .gate-intro {
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+  .gate-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.95rem;
+    padding: 10px 12px;
+    font-family: inherit;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .gate-input:focus { outline: none; border-color: var(--accent); }
+  .gate-btn {
+    width: 100%;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent);
+    border-radius: 8px;
+    padding: 10px 16px;
+    color: var(--accent);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .gate-btn:hover { background: var(--accent); color: #0d2920; }
+  .gate-error {
+    font-size: 0.78rem;
+    color: var(--danger, #e63e3e);
+    margin-top: 10px;
+  }
+  .gate-error[hidden] { display: none; }
+  .gate-footer {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 16px;
+  }
+  .gate-footer a { color: var(--accent); text-decoration: none; }
+  @media print {
+    #gate-overlay { display: none !important; }
+  }
 </style>
 </head>
-<body>
+<body class="gate-locked">
+
+<!-- Access Gate (internal team tool — code on the Notion Team Tools page) -->
+<div id="gate-overlay">
+  <div class="gate-card">
+    <h1>Front Row Ag · Usage Estimator</h1>
+    <p class="gate-intro">This is an internal Front Row Ag team tool. Enter the team access code.</p>
+    <input type="text" class="gate-input" id="gate-input" placeholder="Access code" autocomplete="off" autocapitalize="off">
+    <button class="gate-btn" onclick="tryUnlock()">Unlock Calculator</button>
+    <p class="gate-error" id="gate-error" hidden>That code didn't match. The team code is on the Notion Team Tools page.</p>
+    <p class="gate-footer"><a href="https://www.FrontRowAg.com" target="_blank">FrontRowAg.com</a></p>
+  </div>
+</div>
 
 <div class="container">
 
@@ -1649,6 +1741,59 @@ function toggleRef() {
 // URL STATE
 // ═══════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════
+// ACCESS GATE
+// ═══════════════════════════════════════════════
+// AIDEV-NOTE: Internal-team gate, not security; same pattern as cplus-calc.html.
+// cost-calc.html and usage-calc.html share one team code and one localStorage key,
+// so unlocking either unlocks both. To change the code: compute the new hash with
+// gateHash() (e.g. in the browser console), replace GATE_HASH in BOTH files, and
+// update the keyed links on the Notion Team Tools page.
+const GATE_HASH = "d1c47d4d";
+const GATE_STORAGE_KEY = "fra-team-key";
+let gateKey = null;
+
+function gateNorm(s) { return (s || "").trim().toLowerCase(); }
+
+function gateHash(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = (((h << 5) + h) + s.charCodeAt(i)) >>> 0;
+  return h.toString(16);
+}
+
+function gateCheck(code) { return gateHash(gateNorm(code)) === GATE_HASH; }
+
+function gateUnlock(code, silent) {
+  gateKey = gateNorm(code);
+  try { localStorage.setItem(GATE_STORAGE_KEY, gateKey); } catch (e) {}
+  document.getElementById("gate-overlay").hidden = true;
+  document.body.classList.remove("gate-locked");
+  if (!silent) updateURL();
+}
+
+function tryUnlock() {
+  const v = document.getElementById("gate-input").value;
+  if (gateCheck(v)) {
+    document.getElementById("gate-error").hidden = true;
+    gateUnlock(v, false);
+  } else {
+    document.getElementById("gate-error").hidden = false;
+  }
+}
+
+function initGate() {
+  // silent=true: runs before loadFromURL, so don't rewrite the URL yet
+  const p = new URLSearchParams(window.location.search);
+  const urlKey = p.get("key");
+  let saved = null;
+  try { saved = localStorage.getItem(GATE_STORAGE_KEY); } catch (e) {}
+  if (urlKey && gateCheck(urlKey)) gateUnlock(urlKey, true);
+  else if (saved && gateCheck(saved)) gateUnlock(saved, true);
+  document.getElementById("gate-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") tryUnlock();
+  });
+}
+
 function updateURL() {
   const p = new URLSearchParams();
   p.set('b', state.base);
@@ -1671,6 +1816,7 @@ function updateURL() {
     p.set(`p${i}p`, prod.price);
     p.set(`p${i}s`, prod.unitSize);
   });
+  if (gateKey) p.set("key", gateKey);
   history.replaceState(null, '', '?' + p.toString());
 }
 
@@ -1791,6 +1937,7 @@ function loadTheme() {
 // INIT
 // ═══════════════════════════════════════════════
 
+initGate();
 loadTheme();
 loadFromURL();
 updateTitle();
