@@ -1344,7 +1344,7 @@
       <div class="info-drawer-content">
         <p><strong>PhosZyme</strong> is added to its carrier stock tank at 10% of the Component Plus weight — 5 lb per 50-lb C+ tank — which keeps the applied dose at or near the 0.4 g/gal target across the chart. The carrier is the Component Plus tank (in 2-doser mode, the combined C+ + MKP tank). PhosZyme is not calcium-compatible, so it never goes in a tank with CaNO3. It contains phosphorus-digesting enzymes that improve nutrient availability. When enabled, the calculator automatically scales all dosages down slightly so the total EC — including PhosZyme's contribution — still hits your target. Toggle it on if your feed program includes PhosZyme.</p>
         <p><strong>Si</strong> is a silica supplement used as a foliar spray at 0.5–2 mL/gal, once weekly, from veg through week 3 of flower.</p>
-        <p><strong>pH Up</strong> is used as needed to raise pH into the target range measured at the dripper. On the Component Plus line the flower recipes (Stack, Swell) run <strong>5.5–5.7</strong>; Veg and Ripen run <strong>5.5–6.0</strong>. Lines running above 25 °C (77 °F) want the low end of the range. Maximum 0.2–0.25 g/gal total in the mix. Always add last, after all nutrients are mixed, in 0.05 g/gal increments, and allow 5–15 minutes of reaction time before re-measuring — approach the target gradually and stop when you reach it. The pH Up calculator's recipe rows are built on the 3-Part line; do not use them as a Component Plus dose.</p>
+        <p><strong>pH Up</strong> is used as needed to raise pH into the target range measured at the dripper. On the Component Plus line the flower recipes (Stack, Swell) run <strong>5.5–5.7</strong> at standard strength and <strong>5.5–5.6</strong> at high strength; Veg and Ripen run <strong>5.5–6.0</strong>, or <strong>5.5–5.8</strong> at high strength. Lines running above 25 °C (77 °F) want the low end of the range. Maximum 0.2–0.25 g/gal total in the mix. Always add last, after all nutrients are mixed, in 0.05 g/gal increments, and allow 5–15 minutes of reaction time before re-measuring — approach the target gradually and stop when you reach it. The pH Up calculator's recipe rows are built on the 3-Part line; do not use them as a Component Plus dose.</p>
         <p><strong>BioFlo</strong> is a bioenzymatic line cleaner that removes biofilm from irrigation lines, maintaining consistent flow and even nutrient delivery. Not a feed additive — used as a periodic soak between or during cycles.</p>
         <p><strong>Triologic</strong> is a microbial inoculant containing Mycorrhization Helper Bacteria. It amplifies mycorrhizal colonization when applied as a weekly hand-water drench alongside a separate mycorrhizal inoculant.</p>
       </div>
@@ -2053,6 +2053,22 @@ function getRecipeScheduleLabel() {
   return RECIPE_SCHEDULE_LABELS[state.recipeSchedule];
 }
 
+// AIDEV-NOTE: C+ dripper pH ranges by strength (FRA technical standards, Sep 25 2026).
+// A recipe at or above its chart high-strength EC uses the high-strength range:
+// flower (Stack, Swell) 5.5–5.6 vs 5.5–5.7; Veg and Ripen 5.5–5.8 vs 5.5–6.0.
+const CPLUS_HIGH_STRENGTH_EC = { Veg: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 };
+function getCplusPhRanges() {
+  let flowerHigh = false, vegRipenHigh = false;
+  PHASES.forEach(phase => {
+    const recipe = getPhaseRecipeName(phase);
+    const hi = CPLUS_HIGH_STRENGTH_EC[recipe];
+    const ec = Number(state.targetEC && state.targetEC[phase]);
+    if (!hi || !isFinite(ec) || ec < hi - 0.001) return;
+    if (recipe === "Stack" || recipe === "Swell") flowerHigh = true; else vegRipenHigh = true;
+  });
+  return { flower: flowerHigh ? "5.5–5.6" : "5.5–5.7", vegRipen: vegRipenHigh ? "5.5–5.8" : "5.5–6.0" };
+}
+
 function getPhaseRecipeName(phase) {
   return state.doserMode === "2" ? "Swell" : state.phaseRecipe[phase];
 }
@@ -2355,6 +2371,7 @@ function getSupplementRows(metric) {
   const bioFloMaintenanceRate = metric ? "4 mL/L" : "15 mL/gal";
   const triologicWeeklyRate = metric ? "0.25 mL/L" : "1 mL/gal";
   const triologicTransplantRate = metric ? "0.5 mL/L" : "2 mL/gal";
+  const phRanges = getCplusPhRanges();
   return [
     {
       stateKey: "showSi", name: "Si", printName: "Front Row Si", color: "si", rate: siRate,
@@ -2363,8 +2380,8 @@ function getSupplementRows(metric) {
     },
     {
       stateKey: "showPhUp", name: "pH Up", printName: "Front Row pH Up", color: "phup", rate: phUpRate,
-      detail: `Target pH at the dripper: 5.5–5.7 for Stack and Swell, 5.5–6.0 for Veg and Ripen. As needed, ${phUpRate} max total. Always add last.`,
-      notes: "Target pH at the dripper: 5.5–5.7 for Stack and Swell, 5.5–6.0 for Veg and Ripen. Mix 5–15 minutes; always add last."
+      detail: `Target pH at the dripper: ${phRanges.flower} for Stack and Swell, ${phRanges.vegRipen} for Veg and Ripen. As needed, ${phUpRate} max total. Always add last.`,
+      notes: `Target pH at the dripper: ${phRanges.flower} for Stack and Swell, ${phRanges.vegRipen} for Veg and Ripen. Mix 5–15 minutes; always add last.`
     },
     {
       stateKey: "showBioFlo", name: "BioFlo", printName: "BioFlo", color: "bioflo", rate: `Heavy: ${bioFloHeavyRate}; Maint.: ${bioFloMaintenanceRate}`,
@@ -3325,7 +3342,7 @@ function buildSummary() {
         ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)}`
         : "0.2–0.25";
       const phupUnit = met ? "g/L" : "g/gal";
-      html += `<p style="margin:2px 0;font-size:13px;">pH Up — Target pH at the dripper 5.5–5.7 (Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, ${maxRate} ${phupUnit} max total. Always add last.</p>`;
+      html += `<p style="margin:2px 0;font-size:13px;">pH Up — Target pH at the dripper ${getCplusPhRanges().flower} (Stack, Swell) or ${getCplusPhRanges().vegRipen} (Veg, Ripen). As needed, ${maxRate} ${phupUnit} max total. Always add last.</p>`;
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
@@ -3446,7 +3463,7 @@ function buildSummary() {
       const maxRate = met
         ? `${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.25 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
         : "0.2–0.25 g/gal";
-      plain += t("pH Up — Target pH at the dripper 5.5–5.7 (Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, {max} max total. Always add last.", { max: maxRate }) + "\n";
+      plain += t("pH Up — Target pH at the dripper {flower} (Stack, Swell) or {vegRipen} (Veg, Ripen). As needed, {max} max total. Always add last.", { max: maxRate, ...getCplusPhRanges() }) + "\n";
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
@@ -3947,6 +3964,11 @@ Object.assign(I18N.es, {
   "; Veg and Ripen run": "; Veg y Ripen corren a",
   ". Lines running above 25 °C (77 °F) want the low end of the range. Maximum 0.2–0.25 g/gal total in the mix. Always add last, after all nutrients are mixed, in 0.05 g/gal increments, and allow 5–15 minutes of reaction time before re-measuring — approach the target gradually and stop when you reach it. The pH Up calculator's recipe rows are built on the 3-Part line; do not use them as a Component Plus dose.":
     ". Las líneas que corren por encima de 25 °C (77 °F) necesitan el extremo bajo del rango. Máximo 0.2–0.25 g/gal en total en la mezcla. Agréguelo siempre al final, después de mezclar todos los nutrientes, en incrementos de 0.05 g/gal, y espere 5–15 minutos de reacción antes de volver a medir; acérquese al objetivo poco a poco y deténgase al alcanzarlo. Las filas de recetas de la calculadora de pH Up están hechas para la línea 3-Part; no las use como dosis de Component Plus.",
+  "at standard strength and": "en concentración estándar y",
+  "at high strength; Veg and Ripen run": "en alta concentración; Veg y Ripen corren a",
+  ", or": ", o",
+  "at high strength. Lines running above 25 °C (77 °F) want the low end of the range. Maximum 0.2–0.25 g/gal total in the mix. Always add last, after all nutrients are mixed, in 0.05 g/gal increments, and allow 5–15 minutes of reaction time before re-measuring — approach the target gradually and stop when you reach it. The pH Up calculator's recipe rows are built on the 3-Part line; do not use them as a Component Plus dose.":
+    "en alta concentración. Las líneas que corren por encima de 25 °C (77 °F) necesitan el extremo bajo del rango. Máximo 0.2–0.25 g/gal en total en la mezcla. Agréguelo siempre al final, después de mezclar todos los nutrientes, en incrementos de 0.05 g/gal, y espere 5–15 minutos de reacción antes de volver a medir; acérquese al objetivo poco a poco y deténgase al alcanzarlo. Las filas de recetas de la calculadora de pH Up están hechas para la línea 3-Part; no las use como dosis de Component Plus.",
   "Veg / Moms is not served in 2-doser: a combined C+ + MKP tank can't deliver a zero-MKP Veg recipe. Run veg / moms on a separate CaNO3 + C+ feed.": "Veg / Madres no se cubre con 2 dosificadores: un tanque combinado C+ + MKP no puede entregar una receta Veg sin MKP. Alimente veg / madres con una mezcla aparte de CaNO3 + C+.",
   "Set both dosers to the same injection rate — the CaNO3 tank (0.75 lb/gal) and the combined C+ + MKP tank are concentration-balanced to run at the same rate. Confirm with EC/PPM validation.": "Ajuste ambos dosificadores a la misma tasa de inyección: el tanque de CaNO3 (0.75 lb/gal) y el tanque combinado C+ + MKP están balanceados en concentración para correr a la misma tasa. Confirme con la validación de EC/PPM.",
   "Tip: Choose \"Save as PDF\" in the print dialog to download a clean two-page PDF.": "Consejo: elija \"Guardar como PDF\" en el cuadro de impresión para descargar un PDF limpio de dos páginas.",
@@ -3966,7 +3988,6 @@ Object.assign(I18N.es, {
   "Lower-feeding cultivars": "Cultivares de baja demanda",
   "Higher CO₂": "CO₂ más alto",
   "Lower CO₂": "CO₂ más bajo",
-  "Target pH at the dripper: 5.5–5.7 for Stack and Swell, 5.5–6.0 for Veg and Ripen. Mix 5–15 minutes; always add last.": "pH objetivo en el gotero: 5.5–5.7 para Stack y Swell, 5.5–6.0 para Veg y Ripen. Mezcle 5–15 minutos; agréguelo siempre al final.",
   "Line cleaner for biofilm removal. Heavy clean soak: 8–24 hrs; maintenance every 1–2 weeks.": "Limpiador de líneas para eliminar biopelícula. Remojo de limpieza profunda: 8–24 h; mantenimiento cada 1–2 semanas.",
   "Microbial inoculant — amplifies mycorrhizal colonization.": "Inoculante microbiano; amplifica la colonización micorrízica.",
   "Use C+ stock concentrates within 14 days of mixing. Store in opaque containers at room temperature, off the ground, and away from direct or artificial light.": "Use los concentrados madre de C+ dentro de los 14 días posteriores a la mezcla. Guárdelos en recipientes opacos a temperatura ambiente, sin contacto con el suelo y lejos de la luz directa o artificial.",
@@ -4003,7 +4024,7 @@ Object.assign(I18N.es, {
   "Veg / Moms: run a separate CaNO3 + C+ feed — a combined C+ + MKP tank can't make a zero-MKP Veg recipe.": "Veg / Madres: alimente con una mezcla aparte de CaNO3 + C+; un tanque combinado C+ + MKP no puede hacer una receta Veg sin MKP.",
   "Near Ripen: CaNO3 supplies 31.5% of total EC; the fixed C+ + MKP tank supplies the remaining 68.5%. This is not canonical three-product Ripen.": "Near Ripen: el CaNO3 aporta el 31.5 % de la EC total; el tanque fijo C+ + MKP aporta el 68.5 % restante. No es la receta Ripen canónica de tres productos.",
   "Front Row Ag Component Plus Feed Chart": "Tabla de alimentación Component Plus de Front Row Ag",
-  "pH Up — Target pH at the dripper 5.5–5.7 (Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, {max} max total. Always add last.": "pH Up — pH objetivo en el gotero 5.5–5.7 (Stack, Swell) o 5.5–6.0 (Veg, Ripen). Según sea necesario, máximo {max} en total. Agréguelo siempre al final.",
+  "pH Up — Target pH at the dripper {flower} (Stack, Swell) or {vegRipen} (Veg, Ripen). As needed, {max} max total. Always add last.": "pH Up — pH objetivo en el gotero {flower} (Stack, Swell) o {vegRipen} (Veg, Ripen). Según sea necesario, máximo {max} en total. Agréguelo siempre al final.",
   "Product": "Producto",
   "Sample": "Muestra",
   "Tank 1": "Tanque 1",
@@ -4029,6 +4050,8 @@ Object.assign(I18N.es, {
   "Veg / Moms requires a separate CaNO3 + C+ feed; the combined C+ + MKP tank cannot make a zero-MKP Veg recipe. Near Ripen holds CaNO3 at 31.5% of total EC and assigns the balance to the fixed combo tank; it is not canonical three-product Ripen.": "Veg / Madres requiere una mezcla aparte de CaNO3 + C+; el tanque combinado C+ + MKP no puede hacer una receta Veg sin MKP. Near Ripen mantiene el CaNO3 en el 31.5 % de la EC total y asigna el resto al tanque combinado fijo; no es la receta Ripen canónica de tres productos."
 });
 I18N_PATTERNS.es.push(
+  [/^Target pH at the dripper: (\S+) for Stack and Swell, (\S+) for Veg and Ripen\. Mix 5–15 minutes; always add last\.$/, "pH objetivo en el gotero: $1 para Stack y Swell, $2 para Veg y Ripen. Mezcle 5–15 minutos; agréguelo siempre al final."],
+  [/^Target pH at the dripper: (\S+) for Stack and Swell, (\S+) for Veg and Ripen\. As needed, (.+) max total\. Always add last\.$/, "pH objetivo en el gotero: $1 para Stack y Swell, $2 para Veg y Ripen. Según sea necesario, máximo $3 en total. Agréguelo siempre al final."],
   [/^2-Doser Stock Concentrate · CaNO3 ([\d.]+ lb\/gal)$/, "Concentrado madre · 2 dosificadores · CaNO3 $1"],
   [/^All product values in (.+)\. Sub-values show each product's EC contribution\.$/, "Todos los valores de los productos en $1. Los subvalores muestran el aporte de EC de cada producto."],
   [/^2-Doser stock concentrate \(CaNO3 (.+) \| C\+ \+ MKP\)$/, "concentrado madre 2 dosificadores (CaNO3 $1 | C+ + MKP)"],
