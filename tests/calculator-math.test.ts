@@ -3,7 +3,6 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const costCalculator = readFileSync(new URL("../cost-calc.html", import.meta.url), "utf8");
 const usageCalculator = readFileSync(new URL("../usage-calc.html", import.meta.url), "utf8");
 const feedCalculator = readFileSync(new URL("../feed-calc.html", import.meta.url), "utf8");
 const toolsIndex = readFileSync(new URL("../index.html", import.meta.url), "utf8");
@@ -134,15 +133,6 @@ function createRuntime<T>(html: string, exportsExpression: string, search = "", 
   };
 }
 
-function createCostRuntime() {
-  return createRuntime<{
-    MASTER_RECIPES: Array<{ name: string; products: Array<{ name: string; usage: number }> }>;
-    calcRecipe: (recipe: unknown) => { rawCost: number };
-    getFRASwellDose: (lineId: string, productName: string) => number;
-    FRA_NUTRITION_CORE: any;
-  }>(costCalculator, "{ MASTER_RECIPES, calcRecipe, getFRASwellDose, FRA_NUTRITION_CORE }");
-}
-
 function createUsageRuntime(search = "") {
   return createRuntime<{
     BASE_CONFIG: Record<string, any>;
@@ -217,7 +207,7 @@ describe("shared nutrition core contract", () => {
   });
 
   test("every calculator embeds the canonical source byte-for-byte", () => {
-    [feedCalculator, cplusCalculator, usageCalculator, costCalculator]
+    [feedCalculator, cplusCalculator, usageCalculator]
       .forEach(html => expect(getEmbeddedCore(html)).toBe(nutritionCoreSource));
   });
 
@@ -225,7 +215,6 @@ describe("shared nutrition core contract", () => {
     ["3-Part feed", feedCalculator],
     ["Component Plus feed", cplusCalculator],
     ["usage", usageCalculator],
-    ["cost", costCalculator],
   ])("%s calculator completes its full startup path", (_label, html) => {
     expect(() => createRuntime(html, "true", "", true)).not.toThrow();
   });
@@ -274,7 +263,7 @@ describe("shared nutrition core contract", () => {
       mkdirSync(join(tempRoot, "src"));
       writeFileSync(join(tempRoot, "scripts", "sync-nutrition-core.ts"), readFileSync(new URL("../scripts/sync-nutrition-core.ts", import.meta.url)));
       writeFileSync(join(tempRoot, "src", "nutrition-core.js"), "const TEST_CORE = 1;\n");
-      ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html", "cost-calc.html"].forEach(fileName => {
+      ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html"].forEach(fileName => {
         writeFileSync(join(tempRoot, fileName), `<script>\n${GENERATED_START}\nold\n${GENERATED_END}\n</script>\n`);
       });
 
@@ -298,16 +287,13 @@ describe("shared nutrition core contract", () => {
     const feedSource = stripEmbeddedCore(feedCalculator);
     const cplusSource = stripEmbeddedCore(cplusCalculator);
     const usageSource = stripEmbeddedCore(usageCalculator);
-    const costSource = stripEmbeddedCore(costCalculator);
 
     expect(feedSource).toContain("FRA_NUTRITION_CORE.createFeedMathAdapter");
     expect(cplusSource).toContain("FRA_NUTRITION_CORE.createFeedMathAdapter");
     expect(usageSource).toContain("FRA_NUTRITION_CORE.doseGramsPerGallon");
-    expect(costSource).toContain("FRA_NUTRITION_CORE.doseGramsPerGallon");
     [feedSource, cplusSource].forEach(source => expect(source).not.toContain("ecContrib / ecPerG"));
     [feedSource, cplusSource].forEach(source => expect(source).not.toContain("recipe.partB * baseTargetEC"));
     expect(usageSource).not.toContain("pct / config.ecPerGram");
-    expect(costSource).not.toContain("FRA_SWELL_RECIPE");
   });
 
   test.each([
@@ -350,16 +336,10 @@ describe("shared nutrition core contract", () => {
     }
   });
 
-  test("usage and cost calculators execute every shared Swell product through core math", () => {
+  test("the usage calculator executes every shared Swell product through core math", () => {
     const usage = createUsageRuntime().api;
-    const cost = createCostRuntime().api;
     expect(usage.BASE_CONFIG.fra.recipes).toBe(usage.FRA_NUTRITION_CORE.lines["3part"].recipes);
     expect(usage.BASE_CONFIG.cplus.recipes).toBe(usage.FRA_NUTRITION_CORE.lines.cplus.recipes);
-
-    expect(cost.getFRASwellDose("3part", "Part A"))
-      .toBeCloseTo(nutritionCore.doseGramsPerGallon("3part", "Swell", "Part A", 3), 12);
-    expect(cost.getFRASwellDose("cplus", "CaNO3"))
-      .toBeCloseTo(nutritionCore.doseGramsPerGallon("cplus", "Swell", "CaNO3", 3), 12);
 
     for (const lineId of ["3part", "cplus"]) {
       const baseKey = lineId === "3part" ? "fra" : "cplus";
@@ -369,24 +349,6 @@ describe("shared nutrition core contract", () => {
           .toBeCloseTo(nutritionCore.doseGramsPerGallon(lineId, "Veg", productName, 3), 12);
         expect(usage.calcProductAmount(productName, "flower", 1, 3) * 454)
           .toBeCloseTo(nutritionCore.doseGramsPerGallon(lineId, "Swell", productName, 3), 12);
-      }
-    }
-
-    const costRecipes = {
-      "3part": cost.MASTER_RECIPES.find(recipe => recipe.name === "Front Row Ag · Swell"),
-      cplus: cost.MASTER_RECIPES.find(recipe => recipe.name === "C+ SWELL (Pallet)"),
-    };
-    const costProductNames = {
-      "3part": { "Part A": "Part A", "Part B": "Part B", Bloom: "Bloom" },
-      cplus: { Calcium: "CaNO3", "C+": "C+", MKP: "MKP" },
-    };
-    for (const lineId of ["3part", "cplus"] as const) {
-      const recipe = costRecipes[lineId];
-      expect(recipe).toBeDefined();
-      for (const product of recipe!.products) {
-        const coreName = costProductNames[lineId][product.name as keyof typeof costProductNames[typeof lineId]];
-        expect(product.usage)
-          .toBeCloseTo(nutritionCore.doseGramsPerGallon(lineId, "Swell", coreName, 3), 12);
       }
     }
   });
@@ -810,18 +772,6 @@ describe("shared nutrition core contract", () => {
 });
 
 describe("FRA Swell recipe math", () => {
-  test("the cost calculator executes the canonical EC 3.0 Swell doses", () => {
-    const { api } = createCostRuntime();
-    const fra = api.MASTER_RECIPES.find(recipe => recipe.name === "Front Row Ag · Swell");
-    expect(fra).toBeDefined();
-
-    const doses = Object.fromEntries(fra!.products.map(product => [product.name, product.usage]));
-    expect(doses["Part A"]).toBeCloseTo(4.323529, 6);
-    expect(doses["Part B"]).toBeCloseTo(2.752941, 6);
-    expect(doses.Bloom).toBeCloseTo(4.779412, 6);
-    expect(api.calcRecipe(fra).rawCost).toBeCloseTo(0.102106, 5);
-  });
-
   test("the usage calculator executes current 3-Part potency and recipes", () => {
     const { api } = createUsageRuntime();
     const fra = api.BASE_CONFIG.fra;

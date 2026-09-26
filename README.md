@@ -7,7 +7,7 @@ Internal repo for Front Row Ag customer-facing calculator tools. Hosted via GitH
 - **feed-calc.html** — Feed calculator (stock concentrate + direct-to-reservoir modes)
 - **ph-up-calc.html** — pH Up dosing calculator (consolidated from separate repo)
 - **ph-down-calc.html** — pH Down dosing calculator
-- **cost-calc.html** — Cost comparison calculator (internal; team access code, noindex)
+- **cost-calc.html** — Retired 2026-09-25 (stub page); cost comparison moved to an internal Google Sheet linked from Notion Team Tools
 - **usage-calc.html** — Usage/consumption calculator (internal; team access code, noindex)
 - **cal-hypo/** — Unlisted internal calcium hypochlorite stock and direct-dose calculator
 

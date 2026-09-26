@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
 const sourcePath = join(root, "src/nutrition-core.js");
-const targets = ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html", "cost-calc.html"];
+const targets = ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html"];
 const startMarker = "// BEGIN GENERATED: nutrition-core";
 const endMarker = "// END GENERATED: nutrition-core";
 const source = readFileSync(sourcePath, "utf8").trimEnd();

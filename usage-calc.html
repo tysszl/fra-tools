@@ -1745,10 +1745,8 @@ function toggleRef() {
 // ACCESS GATE
 // ═══════════════════════════════════════════════
 // AIDEV-NOTE: Internal-team gate, not security; same pattern as cplus-calc.html.
-// cost-calc.html and usage-calc.html share one team code and one localStorage key,
-// so unlocking either unlocks both. To change the code: compute the new hash with
-// gateHash() (e.g. in the browser console), replace GATE_HASH in BOTH files, and
-// update the keyed links on the Notion Team Tools page.
+// To change the code: compute the new hash with gateHash() (e.g. in the browser
+// console), replace GATE_HASH, and update the keyed link on the Notion Team Tools page.
 const GATE_HASH = "d1c47d4d";
 const GATE_STORAGE_KEY = "fra-team-key";
 let gateKey = null;
