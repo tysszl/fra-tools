@@ -2027,6 +2027,20 @@ function getPhaseRecipeName(phase) {
   return state.doserMode === "2" ? "Swell" : state.phaseRecipe[phase];
 }
 
+// AIDEV-NOTE: Dripper pH ceiling follows the chart's actual EC (technical-standards.md
+// § pH Management): any flower recipe (Stretch/Stack/Swell) at or above its high-strength
+// EC caps flower at 5.8; otherwise every 3-Part recipe runs 5.5–6.0. Same threshold rule
+// as getCplusPhRanges() in cplus-calc.html.
+const FLOWER_RECIPES = ["Stretch", "Stack", "Swell"];
+function isHighStrengthFlowerChart() {
+  return PHASES.some(phase => {
+    const recipe = getPhaseRecipeName(phase);
+    const hi = EC_PRESETS.high[recipe];
+    const ec = Number(state.targetEC && state.targetEC[phase]);
+    return FLOWER_RECIPES.includes(recipe) && hi && isFinite(ec) && ec >= hi - 0.001;
+  });
+}
+
 function recipesEqual(a, b) {
   return PHASES.every(phase => a[phase] === b[phase]);
 }
@@ -2309,8 +2323,15 @@ const BP_ADDITIVES = [
   ["Front Row Si", "0.5–2 mL/gal", "Foliar, 1x/week, Veg through Wk 3 of flower (stem strength / stress)."],
   ["Triologic", "1–2 mL/gal", "Use 1x per week."],
   ["BioFlo", "30 mL/gal", "As needed to clear biofilm from irrigation lines."],
-  ["Front Row pH Up", "0.05–0.25 g/gal", "Target 5.5–6.0 at the dripper; 5.5–5.8 on high-strength flower. Mix 5–15 minutes."]
+  ["Front Row pH Up", "0.05–0.25 g/gal", null]
 ];
+// pH Up's printed ceiling follows the chart's EC (see isHighStrengthFlowerChart).
+function getBrandedAdditives() {
+  const phNote = isHighStrengthFlowerChart()
+    ? "Target 5.5–5.8 on flower (Stretch, Stack, Swell) and 5.5–6.0 on Veg and Ripen, at the dripper. Mix 5–15 minutes."
+    : "Target 5.5–6.0 at the dripper for every recipe on this chart. Mix 5–15 minutes.";
+  return BP_ADDITIVES.map(a => a[0] === "Front Row pH Up" ? [a[0], a[1], phNote] : a);
+}
 const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
 
 function fcFoot() {
@@ -2438,7 +2459,7 @@ function renderBrandedPrint() {
 
   const additiveTable =
     `<table class="fc-table"><thead><tr><th>Additive</th><th>Rate</th><th>Notes</th></tr></thead><tbody>`
-    + BP_ADDITIVES.map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
+    + getBrandedAdditives().map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
     + `</tbody></table>`;
 
   const ecContribRows = [
@@ -2852,7 +2873,9 @@ function renderSupplements() {
     const phupUnit = met ? "g/L" : "g/gal";
     html += `<div class="supp-item">
       <div class="supp-name" style="color:var(--phup)">pH Up</div>
-      <div class="supp-detail">Target pH at the dripper: 5.5–6.0 for Veg, Ripen and standard-strength flower; 5.5–5.8 for high-strength Stretch, Stack and Swell. As needed, ${maxRate} ${phupUnit} max total (stop at ${stopRate} on high-strength flower). Always add last.</div>
+      <div class="supp-detail">${isHighStrengthFlowerChart()
+        ? `Target pH at the dripper: 5.5–5.8 for flower (Stretch, Stack, Swell) at this chart's high-strength EC; 5.5–6.0 for Veg and Ripen. As needed, ${maxRate} ${phupUnit} max total (stop at ${stopRate} on flower). Always add last.`
+        : `Target pH at the dripper: 5.5–6.0 for every recipe on this chart. As needed, ${maxRate} ${phupUnit} max total. Always add last.`}</div>
     </div>`;
   }
 
@@ -3230,7 +3253,9 @@ function buildSummary() {
         ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}`
         : "0.15–0.2";
       const phupUnit = met ? "g/L" : "g/gal";
-      html += `<p style="margin:2px 0;font-size:13px;">pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} ${phupUnit} max total; stop at ${stopRate} on high-strength flower. Always add last.</p>`;
+      html += `<p style="margin:2px 0;font-size:13px;">${isHighStrengthFlowerChart()
+        ? `pH Up — Target pH at the dripper 5.5–5.8 (flower: Stretch, Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, ${maxRate} ${phupUnit} max total; stop at ${stopRate} on flower. Always add last.`
+        : `pH Up — Target pH at the dripper 5.5–6.0 (all recipes on this chart). As needed, ${maxRate} ${phupUnit} max total. Always add last.`}</p>`;
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
@@ -3352,7 +3377,9 @@ function buildSummary() {
       const stopRate = met
         ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
         : "0.15–0.2 g/gal";
-      plain += t("pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, {max} max total; stop at {stop} on high-strength flower. Always add last.", { max: maxRate, stop: stopRate }) + "\n";
+      plain += (isHighStrengthFlowerChart()
+        ? t("pH Up — Target pH at the dripper 5.5–5.8 (flower: Stretch, Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, {max} max total; stop at {stop} on flower. Always add last.", { max: maxRate, stop: stopRate })
+        : t("pH Up — Target pH at the dripper 5.5–6.0 (all recipes on this chart). As needed, {max} max total. Always add last.", { max: maxRate })) + "\n";
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
@@ -3580,7 +3607,8 @@ const I18N = {
     "Less environmental control": "Menor control ambiental",
     "Foliar, 1x/week, Veg through Wk 3 of flower (stem strength / stress).": "Foliar, 1 vez/semana, de Veg a la sem 3 de floración (firmeza del tallo / estrés).",
     "As needed to clear biofilm from irrigation lines.": "Según sea necesario para eliminar la biopelícula de las líneas de riego.",
-    "Target 5.5–6.0 at the dripper; 5.5–5.8 on high-strength flower. Mix 5–15 minutes.": "Objetivo 5.5–6.0 en el gotero; 5.5–5.8 en floración de alta concentración. Mezcle 5–15 minutos.",
+    "Target 5.5–5.8 on flower (Stretch, Stack, Swell) and 5.5–6.0 on Veg and Ripen, at the dripper. Mix 5–15 minutes.": "Objetivo 5.5–5.8 en floración (Stretch, Stack, Swell) y 5.5–6.0 en Veg y Ripen, en el gotero. Mezcle 5–15 minutos.",
+    "Target 5.5–6.0 at the dripper for every recipe on this chart. Mix 5–15 minutes.": "Objetivo 5.5–6.0 en el gotero para todas las recetas de esta tabla. Mezcle 5–15 minutos.",
     "Draw 250 mL of concentrate from the stock tank.": "Tome 250 mL de concentrado del tanque madre.",
     "Mix the sample into 5 gallons of RO water.": "Mezcle la muestra en 5 galones de agua RO.",
     "If the reading is off, adjust the tank and re-validate before use.": "Si la lectura no coincide, ajuste el tanque y vuelva a validar antes de usarlo.",
@@ -3607,7 +3635,8 @@ const I18N = {
     "Warning": "Advertencia",
     "Veg / Moms: run a separate Part A + Part B feed — a combined B + Bloom tank can't make a zero-Bloom Veg recipe.": "Veg / Madres: alimente con una mezcla aparte de Part A + Part B; un tanque combinado B + Bloom no puede hacer una receta Veg sin Bloom.",
     "Si — Foliar: {rate}, once weekly, veg through week 3 of flower.": "Si — Foliar: {rate}, una vez por semana, de vegetativo a la semana 3 de floración.",
-    "pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, {max} max total; stop at {stop} on high-strength flower. Always add last.": "pH Up — pH objetivo en el gotero 5.5–6.0 (Veg, Ripen, floración de concentración estándar) o 5.5–5.8 (Stretch, Stack, Swell de alta concentración). Según sea necesario, máximo {max} en total; deténgase en {stop} en floración de alta concentración. Agréguelo siempre al final.",
+    "pH Up — Target pH at the dripper 5.5–5.8 (flower: Stretch, Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, {max} max total; stop at {stop} on flower. Always add last.": "pH Up — pH objetivo en el gotero 5.5–5.8 (floración: Stretch, Stack, Swell) o 5.5–6.0 (Veg, Ripen). Según sea necesario, máximo {max} en total; deténgase en {stop} en floración. Agréguelo siempre al final.",
+    "pH Up — Target pH at the dripper 5.5–6.0 (all recipes on this chart). As needed, {max} max total. Always add last.": "pH Up — pH objetivo en el gotero 5.5–6.0 (todas las recetas de esta tabla). Según sea necesario, máximo {max} en total. Agréguelo siempre al final.",
     "BioFlo — Heavy clean: {heavy}. Maintenance: {maint} every 1–2 weeks.": "BioFlo — Limpieza profunda: {heavy}. Mantenimiento: {maint} cada 1–2 semanas.",
     "Triologic — {rate} weekly hand drench.": "Triologic — {rate} en riego manual semanal.",
 
@@ -3651,6 +3680,10 @@ const I18N = {
 // Pattern entries for text that carries numbers or units. Tried after the exact lookup.
 const I18N_PATTERNS = {
   es: [
+    [/^Target pH at the dripper: 5\.5–5\.8 for flower \(Stretch, Stack, Swell\) at this chart's high-strength EC; 5\.5–6\.0 for Veg and Ripen\. As needed, (.+) max total \(stop at (.+) on flower\)\. Always add last\.$/, "pH objetivo en el gotero: 5.5–5.8 para floración (Stretch, Stack, Swell) a la EC de alta concentración de esta tabla; 5.5–6.0 para Veg y Ripen. Según sea necesario, máximo $1 en total (deténgase en $2 en floración). Agréguelo siempre al final."],
+    [/^Target pH at the dripper: 5\.5–6\.0 for every recipe on this chart\. As needed, (.+) max total\. Always add last\.$/, "pH objetivo en el gotero: 5.5–6.0 para todas las recetas de esta tabla. Según sea necesario, máximo $1 en total. Agréguelo siempre al final."],
+    [/^pH Up — Target pH at the dripper 5\.5–5\.8 \(flower: Stretch, Stack, Swell\) or 5\.5–6\.0 \(Veg, Ripen\)\. As needed, (.+) max total; stop at (.+) on flower\. Always add last\.$/, "pH Up — pH objetivo en el gotero 5.5–5.8 (floración: Stretch, Stack, Swell) o 5.5–6.0 (Veg, Ripen). Según sea necesario, máximo $1 en total; deténgase en $2 en floración. Agréguelo siempre al final."],
+    [/^pH Up — Target pH at the dripper 5\.5–6\.0 \(all recipes on this chart\)\. As needed, (.+) max total\. Always add last\.$/, "pH Up — pH objetivo en el gotero 5.5–6.0 (todas las recetas de esta tabla). Según sea necesario, máximo $1 en total. Agréguelo siempre al final."],
     [/^Tank 1 \(Part A\) (.+) gal · Tank 2 \(B \+ Bloom\) (.+) gal$/, "Tanque 1 (Part A) $1 gal · Tanque 2 (B + Bloom) $2 gal"],
     [/^Each of the three stock tanks: (.+) gal$/, "Cada uno de los tres tanques madre: $1 gal"],
     [/^Feed Schedule \((.+)\)$/, "Programa de alimentación ($1)"],

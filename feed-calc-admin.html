@@ -2085,6 +2085,17 @@ function getPhaseRecipeName(phase) {
   return state.doserMode === "2" ? "Swell" : state.phaseRecipe[phase];
 }
 
+// AIDEV-NOTE: Dripper pH ceiling follows the chart's actual EC; mirrors feed-calc.html.
+const FLOWER_RECIPES = ["Stretch", "Stack", "Swell"];
+function isHighStrengthFlowerChart() {
+  return PHASES.some(phase => {
+    const recipe = getPhaseRecipeName(phase);
+    const hi = EC_PRESETS.high[recipe];
+    const ec = Number(state.targetEC && state.targetEC[phase]);
+    return FLOWER_RECIPES.includes(recipe) && hi && isFinite(ec) && ec >= hi - 0.001;
+  });
+}
+
 function recipesEqual(a, b) {
   return PHASES.every(phase => a[phase] === b[phase]);
 }
@@ -2367,8 +2378,15 @@ const BP_ADDITIVES = [
   ["Front Row Si", "0.5–2 mL/gal", "Foliar, 1x/week, Veg through Wk 3 of flower (stem strength / stress)."],
   ["Triologic", "1–2 mL/gal", "Use 1x per week."],
   ["BioFlo", "30 mL/gal", "As needed to clear biofilm from irrigation lines."],
-  ["Front Row pH Up", "0.05–0.25 g/gal", "Target 5.5–6.0 at the dripper; 5.5–5.8 on high-strength flower. Mix 5–15 minutes."]
+  ["Front Row pH Up", "0.05–0.25 g/gal", null]
 ];
+// pH Up's printed ceiling follows the chart's EC (see isHighStrengthFlowerChart).
+function getBrandedAdditives() {
+  const phNote = isHighStrengthFlowerChart()
+    ? "Target 5.5–5.8 on flower (Stretch, Stack, Swell) and 5.5–6.0 on Veg and Ripen, at the dripper. Mix 5–15 minutes."
+    : "Target 5.5–6.0 at the dripper for every recipe on this chart. Mix 5–15 minutes.";
+  return BP_ADDITIVES.map(a => a[0] === "Front Row pH Up" ? [a[0], a[1], phNote] : a);
+}
 const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
 
 function fcFoot() {
@@ -2496,7 +2514,7 @@ function renderBrandedPrint() {
 
   const additiveTable =
     `<table class="fc-table"><thead><tr><th>Additive</th><th>Rate</th><th>Notes</th></tr></thead><tbody>`
-    + BP_ADDITIVES.map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
+    + getBrandedAdditives().map(a => `<tr><td class="nowrap">${a[0]}</td><td class="nowrap">${a[1]}</td><td>${a[2]}</td></tr>`).join("")
     + `</tbody></table>`;
 
   const ecContribRows = [
@@ -2921,7 +2939,9 @@ function renderSupplements() {
     const phupUnit = met ? "g/L" : "g/gal";
     html += `<div class="supp-item">
       <div class="supp-name" style="color:var(--phup)">pH Up</div>
-      <div class="supp-detail">Target pH at the dripper: 5.5–6.0 for Veg, Ripen and standard-strength flower; 5.5–5.8 for high-strength Stretch, Stack and Swell. As needed, ${maxRate} ${phupUnit} max total (stop at ${stopRate} on high-strength flower). Always add last.</div>
+      <div class="supp-detail">${isHighStrengthFlowerChart()
+        ? `Target pH at the dripper: 5.5–5.8 for flower (Stretch, Stack, Swell) at this chart's high-strength EC; 5.5–6.0 for Veg and Ripen. As needed, ${maxRate} ${phupUnit} max total (stop at ${stopRate} on flower). Always add last.`
+        : `Target pH at the dripper: 5.5–6.0 for every recipe on this chart. As needed, ${maxRate} ${phupUnit} max total. Always add last.`}</div>
     </div>`;
   }
 
@@ -3318,7 +3338,9 @@ function buildSummary() {
         ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)}`
         : "0.15–0.2";
       const phupUnit = met ? "g/L" : "g/gal";
-      html += `<p style="margin:2px 0;font-size:13px;">pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} ${phupUnit} max total; stop at ${stopRate} on high-strength flower. Always add last.</p>`;
+      html += `<p style="margin:2px 0;font-size:13px;">${isHighStrengthFlowerChart()
+        ? `pH Up — Target pH at the dripper 5.5–5.8 (flower: Stretch, Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, ${maxRate} ${phupUnit} max total; stop at ${stopRate} on flower. Always add last.`
+        : `pH Up — Target pH at the dripper 5.5–6.0 (all recipes on this chart). As needed, ${maxRate} ${phupUnit} max total. Always add last.`}</p>`;
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
@@ -3440,7 +3462,9 @@ function buildSummary() {
       const stopRate = met
         ? `${(0.15 / CONSTANTS.L_per_gal).toFixed(2)}–${(0.2 / CONSTANTS.L_per_gal).toFixed(2)} g/L`
         : "0.15–0.2 g/gal";
-      plain += `pH Up — Target pH at the dripper 5.5–6.0 (Veg, Ripen, standard-strength flower) or 5.5–5.8 (high-strength Stretch, Stack, Swell). As needed, ${maxRate} max total; stop at ${stopRate} on high-strength flower. Always add last.\n`;
+      plain += isHighStrengthFlowerChart()
+        ? `pH Up — Target pH at the dripper 5.5–5.8 (flower: Stretch, Stack, Swell) or 5.5–6.0 (Veg, Ripen). As needed, ${maxRate} max total; stop at ${stopRate} on flower. Always add last.\n`
+        : `pH Up — Target pH at the dripper 5.5–6.0 (all recipes on this chart). As needed, ${maxRate} max total. Always add last.\n`;
     }
     if (state.showBioFlo) {
       const heavyRate = met ? "8 mL/L" : "30 mL/gal";
