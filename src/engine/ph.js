@@ -1,8 +1,11 @@
 // @ts-check
-// Dripper pH ranges. Each line has its own high-strength rule, kept as the pages have it.
+// Dripper pH ranges, per chart column: each column's range follows its own recipe and
+// target EC (Tyler 2026-09-29, N12). The ceilings are today's published values until
+// the modeled rule replaces dripperPhRange.
 import { DATA } from "./data.js";
 import { recipeForPhase } from "./settings.js";
 
+/** @typedef {import("./data.js").LineId} LineId */
 /** @typedef {import("./data.js").Phase} Phase */
 /** @typedef {import("./settings.js").FeedSettings} FeedSettings */
 
@@ -12,76 +15,55 @@ export function formatPhRange(range) {
 }
 
 /**
- * 3-Part: the chart is high-strength flower when any phase running a flower recipe
- * (Stretch, Stack, Swell) sits at or above that recipe's High preset EC. The High
- * preset is keyed by phase; the page looks it up by recipe name.
- * On two dosers every phase counts as Swell, including the unserved Veg column.
- * @param {FeedSettings} settings
+ * True when `ec`, rounded to the displayed 0.1, is at or above `threshold`.
+ * @param {number} ec
+ * @param {number | undefined} threshold
  */
-export function threePartHighStrengthFlower(settings) {
+function atOrAbove(ec, threshold) {
+  if (!threshold || !isFinite(ec)) return false;
+  const d = DATA.highStrengthEcDecimals;
+  return Number(ec.toFixed(d)) >= Number(threshold.toFixed(d));
+}
+
+/**
+ * Dripper pH range for one recipe at one EC.
+ * 3-Part: Stretch, Stack, and Swell at or above their High preset EC run 5.5–5.8;
+ * everything else 5.5–6.0. C+: Stack/Swell and Veg/Ripen each have a standard and a
+ * high-strength range, switched at the recipe's high-strength EC.
+ * @param {LineId} line
+ * @param {string} recipe
+ * @param {number} ec
+ * @returns {{ range: readonly number[], highStrength: boolean, flower: boolean }}
+ */
+export function dripperPhRange(line, recipe, ec) {
+  if (line === "cplus") {
+    const ph = DATA.lines.cplus.ph;
+    const flower = /** @type {readonly string[]} */ (ph.flowerRecipes).includes(recipe);
+    const high = atOrAbove(ec, /** @type {Record<string, number>} */ (ph.highStrengthEc)[recipe]);
+    const group = flower ? ph.flower : ph.vegRipen;
+    return { range: high ? group.high : group.standard, highStrength: high, flower };
+  }
   const ph = DATA.lines["3part"].ph;
-  const high = /** @type {Record<string, number>} */ (DATA.ecPresets.high);
-  return DATA.phases.some(phase => {
-    const recipe = recipeForPhase(settings, phase);
-    const hi = high[recipe];
-    const ec = Number(settings.targetEc && settings.targetEc[phase]);
-    return /** @type {readonly string[]} */ (ph.flowerRecipes).includes(recipe)
-      && Boolean(hi) && isFinite(ec) && ec >= hi - DATA.highStrengthTolerance;
-  });
+  const flower = /** @type {readonly string[]} */ (ph.flowerRecipes).includes(recipe);
+  // The High preset table is keyed by phase; the rule reads it by recipe name.
+  const high = flower && atOrAbove(ec, /** @type {Record<string, number>} */ (DATA.ecPresets.high)[recipe]);
+  return { range: high ? ph.highStrengthFlower : ph.standard, highStrength: high, flower };
 }
 
 /**
- * C+: flower (Stack, Swell) and Veg/Ripen each switch to their high-strength range when
- * any phase running that recipe sits at or above the recipe's high-strength EC.
- * On two dosers every phase counts as Swell, so Veg/Ripen never switch there.
- * @param {FeedSettings} settings
- */
-export function cplusHighStrength(settings) {
-  const ph = DATA.lines.cplus.ph;
-  const thresholds = /** @type {Record<string, number>} */ (ph.highStrengthEc);
-  let flower = false;
-  let vegRipen = false;
-  DATA.phases.forEach(phase => {
-    const recipe = recipeForPhase(settings, phase);
-    const hi = thresholds[recipe];
-    const ec = Number(settings.targetEc && settings.targetEc[phase]);
-    if (!hi || !isFinite(ec) || ec < hi - DATA.highStrengthTolerance) return;
-    if (/** @type {readonly string[]} */ (ph.flowerRecipes).includes(recipe)) flower = true;
-    else vegRipen = true;
-  });
-  return { flower, vegRipen };
-}
-
-/**
- * Dripper pH targets for the chart.
- * 3-Part: `flower` covers Stretch/Stack/Swell; `vegRipen` covers Veg and Ripen.
- * C+: `flower` covers Stack/Swell.
+ * The chart's dripper pH, one entry per phase (null for the Veg column a 2-doser
+ * does not serve).
  * @param {FeedSettings} settings
  */
 export function phRanges(settings) {
-  if (settings.line === "cplus") {
-    const ph = DATA.lines.cplus.ph;
-    const high = cplusHighStrength(settings);
-    const flowerRange = high.flower ? ph.flower.high : ph.flower.standard;
-    const vegRipenRange = high.vegRipen ? ph.vegRipen.high : ph.vegRipen.standard;
-    return {
-      highStrengthFlower: high.flower,
-      highStrengthVegRipen: high.vegRipen,
-      flowerRange,
-      vegRipenRange,
-      flower: formatPhRange(flowerRange),
-      vegRipen: formatPhRange(vegRipenRange),
-    };
-  }
-  const ph = DATA.lines["3part"].ph;
-  const highStrengthFlower = threePartHighStrengthFlower(settings);
-  const flowerRange = highStrengthFlower ? ph.highStrengthFlower : ph.standard;
+  const columns = DATA.phases.map(phase => {
+    if (settings.doserCount === 2 && phase === "Veg") return null;
+    const recipe = recipeForPhase(settings, phase);
+    const result = dripperPhRange(settings.line, recipe, Number(settings.targetEc[phase]));
+    return { phase, recipe, ...result, text: formatPhRange(result.range) };
+  });
   return {
-    highStrengthFlower,
-    highStrengthVegRipen: false,
-    flowerRange,
-    vegRipenRange: ph.standard,
-    flower: formatPhRange(flowerRange),
-    vegRipen: formatPhRange(ph.standard),
+    columns,
+    anyHighStrengthFlower: columns.some(column => Boolean(column && column.flower && column.highStrength)),
   };
 }

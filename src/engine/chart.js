@@ -18,7 +18,7 @@ import {
   effectiveMethod,
   normalizeStockTankVolume,
   recipeForPhase,
-  recipeLabels,
+  recipeLabel,
   recipeScheduleLabel,
   resolveFeedSettings,
   stockConcentration,
@@ -91,7 +91,17 @@ function roleDose(settings, phase, role, targetEc) {
     targetEc,
     stockLbPerGal: stockConcentration(settings, role),
     unit: settings.unit,
+    extraDecimals: extraDecimals(settings),
   });
+}
+
+/**
+ * 2-doser tanks run at different rates, so their rates print one decimal finer in
+ * every unit (ratio excepted).
+ * @param {FeedSettings} settings
+ */
+export function extraDecimals(settings) {
+  return settings.doserCount === 2 ? 1 : 0;
 }
 
 // ── 3-Part 2-doser ──────────────────────────────────────────────────────────
@@ -122,26 +132,6 @@ export function threePartTwoDoserTankTargetEc(settings, phase, targetEc) {
 }
 
 /**
- * Reproduces feed-calc.html's twoDoserRateDisplay: on two dosers it re-prints mL/gal
- * rates to 0.1 mL/gal, but leaves every other unit at its usual rounding (injection %
- * 2 decimals, ratio whole, mL/L 1 decimal). The numeric `dosage` stays whole-mL.
- * @param {FeedSettings} settings
- * @param {Role} role
- * @param {number} targetEc
- * @param {Phase} phase
- * @param {string} fallback  The normally rounded display.
- */
-export function threePartTwoDoserRateDisplayMlPerGalOnly(settings, role, targetEc, phase, fallback) {
-  if (settings.unit !== "mL/gal") return fallback;
-  const recipe = getRecipe("3part", recipeForPhase(settings, phase));
-  const conc = stockConcentration(settings, role);
-  if (!(conc > 0) || !(recipe[role] > 0)) return fallback;
-  const gramsPerGallon = targetEc * recipe[role] / DATA.lines["3part"].ecPerGram[role];
-  return (gramsPerGallon / conc * /** @type {number} */ (DATA.feedUnits.factors["mL/gal"]))
-    .toFixed(DATA.lines["3part"].twoDoser.mlPerGalDecimals);
-}
-
-/**
  * @param {FeedSettings} settings
  * @returns {FeedRow[]}
  */
@@ -160,8 +150,7 @@ function threePartRows(settings) {
       if (is2Doser && phase === "Veg") return null;
       const eEC = phaseAdjustment(settings, phase).baseTargetEc;
       const r = roleDose(settings, phase, "partA", eEC);
-      const display = is2Doser ? threePartTwoDoserRateDisplayMlPerGalOnly(settings, "partA", eEC, phase, r.display) : r.display;
-      return { display, dosage: r.dosage, ec: r.ec };
+      return { display: r.display, dosage: r.dosage, ec: r.ec };
     }),
   });
 
@@ -180,8 +169,7 @@ function threePartRows(settings) {
         const bloomEc = gramsB * threePartTankBloomToPartBRatio(settings) * line.ecPerGram.bloom;
         let combinedEc = partBEc + bloomEc;
         if (usePhz) combinedEc += adjustment.phoszymeEc;
-        const display = threePartTwoDoserRateDisplayMlPerGalOnly(settings, "partB", t2EC, phase, resultB.display);
-        return { display, dosage: resultB.dosage, ec: combinedEc };
+        return { display: resultB.display, dosage: resultB.dosage, ec: combinedEc };
       }),
     });
     return rows;
@@ -234,6 +222,7 @@ function directPhoszymeCell(settings, phase) {
     included: settings.usePhoszyme,
     carrierStockLbPerGal: stockConcentration(settings, "partB"),
     unit: settings.unit,
+    extraDecimals: extraDecimals(settings),
   });
 }
 
@@ -244,14 +233,15 @@ function directPhoszymeCell(settings, phase) {
  * @param {number} targetEc
  * @param {Array<{ lbPerGal: number, ecPerGram: number }>} components
  * @param {FeedUnit} unit
+ * @param {number} [extra]  Extra display decimals.
  * @returns {DoseCell}
  */
-export function mixedTankDose(targetEc, components, unit) {
+export function mixedTankDose(targetEc, components, unit, extra = 0) {
   const normalizedEc = Math.max(0, Number(targetEc) || 0);
   const stockEcPerGallon = components.reduce((sum, component) =>
     sum + component.lbPerGal * DATA.units.gramsPerPound * component.ecPerGram, 0);
   const injectionPercent = stockEcPerGallon > 0 ? normalizedEc / stockEcPerGallon * 100 : 0;
-  return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit), ec: normalizedEc };
+  return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit, extra), ec: normalizedEc };
 }
 
 /**
@@ -274,8 +264,8 @@ export function cplusNearRipenDoses(settings, targetEc) {
     tank2Components.push({ lbPerGal: rates.partB * DATA.phoszyme.stockCarrierRatio, ecPerGram: DATA.phoszyme.ecPerGram });
   }
   return {
-    partA: mixedTankDose(calciumEc, [{ lbPerGal: rates.partA, ecPerGram: line.ecPerGram.partA }], settings.unit),
-    combo: mixedTankDose(comboEc, tank2Components, settings.unit),
+    partA: mixedTankDose(calciumEc, [{ lbPerGal: rates.partA, ecPerGram: line.ecPerGram.partA }], settings.unit, extraDecimals(settings)),
+    combo: mixedTankDose(comboEc, tank2Components, settings.unit, extraDecimals(settings)),
   };
 }
 
@@ -355,7 +345,7 @@ function cplusRows(settings) {
 
 /**
  * Per-part rows for the chart, the same rows the screen, Copy Summary, and print use.
- * A cell with dosage 0 or display "–" prints as a dash.
+ * A cell prints as a dash only when the part is not in the recipe (display "–").
  * @param {FeedSettings} settings
  * @returns {FeedRow[]}
  */
@@ -489,7 +479,7 @@ export function computeFeedChart(input) {
       phase,
       targetEc: settings.targetEc[phase],
       recipe: recipeForPhase(settings, phase),
-      recipeLabel: recipeLabels(settings, phase),
+      recipeLabel: recipeLabel(settings, phase),
       label: { print: DATA.phaseLabels.print[index], summary: DATA.phaseLabels.summary[index] },
     })),
     rows: feedRows(settings),

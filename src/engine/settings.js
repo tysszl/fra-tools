@@ -179,36 +179,16 @@ export function recipeForPhase(settings, phase) {
 }
 
 /**
- * Recipe names as each surface prints them.
- * - `summary`: 3-Part Copy Summary and every C+ surface (Veg stays "Veg" and the C+
- *   Near Ripen final phase says "Near Ripen" on two dosers).
- * - `print`: the 3-Part printed chart, which prints the math recipe ("Swell" under
- *   Veg / Moms on two dosers). See threePartPrintRecipeLabel.
+ * Recipe names as the chart prints them. Two dosers show "Veg" over the unserved
+ * Veg / Moms column and, on C+, "Near Ripen" for that final phase.
  * @param {FeedSettings} settings
  * @param {Phase} phase
  */
-export function recipeLabels(settings, phase) {
-  if (settings.doserCount !== 2) {
-    const name = settings.phaseRecipe[phase];
-    return { summary: name, print: name };
-  }
-  let summary = "Swell";
-  if (phase === "Veg") summary = "Veg";
-  else if (settings.line === "cplus" && phase === "Ripen" && settings.cplusFinalPhase === "near-ripen") summary = "Near Ripen";
-  return {
-    summary,
-    print: settings.line === "3part" ? threePartPrintRecipeLabel(settings, phase) : summary,
-  };
-}
-
-/**
- * Reproduces feed-calc.html's printed Recipe row, which prints "Swell" under Veg / Moms
- * on two dosers while the screen and Copy Summary print "Veg".
- * @param {FeedSettings} settings
- * @param {Phase} phase
- */
-export function threePartPrintRecipeLabel(settings, phase) {
-  return recipeForPhase(settings, phase);
+export function recipeLabel(settings, phase) {
+  if (settings.doserCount !== 2) return settings.phaseRecipe[phase];
+  if (phase === "Veg") return "Veg";
+  if (settings.line === "cplus" && phase === "Ripen" && settings.cplusFinalPhase === "near-ripen") return "Near Ripen";
+  return "Swell";
 }
 
 /**

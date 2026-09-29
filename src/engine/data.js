@@ -84,8 +84,9 @@ export const DATA = deepFreeze({
   },
   defaultEcPreset: "high",
   customEc: { minExclusive: 0, max: 10, step: 0.1, displayDecimals: 1 },
-  // A phase counts as high strength when its EC >= threshold - tolerance.
-  highStrengthTolerance: 0.001,
+  // A column is high strength when its EC, rounded to the displayed 0.1, is at or above
+  // the recipe's high-strength EC.
+  highStrengthEcDecimals: 1,
 
   recipeSchedules: {
     defaultSchedule: "commercial",
@@ -145,7 +146,6 @@ export const DATA = deepFreeze({
         bloomLb: THREE_PART_TWO_DOSER_BLOOM_LB,
         partBLb: THREE_PART_TWO_DOSER_PART_B_LB,
         tank2VolumeFactor: 1.0,
-        mlPerGalDecimals: 1,
       },
       // 2-doser tank size (and team-mode custom tank size). 3-doser methods use fixed volumes.
       stockTankVolume: { defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 },
@@ -197,7 +197,7 @@ export const DATA = deepFreeze({
         nearRipenCaEcShare: 0.315,
       },
       // Applies to every C+ stock tank, 3-doser and 2-doser.
-      stockTankVolume: { defaultGal: 50, minGal: 1, maxGal: 100000, decimals: 1 },
+      stockTankVolume: { defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 },
       ph: {
         flower: { standard: [5.5, 5.7], high: [5.5, 5.6] },
         vegRipen: { standard: [5.5, 6.0], high: [5.5, 5.8] },
@@ -221,8 +221,6 @@ export const DATA = deepFreeze({
       metricDecimals: 2,
       incrementGPerGal: 0.05,
       waitMinutes: [5, 15],
-      // 3-Part printed additive table only.
-      printRangeGPerGal: [0.05, 0.25],
     },
     bioflo: {
       heavyMlPerGal: 30,
@@ -231,16 +229,13 @@ export const DATA = deepFreeze({
       maintenanceMlPerL: 4,
       soakHours: [8, 24],
       maintenanceEveryWeeks: [1, 2],
-      // 3-Part printed additive table only: heavy rate, "as needed".
-      printMlPerGal: 30,
     },
     triologic: {
       weeklyMlPerGal: 1,
       weeklyMlPerL: 0.25,
-      transplantMlPerGal: 2,
-      transplantMlPerL: 0.5,
-      // 3-Part printed additive table only: "1–2 mL/gal, 1x/week".
-      printRangeMlPerGal: [1, 2],
+      // Up to 2 mL/gal is fine, for example at transplant.
+      maxMlPerGal: 2,
+      maxMlPerL: 0.5,
     },
   },
 
@@ -256,7 +251,8 @@ export const DATA = deepFreeze({
     warmLineC: 25,
     warmLineF: 77,
     cplusStockUseWithinDays: 14,
-    threePartSterileReservoirCalHypoGPer100Gal: [1, 3],
+    sterileReservoirCalHypoGPer100Gal: 1.2,
+    sterileReservoirCalHypoPpm: 2,
     threePartTank2EmptiesFasterApprox: 1.7,
     injectorBandPercent: [0.2, 2.0],
   },

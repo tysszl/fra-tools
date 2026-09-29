@@ -28,14 +28,13 @@ export {
   normalizeCustomLbs,
   normalizeStockTankVolume,
   recipeForPhase,
-  recipeLabels,
+  recipeLabel,
   recipeScheduleLabel,
   resolveFeedSettings,
   stockConcentration,
   stockConfigLabel,
   stockRates,
   tankVolumes,
-  threePartPrintRecipeLabel,
 } from "./settings.js";
 export {
   computeFeedChart,
@@ -46,11 +45,11 @@ export {
   stockTable,
   threePartMetricWeightKg,
   threePartTankBloomToPartBRatio,
-  threePartTwoDoserRateDisplayMlPerGalOnly,
+  extraDecimals,
   threePartTwoDoserTankTargetEc,
 } from "./chart.js";
-export { cplusHighStrength, formatPhRange, phRanges, threePartHighStrengthFlower } from "./ph.js";
-export { formatRange, supplementRates, threePartPrintAdditiveRates } from "./supplements.js";
+export { dripperPhRange, formatPhRange, phRanges } from "./ph.js";
+export { formatRange, supplementRates } from "./supplements.js";
 export {
   usageBagsNeeded,
   usageEstimate,

@@ -37,12 +37,13 @@ export function feedUnitDecimals(unit) {
 
 /**
  * Formats a dose given as the injection % it would need from a 1 lb/gal stock.
- * DTR doses pass through this with a stock concentration of 1.
+ * DTR doses pass through this with a stock concentration of 1. `extraDecimals` adds
+ * precision for every unit except ratio (2-doser charts use 1).
  * @param {number} injectionPercent
  * @param {FeedUnit} unit
  * @returns {FormattedDose}
  */
-export function formatFeedDoseFromInjectionPercent(injectionPercent, unit) {
+export function formatFeedDoseFromInjectionPercent(injectionPercent, unit, extraDecimals = 0) {
   const normalizedPercent = nonNegative(injectionPercent);
   if (!(normalizedPercent > 0)) return { dosage: 0, display: "–" };
   if (unit === "ratio") {
@@ -55,7 +56,10 @@ export function formatFeedDoseFromInjectionPercent(injectionPercent, unit) {
   }
   const gramsPerGallonAtOnePoundStock = normalizedPercent / 100 * DATA.units.gramsPerPound;
   const dosage = gramsPerGallonAtOnePoundStock * /** @type {number} */ (factors[unit]);
-  const decimals = feedUnitDecimals(unit);
+  // A dose that is not zero never prints as zero: add decimals (up to 3 more) until it shows.
+  let decimals = feedUnitDecimals(unit) + extraDecimals;
+  const maxDecimals = decimals + 3;
+  while (decimals < maxDecimals && Number(dosage.toFixed(decimals)) === 0) decimals += 1;
   return { dosage: +dosage.toFixed(decimals), display: dosage.toFixed(decimals) };
 }
 
@@ -151,14 +155,15 @@ export function formatDirectPhoszymeWarning(phases) {
  * @param {number} args.targetEc  EC the three parts deliver (PhosZyme already removed).
  * @param {number} args.stockLbPerGal
  * @param {FeedUnit} args.unit
+ * @param {number} [args.extraDecimals]
  * @returns {DoseCell}
  */
-export function partDose({ lineId, recipeName, role, targetEc, stockLbPerGal, unit }) {
+export function partDose({ lineId, recipeName, role, targetEc, stockLbPerGal, unit, extraDecimals = 0 }) {
   const ec = ecContribution(lineId, recipeName, role, targetEc);
   if (ec === 0) return { ...EMPTY_CELL };
   const gramsPerGallon = doseGramsPerGallon(lineId, recipeName, role, targetEc);
   const injectionPercent = gramsPerGallon / stockLbPerGal * (100 / DATA.units.gramsPerPound);
-  return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit), ec };
+  return { ...formatFeedDoseFromInjectionPercent(injectionPercent, unit, extraDecimals), ec };
 }
 
 /**
@@ -174,7 +179,7 @@ export function partDose({ lineId, recipeName, role, targetEc, stockLbPerGal, un
  * @param {FeedUnit} args.unit
  * @returns {DoseCell}
  */
-export function phoszymeDose({ lineId, recipeName, finalTargetEc, application, included, carrierStockLbPerGal, unit }) {
+export function phoszymeDose({ lineId, recipeName, finalTargetEc, application, included, carrierStockLbPerGal, unit, extraDecimals = 0 }) {
   const phz = DATA.phoszyme;
   const adjustment = phoszymeAdjustment({ lineId, recipeName, targetEc: finalTargetEc, application, included });
   if (!included) return { ...EMPTY_CELL };
@@ -187,7 +192,7 @@ export function phoszymeDose({ lineId, recipeName, finalTargetEc, application, i
   }
   const carrier = partDose({
     lineId, recipeName, role: "partB", targetEc: adjustment.baseTargetEc,
-    stockLbPerGal: carrierStockLbPerGal, unit,
+    stockLbPerGal: carrierStockLbPerGal, unit, extraDecimals,
   });
   if (carrier.dosage === 0) return { ...EMPTY_CELL };
   return { dosage: carrier.dosage, ec: adjustment.phoszymeEc, display: carrier.display };

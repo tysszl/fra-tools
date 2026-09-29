@@ -68,7 +68,7 @@ describe("approval snapshot", () => {
       "1-1-1": { rates: { partA: 1, partB: 1, bloom: 1 }, tankVolumes: { tankA: 50, tankB: 50 } },
       "2-doser": { rates: { partA: 1.5, partB: 0.56, bloom: 1 }, tankVolumes: { tankA: 50, tankB: 50 } },
     });
-    expect(tp.twoDoser).toMatchObject({ tankGal: 50, bloomLb: 50, partBLb: 28, tank2VolumeFactor: 1, mlPerGalDecimals: 1 });
+    expect(tp.twoDoser).toMatchObject({ tankGal: 50, bloomLb: 50, partBLb: 28, tank2VolumeFactor: 1 });
     expect(tp.stockTankVolume).toEqual({ defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 });
     expect(tp.customStock).toEqual({
       maxLbPerGal: { partA: 3, partB: 2, bloom: 2 }, minLbPerGal: 0.1, defaultLbs: { partA: 75, partB: 50, bloom: 50 },
@@ -79,7 +79,7 @@ describe("approval snapshot", () => {
       "2-doser": { rates: { partA: 0.75, partB: 0.75, bloom: 1 } },
     });
     expect(DATA.lines.cplus.twoDoser).toMatchObject({ caStockOptions: [0.75, 1], nearRipenCaEcShare: 0.315 });
-    expect(DATA.lines.cplus.stockTankVolume.minGal).toBe(1);
+    expect(DATA.lines.cplus.stockTankVolume.minGal).toBe(10);
     expect(DATA.validation).toEqual({ us: { sampleMl: 250, waterGal: 5 }, metric: { sampleMl: 400, waterL: 20 }, displayDecimals: 2 });
   });
 
@@ -97,14 +97,15 @@ describe("approval snapshot", () => {
       si: { foliarMlPerGal: [0.5, 2], foliarMlPerL: [0.13, 0.53] },
       phUp: {
         maxGPerGal: [0.2, 0.25], highStrengthFlowerStopGPerGal: [0.15, 0.2], metricDecimals: 2,
-        incrementGPerGal: 0.05, waitMinutes: [5, 15], printRangeGPerGal: [0.05, 0.25],
+        incrementGPerGal: 0.05, waitMinutes: [5, 15],
       },
       bioflo: {
         heavyMlPerGal: 30, heavyMlPerL: 8, maintenanceMlPerGal: 15, maintenanceMlPerL: 4,
-        soakHours: [8, 24], maintenanceEveryWeeks: [1, 2], printMlPerGal: 30,
+        soakHours: [8, 24], maintenanceEveryWeeks: [1, 2],
       },
-      triologic: { weeklyMlPerGal: 1, weeklyMlPerL: 0.25, transplantMlPerGal: 2, transplantMlPerL: 0.5, printRangeMlPerGal: [1, 2] },
+      triologic: { weeklyMlPerGal: 1, weeklyMlPerL: 0.25, maxMlPerGal: 2, maxMlPerL: 0.5 },
     });
+    expect(DATA.reference.sterileReservoirCalHypoGPer100Gal).toBe(1.2);
   });
 
   test("usage numbers", () => {
@@ -132,12 +133,7 @@ describe("sources", () => {
 
   test("audit differences are marked", () => {
     expect(E.sourceFor("lines.3part.stockMethods.2-doser.rates.partB")).toContain("audit N2");
-    expect(E.sourceFor("supplements.triologic.printRangeMlPerGal")).toContain("audit N3");
-    expect(E.sourceFor("supplements.bioflo.printMlPerGal")).toContain("audit N4");
-    expect(E.sourceFor("supplements.phUp.printRangeGPerGal")).toContain("audit N5");
-    expect(E.sourceFor("reference.threePartSterileReservoirCalHypoGPer100Gal")).toContain("audit N6");
     expect(E.sourceFor("usage.siRateByEc.below")).toContain("audit N10");
-    expect(E.sourceFor("lines.cplus.stockTankVolume.minGal")).toContain("audit N11");
     expect(E.sourceFor("lines.cplus.ph.flower.high")).toContain("audit N12");
     expect(E.sourceFor("lines.3part.ph.highStrengthFlower")).toContain("audit N13");
     expect(E.sourceFor("usage.phUpGPerGal")).toContain("audit N14");
@@ -180,7 +176,11 @@ describe("matches src/nutrition-core.js", () => {
     }
     for (const unit of ["mL/gal", "injection %", "ratio", "mL/L", "g/gal", "g/L"] as const) {
       for (const pct of [0, 0.013, 0.528, 1.9]) {
-        expect(E.formatFeedDoseFromInjectionPercent(pct, unit)).toEqual(core.formatFeedDoseFromInjectionPercent(pct, unit));
+        const engine = E.formatFeedDoseFromInjectionPercent(pct, unit);
+        const legacy = core.formatFeedDoseFromInjectionPercent(pct, unit);
+        // Ruled: a nonzero dose gets extra decimals instead of printing as zero.
+        if (pct > 0 && legacy.dosage === 0) expect(engine.dosage).toBeGreaterThan(0);
+        else expect(engine).toEqual(legacy);
       }
     }
   });
@@ -255,14 +255,14 @@ describe("documented values", () => {
     expect(E.computeFeedChart({ line: "cplus", doserCount: 2, usePhoszyme: true }).stock!.tank2Total).toBe("2.54");
   });
 
-  test("C+ 2-doser rates (FR controlled outputs table)", () => {
-    const wholeMl = (settings: any, index: number) =>
-      E.computeFeedChart({ line: "cplus", doserCount: 2, ...settings }).rows.map(row => row.cells[index]!.dosage);
+  test("C+ 2-doser rates print exactly as the FR controlled outputs table", () => {
+    const rates = (settings: any, index: number) =>
+      E.computeFeedChart({ line: "cplus", doserCount: 2, ...settings }).rows.map(row => row.cells[index]!.display);
     const swell3 = { ecPreset: "custom", targetEc: { Stretch: 3.0 } };
-    expect(wholeMl(swell3, 1)).toEqual([39, 39]);
-    expect(wholeMl({ ...swell3, cplusCaStockLbPerGal: 1 }, 1)).toEqual([29, 39]);
-    expect(wholeMl({ cplusFinalPhase: "near-ripen" }, 4)).toEqual([20, 25]);
-    expect(wholeMl({ cplusFinalPhase: "near-ripen", cplusCaStockLbPerGal: 1 }, 4)).toEqual([15, 25]);
+    expect(rates(swell3, 1)).toEqual(["38.8", "38.8"]);
+    expect(rates({ ...swell3, cplusCaStockLbPerGal: 1 }, 1)).toEqual(["29.1", "38.8"]);
+    expect(rates({ cplusFinalPhase: "near-ripen" }, 4)).toEqual(["19.9", "25.2"]);
+    expect(rates({ cplusFinalPhase: "near-ripen", cplusCaStockLbPerGal: 1 }, 4)).toEqual(["14.9", "25.2"]);
     const mlPerGal = (role: "partA" | "partB", lbPerGal: number) =>
       E.doseGramsPerGallon("cplus", "Swell", role, 3.0) / (lbPerGal * 454) * 3785;
     expect(mlPerGal("partA", 0.75)).toBeCloseTo(38.8, 1);
@@ -282,10 +282,11 @@ describe("settings", () => {
     expect([s.doserCount, s.unit]).toEqual([3, "g/gal"]);
   });
 
-  test("tank volume limits differ per line (3-Part 10 gal, C+ 1 gal)", () => {
+  test("tank volume minimum is 10 gal on both lines", () => {
     expect(E.normalizeStockTankVolume("3part", 5)).toBe(50);
     expect(E.normalizeStockTankVolume("3part", 12.34)).toBe(12.3);
-    expect(E.normalizeStockTankVolume("cplus", 5)).toBe(5);
+    expect(E.normalizeStockTankVolume("cplus", 5)).toBe(50);
+    expect(E.normalizeStockTankVolume("cplus", 10)).toBe(10);
     expect(E.normalizeStockTankVolume("cplus", 0.5)).toBe(50);
     expect(E.normalizeStockTankVolume("cplus", 250000)).toBe(100000);
   });
@@ -308,38 +309,41 @@ describe("settings", () => {
 });
 
 describe("pH ranges", () => {
-  test("3-Part: high preset is high-strength flower; standard is not; tolerance just under 0.001", () => {
-    expect(E.computeFeedChart({ line: "3part" }).ph).toMatchObject({ highStrengthFlower: true, flower: "5.5–5.8", vegRipen: "5.5–6.0" });
-    expect(E.computeFeedChart({ line: "3part", ecPreset: "standard" }).ph).toMatchObject({ highStrengthFlower: false, flower: "5.5–6.0" });
-    const edge = { line: "3part", ecPreset: "custom", recipeSchedule: "custom", phaseRecipe: { Stack: "Stack" } } as any;
-    const low = { Veg: 2, Stretch: 2, Stack: 2.698, Swell: 2, Ripen: 1 };
-    expect(E.computeFeedChart({ ...edge, targetEc: { ...low } }).ph.highStrengthFlower).toBe(false);
-    expect(E.computeFeedChart({ ...edge, targetEc: { ...low, Stack: 2.6995 } }).ph.highStrengthFlower).toBe(true);
-    // 2.7 - 0.001 is 2.6990000000000003 in floating point, so 2.699 itself is not high strength.
-    expect(E.computeFeedChart({ ...edge, targetEc: { ...low, Stack: 2.699 } }).ph.highStrengthFlower).toBe(false);
+  const cols = (input: any) => E.computeFeedChart(input).ph.columns.map(c => c && c.text);
+
+  test("3-Part: each column follows its own recipe and EC", () => {
+    expect(cols({ line: "3part" })).toEqual(["5.5–6.0", "5.5–5.8", "5.5–5.8", "5.5–5.8", "5.5–6.0"]);
+    expect(cols({ line: "3part", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–6.0", "5.5–6.0", "5.5–6.0", "5.5–6.0"]);
+    // Stack recipe in week 1–2 at 2.6 is below its 2.7 threshold; Swell at 2.4 is at it.
+    const mixed = { line: "3part", ecPreset: "custom", targetEc: { Veg: 3, Stretch: 2.6, Stack: 2.0, Swell: 2.4, Ripen: 1.8 } };
+    expect(cols(mixed)).toEqual(["5.5–6.0", "5.5–6.0", "5.5–6.0", "5.5–5.8", "5.5–6.0"]);
   });
 
-  test("C+: flower and Veg/Ripen switch separately", () => {
-    expect(E.computeFeedChart({ line: "cplus" }).ph).toMatchObject({ flower: "5.5–5.6", vegRipen: "5.5–5.8" });
-    expect(E.computeFeedChart({ line: "cplus", ecPreset: "standard" }).ph).toMatchObject({ flower: "5.5–5.7", vegRipen: "5.5–6.0" });
+  test("high strength compares at the displayed 0.1 EC", () => {
+    expect(E.dripperPhRange("3part", "Stack", 2.699).highStrength).toBe(true);
+    expect(E.dripperPhRange("3part", "Stack", 2.64).highStrength).toBe(false);
+  });
+
+  test("C+: flower and Veg/Ripen ranges per column", () => {
+    expect(cols({ line: "cplus" })).toEqual(["5.5–5.8", "5.5–5.6", "5.5–5.6", "5.5–5.6", "5.5–5.8"]);
+    expect(cols({ line: "cplus", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–5.7", "5.5–5.7", "5.5–5.7", "5.5–6.0"]);
+  });
+
+  test("2-doser: the unserved Veg column has no range", () => {
+    expect(cols({ line: "3part", doserCount: 2 })[0]).toBeNull();
+    expect(cols({ line: "cplus", doserCount: 2 })[0]).toBeNull();
   });
 });
 
 describe("supplements", () => {
-  test("screen rates, US and metric", () => {
+  test("rates, US and metric", () => {
     expect(E.supplementRates(false)).toMatchObject({
       siFoliar: "0.5–2 mL/gal", phUpMax: "0.2–0.25", phUpHighStrengthFlowerStop: "0.15–0.2",
-      biofloHeavy: "30 mL/gal", biofloMaintenance: "15 mL/gal", triologicWeekly: "1 mL/gal", triologicTransplant: "2 mL/gal",
+      biofloHeavy: "30 mL/gal", biofloMaintenance: "15 mL/gal", triologicWeekly: "1 mL/gal", triologicMax: "2 mL/gal",
     });
     expect(E.supplementRates(true)).toMatchObject({
       siFoliar: "0.13–0.53 mL/L", phUpMax: "0.05–0.07", phUpHighStrengthFlowerStop: "0.04–0.05", phUpUnit: "g/L",
-      biofloHeavy: "8 mL/L", biofloMaintenance: "4 mL/L", triologicWeekly: "0.25 mL/L", triologicTransplant: "0.5 mL/L",
-    });
-  });
-
-  test("3-Part printed additive table is US-only with its own ranges (audit N3-N5)", () => {
-    expect(E.threePartPrintAdditiveRates()).toEqual({
-      si: "0.5–2 mL/gal", triologic: "1–2 mL/gal", bioflo: "30 mL/gal", phUp: "0.05–0.25 g/gal",
+      biofloHeavy: "8 mL/L", biofloMaintenance: "4 mL/L", triologicWeekly: "0.25 mL/L", triologicMax: "0.5 mL/L",
     });
   });
 });
@@ -364,36 +368,31 @@ describe("usage", () => {
   });
 });
 
-// Places where the current pages are inconsistent. The engine reproduces each one on
-// purpose; these tests document the behavior until Tyler decides.
-describe("reproduced inconsistencies", () => {
-  test("3-Part 2-doser re-prints only mL/gal to 0.1; other units keep their usual rounding", () => {
+// Ruled display behavior (Tyler 2026-09-29).
+describe("display rules", () => {
+  test("2-doser rates print one decimal finer in every unit except ratio", () => {
     const at = (unit: string) => E.computeFeedChart({ line: "3part", doserCount: 2, unit } as any).rows[0].cells[4]!;
-    expect(at("mL/gal")).toMatchObject({ display: "14.4", dosage: 14 });
-    expect(at("injection %").display).toBe("0.38");
+    expect(at("mL/gal")).toMatchObject({ display: "14.4", dosage: 14.4 });
+    expect(at("injection %").display).toBe("0.381");
     expect(at("ratio").display).toBe("1:263");
-    expect(at("mL/L").display).toBe("3.8");
+    expect(at("mL/L").display).toBe("3.81");
   });
 
-  test("3-Part 2-doser: a rate that rounds to 0 whole mL prints as a dash even though its 0.1 mL display is not 0", () => {
-    const chart = E.computeFeedChart({ line: "3part", doserCount: 2, ecPreset: "custom", targetEc: { Swell: 0.05 } as any });
-    const tank1 = chart.rows[0].cells[3]!;
-    expect(tank1).toMatchObject({ display: "0.4", dosage: 0 });
+  test("a nonzero dose never prints as a dash", () => {
+    const chart = E.computeFeedChart({ line: "3part", ecPreset: "custom", targetEc: { Swell: 0.05 } as any });
+    const cell = chart.rows[0].cells[3]!;
+    expect(cell.display).not.toBe("–");
+    expect(Number(cell.display)).toBeGreaterThan(0);
   });
 
-  test("3-Part 2-doser prints 'Swell' under Veg / Moms on the printed chart but 'Veg' in Copy Summary", () => {
-    const veg = E.computeFeedChart({ line: "3part", doserCount: 2 }).phases[0];
-    expect(veg.recipeLabel).toEqual({ summary: "Veg", print: "Swell" });
+  test("2-doser charts label the unserved column Veg on every surface", () => {
+    expect(E.computeFeedChart({ line: "3part", doserCount: 2 }).phases[0].recipeLabel).toBe("Veg");
   });
+});
 
-  test("2-doser pH: the unserved Veg column counts as Swell (3-Part), and C+ Veg/Ripen never switch to high strength", () => {
-    const lowFlower = { Veg: 3.0, Stretch: 2.0, Stack: 2.0, Swell: 2.0, Ripen: 1.0 };
-    expect(E.computeFeedChart({ line: "3part", doserCount: 2, ecPreset: "custom", targetEc: lowFlower }).ph.highStrengthFlower).toBe(true);
-    expect(E.computeFeedChart({ line: "3part", doserCount: 3, ecPreset: "custom", targetEc: lowFlower }).ph.highStrengthFlower).toBe(false);
-    expect(E.computeFeedChart({ line: "cplus", doserCount: 2 }).ph.vegRipen).toBe("5.5–6.0");
-    expect(E.computeFeedChart({ line: "cplus", doserCount: 3 }).ph.vegRipen).toBe("5.5–5.8");
-  });
-
+// Places where the current pages are inconsistent and Tyler has not yet ruled (N17-N19).
+// The engine reproduces each one on purpose.
+describe("reproduced inconsistencies", () => {
   test("metric stock charge: 3-Part rounds litres and g/L first, C+ does not", () => {
     // 4-3-3 Part A: 53.5 gal at 1.87 lb/gal.
     expect(E.threePartMetricWeightKg(Math.round(53.5 * 3.785), Math.round(1.87 * 454 / 3.785))).toBe(45.2);
