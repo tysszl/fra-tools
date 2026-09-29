@@ -38,15 +38,14 @@ export {
 } from "./settings.js";
 export {
   computeFeedChart,
-  cplusMetricWeightKg,
   cplusNearRipenDoses,
   feedRows,
   mixedTankDose,
   stockTable,
-  threePartMetricWeightKg,
-  threePartTankBloomToPartBRatio,
+  metricWeightKg,
+  tank2BloomToPartBRatio,
   extraDecimals,
-  threePartTwoDoserTankTargetEc,
+  twoDoserTank2TargetEc,
 } from "./chart.js";
 export { dripperPhRange, formatPhRange, phRanges } from "./ph.js";
 export { formatRange, supplementRates } from "./supplements.js";

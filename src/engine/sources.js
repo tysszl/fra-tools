@@ -30,7 +30,7 @@ export const SOURCES = Object.freeze({
   "recipeSchedules": "FR § 3-Part Line › Recipe EC targets (commercial chart); Standard Progression retired 2026-09-29 (FR still lists it)",
 
   "validation.us": "TS § Stock Concentrate Methods (250 mL in 5 gal RO)",
-  "validation.metric": "undocumented (400 mL in 20 L is not the US dilution; metric validation ECs differ)",
+  "validation.metric": "Tyler 2026-09-29 ruling N18 (250 mL of stock in 20 L RO; validation EC computed for that sample)",
   "validation.displayDecimals": "undocumented (page display rounding)",
 
   "lines.3part.label": "undocumented (page label)",
@@ -48,8 +48,7 @@ export const SOURCES = Object.freeze({
   "lines.3part.stockTankVolume": "undocumented (page input limits; 50 gal default matches the 50 gal builds)",
   "lines.3part.customStock.maxLbPerGal": "TS § Stock Concentrate Methods › Custom stock ceiling (6-4-4 in 50 gal)",
   "lines.3part.customStock": "undocumented (team-mode defaults and rounding)",
-  "lines.3part.ph.standard": "TS § pH Management (5.5-6.0)",
-  "lines.3part.ph.highStrengthFlower": "TS § pH Management (high-strength flower 5.5-5.8); printed ceiling vs modeled limit at the actual recipe/EC: audit N13",
+  "lines.3part.phCeilingFit": "chemistry-model PHREEQC fit 2026-09-29, 22 °C RO brushite; rule approved Tyler 2026-09-29",
 
   "lines.cplus.label": "undocumented (page label)",
   "lines.cplus.ecPerGram": "FR § Component Plus Line › Products & EC per gram per gallon",
@@ -61,13 +60,12 @@ export const SOURCES = Object.freeze({
   "lines.cplus.twoDoser": "FR § 2-doser stock concentrate (C+) (CaNO3 0.75 / 1.00; Near Ripen 31.5%)",
   "lines.cplus.stockTankVolume": "undocumented (page input limits)",
   "lines.cplus.stockTankVolume.minGal": "FR § 2-doser stock concentrate (C+): 10 gal minimum (Tyler 2026-09-29)",
-  "lines.cplus.ph": "TS § pH Management (C+ flower 5.5-5.7 / 5.5-5.6; Veg and Ripen 5.5-6.0 / 5.5-5.8); ALK §3a still has 5.7 / 6.0: audit N12. C+ supplement text has no high-strength pH Up stop: audit N5",
-  "lines.cplus.ph.highStrengthEc": "TS § pH Management (Stack 2.7, Swell 2.4, Veg 3.0, Ripen 1.8); page-specific: C+ keys thresholds by recipe in its own table",
+  "lines.cplus.phCeilingFit": "chemistry-model PHREEQC fit 2026-09-29, 22 °C RO brushite; rule approved Tyler 2026-09-29",
 
   "supplements.si": "TS § Product Usage › Front Row Si (foliar 0.5-2 mL/gal); metric values hand-rounded, undocumented",
   "supplements.phUp.maxGPerGal": "TS § pH Management (0.2-0.25 g/gal max)",
   "supplements.phUp.highStrengthFlowerStopGPerGal": "TS § pH Management (~0.15-0.2 g/gal on high-strength flower); both lines (CL 2026-09-25)",
-  "highStrengthEcDecimals": "display precision of target EC (0.1)",
+  "dripperPh": "Tyler 2026-09-29 ruling N12 (nearest 0.1, floor 5.5, cap 6.0; at-the-line note under 5.55); TS § pH Management (5.5 floor, warm lines > 25 °C)",
   "supplements.phUp.metricDecimals": "undocumented (page display rounding)",
   "supplements.phUp.incrementGPerGal": "TS § Mixing Order (0.05 g/gal increments)",
   "supplements.phUp.waitMinutes": "TS § Mixing Order (wait 5-15 min)",
@@ -87,8 +85,6 @@ export const SOURCES = Object.freeze({
   "reference.sterileReservoirCalHypoGPer100Gal": "TS § Water Quality (~1.2 g/100 gal gives 2 ppm)",
   "reference.sterileReservoirCalHypoPpm": "TS (2 ppm target)",
   "reference.typicalFeedEc": "undocumented",
-  "reference.warmLineC": "TS § pH Management (warm lines > 25 °C)",
-  "reference.warmLineF": "TS § pH Management (warm lines > 25 °C)",
   "reference.cplusStockUseWithinDays": "FR § Component Plus Line › Stock concentrate (use within 14 days)",
   "reference.threePartTank2EmptiesFasterApprox": "undocumented",
   "reference.injectorBandPercent": "undocumented",

@@ -80,19 +80,15 @@ describe("approval snapshot", () => {
     });
     expect(DATA.lines.cplus.twoDoser).toMatchObject({ caStockOptions: [0.75, 1], nearRipenCaEcShare: 0.315 });
     expect(DATA.lines.cplus.stockTankVolume.minGal).toBe(10);
-    expect(DATA.validation).toEqual({ us: { sampleMl: 250, waterGal: 5 }, metric: { sampleMl: 400, waterL: 20 }, displayDecimals: 2 });
+    expect(DATA.validation).toEqual({ us: { sampleMl: 250, waterGal: 5 }, metric: { sampleMl: 250, waterL: 20 }, displayDecimals: 2 });
   });
 
   test("pH ranges and supplement rates", () => {
-    expect(DATA.lines["3part"].ph).toEqual({
-      standard: [5.5, 6.0], highStrengthFlower: [5.5, 5.8], flowerRecipes: ["Stretch", "Stack", "Swell"],
-    });
-    expect(DATA.lines.cplus.ph).toEqual({
-      flower: { standard: [5.5, 5.7], high: [5.5, 5.6] },
-      vegRipen: { standard: [5.5, 6.0], high: [5.5, 5.8] },
-      flowerRecipes: ["Stack", "Swell"],
-      highStrengthEc: { Veg: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
-    });
+    expect(DATA.dripperPh).toEqual({ floor: 5.5, cap: 6.0, decimals: 1, atLineBelow: 5.55, warmLineC: 25, warmLineF: 77 });
+    expect(Object.keys(DATA.lines["3part"].phCeilingFit)).toEqual(["Veg", "Stretch", "Stack", "Swell", "Ripen"]);
+    expect(Object.keys(DATA.lines.cplus.phCeilingFit)).toEqual(["Veg", "Stack", "Swell", "Ripen"]);
+    expect(DATA.lines["3part"].phCeilingFit.Stack).toEqual({ lo: 1.4, c: [6.689279781888666, -2.2837510566099475, 0.5899482694086496] });
+    expect(DATA.lines.cplus.phCeilingFit.Swell).toEqual({ lo: 1.0, c: [6.369377076383701, -2.0998578582025647, 0.5002124440639382] });
     expect(DATA.supplements).toEqual({
       si: { foliarMlPerGal: [0.5, 2], foliarMlPerL: [0.13, 0.53] },
       phUp: {
@@ -134,8 +130,8 @@ describe("sources", () => {
   test("audit differences are marked", () => {
     expect(E.sourceFor("lines.3part.stockMethods.2-doser.rates.partB")).toContain("audit N2");
     expect(E.sourceFor("usage.siRateByEc.below")).toContain("audit N10");
-    expect(E.sourceFor("lines.cplus.ph.flower.high")).toContain("audit N12");
-    expect(E.sourceFor("lines.3part.ph.highStrengthFlower")).toContain("audit N13");
+    expect(E.sourceFor("lines.cplus.phCeilingFit.Stack.c")).toContain("PHREEQC");
+    expect(E.sourceFor("dripperPh.cap")).toContain("N12");
     expect(E.sourceFor("usage.phUpGPerGal")).toContain("audit N14");
   });
 });
@@ -312,21 +308,32 @@ describe("pH ranges", () => {
   const cols = (input: any) => E.computeFeedChart(input).ph.columns.map(c => c && c.text);
 
   test("3-Part: each column follows its own recipe and EC", () => {
-    expect(cols({ line: "3part" })).toEqual(["5.5–6.0", "5.5–5.8", "5.5–5.8", "5.5–5.8", "5.5–6.0"]);
-    expect(cols({ line: "3part", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–6.0", "5.5–6.0", "5.5–6.0", "5.5–6.0"]);
-    // Stack recipe in week 1–2 at 2.6 is below its 2.7 threshold; Swell at 2.4 is at it.
-    const mixed = { line: "3part", ecPreset: "custom", targetEc: { Veg: 3, Stretch: 2.6, Stack: 2.0, Swell: 2.4, Ripen: 1.8 } };
-    expect(cols(mixed)).toEqual(["5.5–6.0", "5.5–6.0", "5.5–6.0", "5.5–5.8", "5.5–6.0"]);
+    expect(cols({ line: "3part" })).toEqual(["5.5–6.0", "5.5–5.7", "5.5–5.8", "5.5–5.8", "5.5–6.0"]);
+    expect(cols({ line: "3part", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–5.9", "5.5–5.9", "5.5–6.0", "5.5–6.0"]);
   });
 
-  test("high strength compares at the displayed 0.1 EC", () => {
-    expect(E.dripperPhRange("3part", "Stack", 2.699).highStrength).toBe(true);
-    expect(E.dripperPhRange("3part", "Stack", 2.64).highStrength).toBe(false);
+  test("C+: each column follows its own recipe and EC; at the line the range closes to 5.5", () => {
+    expect(cols({ line: "cplus" })).toEqual(["5.5–6.0", "5.5", "5.5–5.6", "5.5–5.6", "5.5–5.9"]);
+    expect(cols({ line: "cplus", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–5.7", "5.5–5.7", "5.5–5.8", "5.5–6.0"]);
+    const flags = E.computeFeedChart({ line: "cplus", recipeSchedule: "swell-flower" }).ph.columns.map(c => c && c.atLine);
+    expect(flags).toEqual([false, true, false, false, false]);
   });
 
-  test("C+: flower and Veg/Ripen ranges per column", () => {
-    expect(cols({ line: "cplus" })).toEqual(["5.5–5.8", "5.5–5.6", "5.5–5.6", "5.5–5.6", "5.5–5.8"]);
-    expect(cols({ line: "cplus", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–5.7", "5.5–5.7", "5.5–5.7", "5.5–6.0"]);
+  test("ceiling: modeled limit to the nearest 0.1, floor 5.5, cap 6.0, cap below the fit floor", () => {
+    const stack3 = E.dripperPhRange("3part", "Stack", 3.0);
+    expect(stack3.limit).toBeCloseTo(5.734, 3);
+    expect(stack3.ceiling).toBe(5.7);
+    expect(E.dripperPhRange("3part", "Stack", 1.39).ceiling).toBe(6.0);
+    expect(E.dripperPhRange("cplus", "Swell", 3.0)).toMatchObject({ ceiling: 5.5, atLine: true });
+    expect(E.dripperPhRange("cplus", "Swell", 4.5).ceiling).toBe(5.5);
+    expect(E.dripperPhRange("cplus", "Swell", 2.7)).toMatchObject({ ceiling: 5.6, atLine: false });
+    expect(E.formatPhRange([5.5, 5.5])).toBe("5.5");
+  });
+
+  test("C+ 2-doser Near Ripen takes the lower of the Swell and Ripen limits", () => {
+    const col = E.computeFeedChart({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" }).ph.columns[4]!;
+    const lower = Math.min(E.dripperPhRange("cplus", "Swell", 1.8).limit, E.dripperPhRange("cplus", "Ripen", 1.8).limit);
+    expect(col.limit).toBe(lower);
   });
 
   test("2-doser: the unserved Veg column has no range", () => {
@@ -390,30 +397,31 @@ describe("display rules", () => {
   });
 });
 
-// Places where the current pages are inconsistent and Tyler has not yet ruled (N17-N19).
-// The engine reproduces each one on purpose.
-describe("reproduced inconsistencies", () => {
-  test("metric stock charge: 3-Part rounds litres and g/L first, C+ does not", () => {
-    // 4-3-3 Part A: 53.5 gal at 1.87 lb/gal.
-    expect(E.threePartMetricWeightKg(Math.round(53.5 * 3.785), Math.round(1.87 * 454 / 3.785))).toBe(45.2);
-    expect(E.cplusMetricWeightKg(53.5, 1.87)).toBe(45.4);
+// Tyler's 2026-09-29 rulings N17-N19.
+describe("stock and 2-doser rulings", () => {
+  test("N17: metric charge from exact litres and g/L, rounded once, on both lines", () => {
+    expect(E.metricWeightKg(53.5, 1.87)).toBe(45.4);
+    const three = E.computeFeedChart({ line: "3part", method: "4-3-3", unit: "mL/L" }).stock!.rows[0].wt;
+    const cplus = E.computeFeedChart({ line: "cplus", stockTankVolumeGal: 53.5, unit: "mL/L" }).stock!.rows[0].wt;
+    expect(three).toBe(45.4);
+    expect(cplus).toBe(E.metricWeightKg(53.5, 1));
   });
 
-  test("metric validation uses 400 mL in 20 L, so metric validation ECs are not the US ones", () => {
+  test("N18: metric validation is 250 mL of stock in 20 L, computed for that sample", () => {
     const us = E.computeFeedChart({ line: "3part" }).stock!.rows[0].valEC;
-    const metric = E.computeFeedChart({ line: "3part", unit: "mL/L" }).stock!.rows[0].valEC;
-    expect([us, metric]).toEqual([2.75, 4.17]);
+    const metric = E.computeFeedChart({ line: "3part", unit: "mL/L" }).stock!;
+    expect(us).toBe(2.75);
+    expect(metric.rows[0]).toMatchObject({ sample: 250, valEC: +(1.5 * 454 / 3.785 * 0.25 / 20 * 0.306 * 3.785).toFixed(2) });
+    expect(metric.sampleUnit).toBe("mL / 20L");
   });
 
-  test("C+ 2-doser Tank 2 rate comes from the C+ share alone and its EC from the recipe, unlike the 3-Part tank solver", () => {
+  test("N19: C+ 2-doser Tank 2 uses the whole-tank solve, so its EC is what the tank delivers", () => {
     const chart = E.computeFeedChart({ line: "cplus", doserCount: 2, unit: "injection %" });
     const cell = chart.rows[1].cells[1]!;
-    const eEc = 3.0;
-    expect(cell.ec).toBeCloseTo(eEc * (0.3294 + 0.3022), 12);
-    // What the tank actually delivers at that rate (MKP rides at 1.00:0.75 by weight):
-    const cplusGramsPerGal = E.doseGramsPerGallon("cplus", "Swell", "partB", eEc);
+    const t2 = E.twoDoserTank2TargetEc(chart.settings, "Stretch", 3.0);
+    const cplusGramsPerGal = E.doseGramsPerGallon("cplus", "Swell", "partB", t2);
     const delivered = cplusGramsPerGal * 0.283 + cplusGramsPerGal * (1 / 0.75) * 0.195;
-    expect(Math.abs(delivered - cell.ec)).toBeGreaterThan(0);
-    expect(Math.abs(delivered - cell.ec) / cell.ec).toBeLessThan(0.002);
+    expect(cell.ec).toBeCloseTo(delivered, 12);
+    expect(cell.ec).toBeCloseTo(3.0 * (0.3294 + 0.3022), 12);
   });
 });

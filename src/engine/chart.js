@@ -104,31 +104,51 @@ export function extraDecimals(settings) {
   return settings.doserCount === 2 ? 1 : 0;
 }
 
-// ── 3-Part 2-doser ──────────────────────────────────────────────────────────
+// ── 2-doser Tank 2 (both lines) ─────────────────────────────────────────────
 
 /**
- * Bloom:Part B by weight as Tank 2 is charged (50 lb : 28 lb).
+ * Bloom-role : Part B-role by weight as Tank 2 is charged (3-Part 50 lb : 28 lb;
+ * C+ 1.00 : 0.75 lb/gal).
  * @param {FeedSettings} settings
  */
-export function threePartTankBloomToPartBRatio(settings) {
+export function tank2BloomToPartBRatio(settings) {
   const rates = stockRates(settings);
   return rates.bloom / rates.partB;
 }
 
 /**
- * The EC to hand the Part B dose math so Part B plus the Bloom riding with it deliver
- * Tank 2's combined recipe share of the target.
+ * The EC to hand the Part B-role dose math so it, plus the Bloom-role product riding
+ * with it, delivers Tank 2's combined recipe share of the target (the whole-tank solve;
+ * both lines since Tyler's 2026-09-29 ruling N19).
  * @param {FeedSettings} settings
  * @param {Phase} phase
  * @param {number} targetEc
  */
-export function threePartTwoDoserTankTargetEc(settings, phase, targetEc) {
-  const recipe = getRecipe("3part", recipeForPhase(settings, phase));
-  const ecPerGram = DATA.lines["3part"].ecPerGram;
+export function twoDoserTank2TargetEc(settings, phase, targetEc) {
+  const recipe = getRecipe(settings.line, recipeForPhase(settings, phase));
+  const ecPerGram = getLine(settings.line).ecPerGram;
   const share = recipe.partB + recipe.bloom;
   if (!(share > 0) || !(recipe.partB > 0)) return targetEc;
-  const ecPerGramB = ecPerGram.partB + ecPerGram.bloom * threePartTankBloomToPartBRatio(settings);
+  const ecPerGramB = ecPerGram.partB + ecPerGram.bloom * tank2BloomToPartBRatio(settings);
   return targetEc * share * ecPerGram.partB / (recipe.partB * ecPerGramB);
+}
+
+/**
+ * One 2-doser Tank 2 cell: the dose of the combined stock and the EC it delivers.
+ * @param {FeedSettings} settings
+ * @param {Phase} phase
+ * @returns {DoseCell}
+ */
+function twoDoserTank2Cell(settings, phase) {
+  const line = getLine(settings.line);
+  const adjustment = phaseAdjustment(settings, phase);
+  const t2EC = twoDoserTank2TargetEc(settings, phase, adjustment.baseTargetEc);
+  const resultB = roleDose(settings, phase, "partB", t2EC);
+  const gramsB = (t2EC * getRecipe(settings.line, recipeForPhase(settings, phase)).partB) / line.ecPerGram.partB;
+  const partBEc = gramsB * line.ecPerGram.partB;
+  const bloomEc = gramsB * tank2BloomToPartBRatio(settings) * line.ecPerGram.bloom;
+  const phzEc = settings.usePhoszyme ? adjustment.phoszymeEc : 0;
+  return { display: resultB.display, dosage: resultB.dosage, ec: partBEc + bloomEc + phzEc };
 }
 
 /**
@@ -158,19 +178,7 @@ function threePartRows(settings) {
     rows.push({
       key: "tank2",
       label: usePhz ? line.twoDoserComboPhzLabel : line.twoDoserComboLabel,
-      cells: phases.map(phase => {
-        if (phase === "Veg") return null;
-        const adjustment = phaseAdjustment(settings, phase);
-        const eEC = adjustment.baseTargetEc;
-        const t2EC = threePartTwoDoserTankTargetEc(settings, phase, eEC);
-        const resultB = roleDose(settings, phase, "partB", t2EC);
-        const gramsB = (t2EC * getRecipe("3part", recipeForPhase(settings, phase)).partB) / line.ecPerGram.partB;
-        const partBEc = gramsB * line.ecPerGram.partB;
-        const bloomEc = gramsB * threePartTankBloomToPartBRatio(settings) * line.ecPerGram.bloom;
-        let combinedEc = partBEc + bloomEc;
-        if (usePhz) combinedEc += adjustment.phoszymeEc;
-        return { display: resultB.display, dosage: resultB.dosage, ec: combinedEc };
-      }),
+      cells: phases.map(phase => (phase === "Veg" ? null : twoDoserTank2Cell(settings, phase))),
     });
     return rows;
   }
@@ -301,15 +309,7 @@ function cplusRows(settings) {
       cells: phases.map(phase => {
         if (phase === "Veg") return null;
         if (phase === "Ripen" && nearRipen) return nearRipen.combo;
-        const adjustment = phaseAdjustment(settings, phase);
-        const effectiveEC = adjustment.baseTargetEc;
-        const carrier = roleDose(settings, phase, "partB", effectiveEC);
-        const phzEC = usePhz ? adjustment.phoszymeEc : 0;
-        return {
-          display: carrier.display,
-          dosage: carrier.dosage,
-          ec: carrier.ec + ecContribution("cplus", recipeForPhase(settings, phase), "bloom", effectiveEC) + phzEC,
-        };
+        return twoDoserTank2Cell(settings, phase);
       }),
     });
     return rows;
@@ -357,8 +357,6 @@ export function feedRows(settings) {
 
 /**
  * Stock tank table: charge weights, concentrations, and validation EC per tank.
- * The 3-Part and C+ pages compute metric weights differently; see
- * cplusMetricWeightKg and threePartMetricWeightKg.
  * @param {FeedSettings} settings
  * @param {string} [method]
  * @returns {StockTable}
@@ -372,58 +370,38 @@ export function stockTable(settings, method = effectiveMethod(settings)) {
   const rates = stockRates(settings, method);
   const vols = tankVolumes(settings, method);
   const names = line.stockNames;
+  const phzRate = rates.partB * ratio;
 
-  /** @param {Role} role */
-  const concDisplay = role => (met ? Math.round(rates[role] * gramsPerPound / litersPerGallon) : rates[role]);
+  /** @param {number} lbPerGal */
+  const gramsPerLiter = lbPerGal => lbPerGal * gramsPerPound / litersPerGallon;
+  /** @param {number} lbPerGal */
+  const concDisplay = lbPerGal => (met ? Math.round(gramsPerLiter(lbPerGal)) : lbPerGal);
+  /** @param {number} gal @param {number} lbPerGal */
+  const weight = (gal, lbPerGal) => (met ? metricWeightKg(gal, lbPerGal) : +(gal * lbPerGal).toFixed(1));
 
   const volA = met ? Math.round(vols.tankA * litersPerGallon) : vols.tankA;
   const volB = met ? Math.round(vols.tankB * litersPerGallon) : vols.tankB;
-
-  /** @type {(role: Role) => number} */
-  let weight;
-  if (settings.line === "cplus") {
-    const stockVolumeGal = normalizeStockTankVolume("cplus", settings.stockTankVolumeGal);
-    weight = role => (met ? cplusMetricWeightKg(stockVolumeGal, rates[role]) : +(stockVolumeGal * rates[role]).toFixed(1));
-  } else {
-    weight = role => {
-      const isTankA = role === "partA";
-      if (met) return threePartMetricWeightKg(isTankA ? volA : volB, concDisplay(role));
-      return +((isTankA ? vols.tankA : vols.tankB) * rates[role]).toFixed(1);
-    };
-  }
-  const wtA = weight("partA");
-  const wtB = weight("partB");
-  const wtPhz = +(wtB * ratio).toFixed(1);
-  const wtBloom = weight("bloom");
+  const wtA = weight(vols.tankA, rates.partA);
+  const wtB = weight(vols.tankB, rates.partB);
+  const wtPhz = met ? metricWeightKg(vols.tankB, phzRate) : +(wtB * ratio).toFixed(1);
+  const wtBloom = weight(vols.tankB, rates.bloom);
 
   const sampleVol = met ? DATA.validation.metric.sampleMl : DATA.validation.us.sampleMl;
-  const sampleDilution = met ? DATA.validation.metric.waterL : DATA.validation.us.waterGal;
-  /** @param {number} ecBase */
-  const ecPerUnit = ecBase => (met ? ecBase * litersPerGallon : ecBase);
-  /** @param {number} conc @param {number} ecBase */
-  const valEcMetric = (conc, ecBase) => +(conc * ecPerUnit(ecBase) * (sampleVol / sampleDilution / 1000)).toFixed(2);
-  /** @param {number} rateLbs @param {number} ecBase */
-  const valEcUs = (rateLbs, ecBase) =>
-    +(rateLbs * gramsPerPound * ecBase * (sampleVol / DATA.validation.us.waterGal / millilitersPerGallon)).toFixed(2);
-
-  const concA = concDisplay("partA");
-  const concB = concDisplay("partB");
-  const concPhz = met ? Math.round(concB * ratio) : +(concB * ratio).toFixed(2);
-  const concBloom = concDisplay("bloom");
-
-  const valA = met ? valEcMetric(concA, ecPerGram.partA) : valEcUs(rates.partA, ecPerGram.partA);
-  const valB = met ? valEcMetric(concB, ecPerGram.partB) : valEcUs(rates.partB, ecPerGram.partB);
-  const valPhz = met ? valEcMetric(concPhz, ecPerGram.phoszyme) : valEcUs(rates.partB * ratio, ecPerGram.phoszyme);
-  const valBlm = met ? valEcMetric(concBloom, ecPerGram.bloom) : valEcUs(rates.bloom, ecPerGram.bloom);
+  /** @param {number} lbPerGal @param {number} ecBase */
+  const valEc = (lbPerGal, ecBase) => (met
+    ? +(gramsPerLiter(lbPerGal) * ecBase * litersPerGallon * (sampleVol / 1000 / DATA.validation.metric.waterL)).toFixed(2)
+    : +(lbPerGal * gramsPerPound * ecBase * (sampleVol / DATA.validation.us.waterGal / millilitersPerGallon)).toFixed(2));
   /** @param {number} ec */
-  const ecG = ec => (met ? ecPerUnit(ec).toFixed(3) : ec);
+  const ecG = ec => (met ? (ec * litersPerGallon).toFixed(3) : ec);
+
+  const concPhz = met ? Math.round(gramsPerLiter(phzRate)) : +phzRate.toFixed(2);
 
   /** @type {StockRow[]} */
   const rows = [
-    { key: "partA", tank: 1, part: names.partA, vol: volA, wt: wtA, conc: concA, sample: sampleVol, ecG: ecG(ecPerGram.partA), valEC: valA },
-    { key: "partB", tank: 2, part: names.partB, vol: volB, wt: wtB, conc: concB, sample: sampleVol, ecG: ecG(ecPerGram.partB), valEC: valB },
-    { key: "phz", tank: "–", part: "PhosZyme*", vol: volB, wt: wtPhz, conc: concPhz, sample: sampleVol, ecG: ecG(ecPerGram.phoszyme), valEC: valPhz },
-    { key: "bloom", tank: 3, part: names.bloom, vol: volB, wt: wtBloom, conc: concBloom, sample: sampleVol, ecG: ecG(ecPerGram.bloom), valEC: valBlm },
+    { key: "partA", tank: 1, part: names.partA, vol: volA, wt: wtA, conc: concDisplay(rates.partA), sample: sampleVol, ecG: ecG(ecPerGram.partA), valEC: valEc(rates.partA, ecPerGram.partA) },
+    { key: "partB", tank: 2, part: names.partB, vol: volB, wt: wtB, conc: concDisplay(rates.partB), sample: sampleVol, ecG: ecG(ecPerGram.partB), valEC: valEc(rates.partB, ecPerGram.partB) },
+    { key: "phz", tank: "–", part: "PhosZyme*", vol: volB, wt: wtPhz, conc: concPhz, sample: sampleVol, ecG: ecG(ecPerGram.phoszyme), valEC: valEc(phzRate, ecPerGram.phoszyme) },
+    { key: "bloom", tank: 3, part: names.bloom, vol: volB, wt: wtBloom, conc: concDisplay(rates.bloom), sample: sampleVol, ecG: ecG(ecPerGram.bloom), valEC: valEc(rates.bloom, ecPerGram.bloom) },
   ];
 
   let tank2Total = null;
@@ -436,7 +414,7 @@ export function stockTable(settings, method = effectiveMethod(settings)) {
     volUnit: met ? "L" : "gal",
     wtUnit: met ? "kg" : "lbs",
     concUnit: met ? "g / L" : "lbs / gal",
-    sampleUnit: met ? "mL / 20L" : "mL / 5gal",
+    sampleUnit: met ? `mL / ${DATA.validation.metric.waterL}L` : `mL / ${DATA.validation.us.waterGal}gal`,
     ecUnit: met ? "EC / g / L" : "EC / g / gal",
     rows,
     tank2Total,
@@ -444,22 +422,16 @@ export function stockTable(settings, method = effectiveMethod(settings)) {
 }
 
 /**
- * feed-calc.html metric charge: rounded litres × rounded g/L.
- * @param {number} volumeL
- * @param {number} gramsPerLiter
- */
-export function threePartMetricWeightKg(volumeL, gramsPerLiter) {
-  return +(volumeL * gramsPerLiter / 1000).toFixed(1);
-}
-
-/**
- * cplus-calc.html metric charge: gallons × lb/gal × 454 g/lb, unrounded until the end.
- * Differs from the 3-Part rounding by up to a few tenths of a kg.
+ * Metric charge (kg) from the exact tank volume and concentration, rounded once for
+ * display (Tyler 2026-09-29, N17). Equal to gal × lb/gal × 454 g/lb.
  * @param {number} volumeGal
  * @param {number} lbPerGal
  */
-export function cplusMetricWeightKg(volumeGal, lbPerGal) {
-  return +(volumeGal * lbPerGal * DATA.units.gramsPerPound / 1000).toFixed(1);
+export function metricWeightKg(volumeGal, lbPerGal) {
+  const { gramsPerPound, litersPerGallon } = DATA.units;
+  const liters = volumeGal * litersPerGallon;
+  const gramsPerLiter = lbPerGal * gramsPerPound / litersPerGallon;
+  return +(liters * gramsPerLiter / 1000).toFixed(1);
 }
 
 // ── Whole chart ────────────────────────────────────────────────────────────

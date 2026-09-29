@@ -1,53 +1,57 @@
 // @ts-check
-// Dripper pH ranges, per chart column: each column's range follows its own recipe and
-// target EC (Tyler 2026-09-29, N12). The ceilings are today's published values until
-// the modeled rule replaces dripperPhRange.
-import { DATA } from "./data.js";
+// Dripper pH ranges, per chart column: each column's ceiling is the modeled 22 °C
+// calcium-phosphate limit for its own recipe and target EC (Tyler 2026-09-29, N12).
+import { DATA, getLine } from "./data.js";
 import { recipeForPhase } from "./settings.js";
 
 /** @typedef {import("./data.js").LineId} LineId */
 /** @typedef {import("./data.js").Phase} Phase */
 /** @typedef {import("./settings.js").FeedSettings} FeedSettings */
 
-/** @param {readonly number[]} range */
+/**
+ * "5.5–5.8", or "5.5" when the range has closed to the floor.
+ * @param {readonly number[]} range
+ */
 export function formatPhRange(range) {
-  return `${range[0].toFixed(1)}–${range[1].toFixed(1)}`;
+  return range[1] <= range[0] ? range[0].toFixed(1) : `${range[0].toFixed(1)}–${range[1].toFixed(1)}`;
 }
 
 /**
- * True when `ec`, rounded to the displayed 0.1, is at or above `threshold`.
+ * The modeled 22 °C limit, unrounded; Infinity below the fit floor (limit above the cap).
+ * @param {LineId} line
+ * @param {string} recipe
  * @param {number} ec
- * @param {number | undefined} threshold
  */
-function atOrAbove(ec, threshold) {
-  if (!threshold || !isFinite(ec)) return false;
-  const d = DATA.highStrengthEcDecimals;
-  return Number(ec.toFixed(d)) >= Number(threshold.toFixed(d));
+export function phLimit(line, recipe, ec) {
+  const fit = /** @type {Record<string, { lo: number, c: readonly number[] }>} */ (getLine(line).phCeilingFit)[recipe];
+  if (!fit) throw new Error(`No pH ceiling fit for ${line} ${recipe}`);
+  if (!(ec >= fit.lo)) return Infinity;
+  const x = Math.log10(ec);
+  return fit.c[0] + fit.c[1] * x + fit.c[2] * x * x;
 }
 
 /**
  * Dripper pH range for one recipe at one EC.
- * 3-Part: Stretch, Stack, and Swell at or above their High preset EC run 5.5–5.8;
- * everything else 5.5–6.0. C+: Stack/Swell and Veg/Ripen each have a standard and a
- * high-strength range, switched at the recipe's high-strength EC.
  * @param {LineId} line
  * @param {string} recipe
  * @param {number} ec
- * @returns {{ range: readonly number[], highStrength: boolean, flower: boolean }}
+ * @returns {{ range: readonly number[], ceiling: number, limit: number, atLine: boolean }}
  */
 export function dripperPhRange(line, recipe, ec) {
-  if (line === "cplus") {
-    const ph = DATA.lines.cplus.ph;
-    const flower = /** @type {readonly string[]} */ (ph.flowerRecipes).includes(recipe);
-    const high = atOrAbove(ec, /** @type {Record<string, number>} */ (ph.highStrengthEc)[recipe]);
-    const group = flower ? ph.flower : ph.vegRipen;
-    return { range: high ? group.high : group.standard, highStrength: high, flower };
-  }
-  const ph = DATA.lines["3part"].ph;
-  const flower = /** @type {readonly string[]} */ (ph.flowerRecipes).includes(recipe);
-  // The High preset table is keyed by phase; the rule reads it by recipe name.
-  const high = flower && atOrAbove(ec, /** @type {Record<string, number>} */ (DATA.ecPresets.high)[recipe]);
-  return { range: high ? ph.highStrengthFlower : ph.standard, highStrength: high, flower };
+  const rule = DATA.dripperPh;
+  const limit = phLimit(line, recipe, Number(ec));
+  const step = 10 ** rule.decimals;
+  const rounded = Number.isFinite(limit) ? Math.round(limit * step) / step : rule.cap;
+  const ceiling = Math.min(rule.cap, Math.max(rule.floor, rounded));
+  return { range: [rule.floor, ceiling], ceiling, limit, atLine: limit < rule.atLineBelow };
+}
+
+/**
+ * @param {FeedSettings} settings
+ * @param {Phase} phase
+ */
+function nearRipen(settings, phase) {
+  return settings.line === "cplus" && settings.doserCount === 2 && phase === "Ripen" && settings.cplusFinalPhase === "near-ripen";
 }
 
 /**
@@ -59,11 +63,17 @@ export function phRanges(settings) {
   const columns = DATA.phases.map(phase => {
     if (settings.doserCount === 2 && phase === "Veg") return null;
     const recipe = recipeForPhase(settings, phase);
-    const result = dripperPhRange(settings.line, recipe, Number(settings.targetEc[phase]));
+    const ec = Number(settings.targetEc[phase]);
+    let result = dripperPhRange(settings.line, recipe, ec);
+    // C+ 2-doser Near Ripen sits between Swell and Ripen; it takes the lower limit.
+    if (nearRipen(settings, phase)) {
+      const ripen = dripperPhRange(settings.line, "Ripen", ec);
+      if (ripen.limit < result.limit) result = ripen;
+    }
     return { phase, recipe, ...result, text: formatPhRange(result.range) };
   });
   return {
     columns,
-    anyHighStrengthFlower: columns.some(column => Boolean(column && column.flower && column.highStrength)),
+    anyAtLine: columns.some(column => Boolean(column && column.atLine)),
   };
 }

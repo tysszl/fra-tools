@@ -147,9 +147,11 @@ const EXCEPTIONS = {
   twoDoserPrecision: "2-doser rates print one decimal finer in every unit except ratio (was: 3-Part mL/gal only)",
   nonzeroNeverDash: "a nonzero dose gets extra decimals instead of printing 0 or a dash",
   twoDoserVegLabel: "3-Part 2-doser printed chart labels the unserved column Veg (was Swell)",
-  perColumnPh: "N12: dripper pH follows each column's recipe and EC (was one chart-wide rule); today's ceilings",
-  highStrengthRounding: "high strength compares at the displayed 0.1 EC (2.699 counts as 2.7)",
+  perColumnCeiling: "N12: each column's dripper pH ceiling is the modeled 22 °C calcium-phosphate limit for its recipe and EC, nearest 0.1, within 5.5-6.0 (was one chart-wide high-strength rule)",
   cplusMinTank: "N14: C+ minimum stock tank is 10 gal (was 1); smaller entries fall back to 50",
+  metricCharge: "N17: metric stock weights from exact litres and g/L, rounded once, on both lines (3-Part rounded litres and g/L first)",
+  metricValidation: "N18: metric validation is 250 mL of stock in 20 L (was 400 mL), validation EC computed for that sample from exact g/L",
+  cplusTank2Solve: "N19: C+ 2-doser Tank 2 rate uses the whole-tank solve, as 3-Part does (was the C+ share alone)",
   supplementCopy: "N4-N11: one set of supplement rates on every surface (BioFlo 15 maintenance, pH Up 0.2-0.25 max with the high-strength stop on both lines, Triologic up to 2 mL/gal)",
 } as const;
 type ExceptionId = keyof typeof EXCEPTIONS;
@@ -158,10 +160,21 @@ const applied: Record<ExceptionId, number> = Object.fromEntries(Object.keys(EXCE
 const decimalsOf = (display: string) => (display.includes(".") ? display.split(".")[1].length : 0);
 
 /** Legacy vs engine cell: equal, or different only as twoDoserPrecision / nonzeroNeverDash allow. */
-function cellDiffers(legacy: any, engine: any, c: Config): false | string {
+function cellDiffers(legacy: any, engine: any, c: Config, row: string, phase: Phase): false | string {
   if (!legacy || !engine) return legacy === engine ? false : "null mismatch";
   if (Math.abs(legacy.ec - engine.ec) > 1e-12) return "ec";
   if (legacy.display === engine.display && legacy.dosage === engine.dosage) return false;
+  // N19: the whole-tank solve scales the C+ tank's dose by twoDoserTank2TargetEc / target.
+  if (row === "tank2" && c.line === "cplus" && !(c.fp === "near-ripen" && phase === "Ripen")) {
+    const scale = E.twoDoserTank2TargetEc(E.resolveFeedSettings(toEngineInput(c)), phase, 1);
+    const isRatio = engine.display.startsWith("1:");
+    const ev = isRatio ? 1 / Number(engine.display.slice(2)) : Number(engine.display);
+    const lv = isRatio ? 1 / Number(legacy.display.slice(2)) : Number(legacy.display);
+    const tolerance = isRatio
+      ? lv * scale * (1 / (Number(legacy.display.slice(2)) - 1)) * 2
+      : 0.5 * 10 ** -decimalsOf(legacy.display) * (1 + scale) + 0.5 * 10 ** -decimalsOf(engine.display) + 1e-9;
+    if (scale !== 1 && Math.abs(ev - lv * scale) <= tolerance) { applied.cplusTank2Solve++; return false; }
+  }
   if (engine.display.startsWith("1:") || legacy.display.startsWith("1:")) return "ratio";
   // Legacy 3-Part 2-doser showed mL/gal to 0.1 but kept the numeric dosage whole.
   if (c.doserCount === 2 && legacy.display === engine.display && Number(engine.display) === engine.dosage) {
@@ -190,7 +203,7 @@ function legacyPh(settings: any) {
     const flowerHigh = PHASES.some(ph => ["Stretch", "Stack", "Swell"].includes(rec(ph)) && high(settings.targetEc[ph], hi[rec(ph)]));
     return { flowerHigh, vegRipenHigh: false, flower: flowerHigh ? "5.5–5.8" : "5.5–6.0", vegRipen: "5.5–6.0" };
   }
-  const t = E.DATA.lines.cplus.ph.highStrengthEc as Record<string, number>;
+  const t: Record<string, number> = { Veg: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 };
   let flowerHigh = false, vegRipenHigh = false;
   PHASES.forEach(ph => {
     if (!high(settings.targetEc[ph], t[rec(ph)])) return;
@@ -327,7 +340,7 @@ function compareConfig(c: Config, mismatches: string[]) {
   const engineRows = normRows(chart.rows);
   check("feed row labels", legacyRows.map(r => r.label), engineRows.map(r => r.label));
   legacyRows.forEach((row, i) => row.cells.forEach((cell, j) => {
-    const why = cellDiffers(cell, engineRows[i]?.cells[j], c);
+    const why = cellDiffers(cell, engineRows[i]?.cells[j], c, chart.rows[i]?.key, PHASES[j]);
     if (why) check(`feed cell ${row.label}/${PHASES[j]} (${why})`, cell, engineRows[i]?.cells[j]);
   }));
   check("PhosZyme warning", element("phz-target-warning").textContent, chart.phoszymeWarning.text);
@@ -362,9 +375,12 @@ function compareConfig(c: Config, mismatches: string[]) {
   }
 
   if (c.application === "stock") {
-    check("stock table", normStock(api.calcStockTanks(s.method, s.unit)), normStock(chart.stock));
+    const legacyStock = normStock(api.calcStockTanks(s.method, s.unit));
+    const engineStock = normStock(chart.stock);
+    if (metric) compareMetricStock(chart, legacyStock, engineStock, check);
+    else check("stock table", legacyStock, engineStock);
     if (c.line === "3part") check("tank volumes", api.getTankVolumes(s.method), chart.tankVolumes);
-    if (c.doserCount === 2) {
+    if (c.doserCount === 2 && !metric) {
       const total = element("stock-body").innerHTML.match(/Tank 2 Total[\s\S]*?class="validation-ec"[^>]*>([^<]*)</)?.[1];
       check("Tank 2 validation total", total, chart.stock!.tank2Total);
     }
@@ -372,31 +388,55 @@ function compareConfig(c: Config, mismatches: string[]) {
 }
 
 /**
- * perColumnPh / highStrengthRounding: each engine column equals the legacy chart-wide
- * range unless that column's own high-strength status differs from the chart-wide one.
+ * perColumnCeiling: each engine column equals the legacy chart-wide range, or differs
+ * and carries the modeled ceiling, recomputed here from the fit.
  */
 function comparePh(c: Config, chart: any, oldPh: ReturnType<typeof legacyPh>, check: (w: string, a: unknown, b: unknown) => void) {
   chart.ph.columns.forEach((col: any, i: number) => {
     if (!col) { check("2-doser Veg pH column is empty", c.doserCount === 2 && i === 0, true); return; }
     const flowerGroup = c.line === "3part" ? ["Stretch", "Stack", "Swell"].includes(col.recipe) : ["Stack", "Swell"].includes(col.recipe);
     const legacyText = flowerGroup ? oldPh.flower : oldPh.vegRipen;
-    const legacyHigh = flowerGroup ? oldPh.flowerHigh : oldPh.vegRipenHigh;
-    if (col.text === legacyText) return;
-    if (col.highStrength !== legacyHigh) {
-      const ec = chart.settings.targetEc[PHASES[i]];
-      const t = c.line === "3part" ? (E.DATA.ecPresets.high as any)[col.recipe] : (E.DATA.lines.cplus.ph.highStrengthEc as any)[col.recipe];
-      if (col.highStrength && t && ec < t - 0.001 && Number(ec.toFixed(1)) >= t) applied.highStrengthRounding++;
-      else applied.perColumnPh++;
-      return;
-    }
-    check(`pH column ${PHASES[i]}`, legacyText, col.text);
+    const ec = chart.settings.targetEc[PHASES[i]];
+    const recipes = c.line === "cplus" && c.doserCount === 2 && c.fp === "near-ripen" && i === 4 ? ["Swell", "Ripen"] : [col.recipe];
+    const limit = Math.min(...recipes.map(recipe => {
+      const fit = (E.DATA.lines[c.line].phCeilingFit as any)[recipe];
+      const x = Math.log10(ec);
+      return ec < fit.lo ? Infinity : fit.c[0] + fit.c[1] * x + fit.c[2] * x * x;
+    }));
+    const ceiling = Math.min(6, Math.max(5.5, Number.isFinite(limit) ? Math.round(limit * 10) / 10 : 6));
+    const expected = ceiling === 5.5 ? "5.5" : `5.5–${ceiling.toFixed(1)}`;
+    check(`pH column ${PHASES[i]}`, expected, col.text);
+    check(`pH column ${PHASES[i]} at-the-line flag`, limit < 5.55, col.atLine);
+    if (col.text !== legacyText) applied.perColumnCeiling++;
+  });
+}
+
+/** metricCharge / metricValidation: every other stock field matches; weights and validation follow the rulings. */
+function compareMetricStock(chart: any, legacy: any, engine: any, check: (w: string, a: unknown, b: unknown) => void) {
+  const strip = (stock: any) => ({ ...stock, rows: stock.rows.map(({ wt, valEC, sample, conc, ...rest }: any) => rest) });
+  check("stock table (metric, other fields)", strip(legacy), strip(engine));
+  const rates = E.stockRates(chart.settings);
+  const vols = chart.tankVolumes;
+  const phz = rates.partB * 0.1;
+  const gal = [vols.tankA, vols.tankB, vols.tankB, vols.tankB];
+  const lbPerGal = [rates.partA, rates.partB, phz, rates.bloom];
+  const ecPerGram = [...["partA", "partB"].map(k => (E.getLine(chart.settings.line).ecPerGram as any)[k]), 0.22, E.getLine(chart.settings.line).ecPerGram.bloom];
+  engine.rows.forEach((row: any, i: number) => {
+    const kg = +(gal[i] * lbPerGal[i] * 454 / 1000).toFixed(1);
+    check(`metric weight ${row.key}`, kg, row.wt);
+    if (row.wt !== legacy.rows[i].wt) applied.metricCharge++;
+    const gPerL = lbPerGal[i] * 454 / 3.785;
+    check(`metric conc ${row.key}`, Math.round(gPerL), row.conc);
+    const val = +(gPerL * 0.25 / 20 * ecPerGram[i] * 3.785).toFixed(2);
+    check(`metric validation ${row.key}`, [250, val], [row.sample, row.valEC]);
+    applied.metricValidation++;
   });
 }
 
 describe("named exceptions", () => {
   test("each exception is intended and documented", () => {
     expect(Object.keys(EXCEPTIONS).sort()).toEqual([
-      "cplusMinTank", "highStrengthRounding", "nonzeroNeverDash", "perColumnPh", "supplementCopy", "twoDoserPrecision", "twoDoserVegLabel",
+      "cplusMinTank", "cplusTank2Solve", "metricCharge", "metricValidation", "nonzeroNeverDash", "perColumnCeiling", "supplementCopy", "twoDoserPrecision", "twoDoserVegLabel",
     ]);
   });
 

@@ -84,9 +84,21 @@ export const DATA = deepFreeze({
   },
   defaultEcPreset: "high",
   customEc: { minExclusive: 0, max: 10, step: 0.1, displayDecimals: 1 },
-  // A column is high strength when its EC, rounded to the displayed 0.1, is at or above
-  // the recipe's high-strength EC.
-  highStrengthEcDecimals: 1,
+
+  // Dripper pH ceiling per chart column: the modeled 22 °C calcium-phosphate (brushite)
+  // limit for the column's recipe at its EC, limit = c0 + c1·x + c2·x² with x = log10(EC),
+  // rounded to the nearest 0.1 and held within [floor, cap]. Below a recipe's fit floor
+  // `lo` the limit is above the cap. A column whose unrounded limit is under `atLineBelow`
+  // carries the at-the-line note.
+  dripperPh: {
+    floor: 5.5,
+    cap: 6.0,
+    decimals: 1,
+    atLineBelow: 5.55,
+    // Lines warmer than this run the low end of the range.
+    warmLineC: 25,
+    warmLineF: 77,
+  },
 
   recipeSchedules: {
     defaultSchedule: "commercial",
@@ -99,10 +111,11 @@ export const DATA = deepFreeze({
     },
   },
 
-  // Stock validation dilution. Metric is not the same dilution as US (1:50 vs ~1:75.7).
+  // Stock validation dilution. Metric is not the same dilution as US (1:80 vs ~1:75.7);
+  // each prints the validation EC for its own sample.
   validation: {
     us: { sampleMl: 250, waterGal: 5 },
-    metric: { sampleMl: 400, waterL: 20 },
+    metric: { sampleMl: 250, waterL: 20 },
     displayDecimals: 2,
   },
 
@@ -158,10 +171,13 @@ export const DATA = deepFreeze({
         rateDecimals: 3,
         labelDecimals: 2,
       },
-      ph: {
-        standard: [5.5, 6.0],
-        highStrengthFlower: [5.5, 5.8],
-        flowerRecipes: ["Stretch", "Stack", "Swell"],
+      // Keyed by recipe.
+      phCeilingFit: {
+        Veg: { lo: 2.3, c: [7.2754554135017475, -2.821564782902578, 0.9055741934386606] },
+        Stretch: { lo: 1.5, c: [6.7563304679419725, -2.3289980543769833, 0.6124490176655443] },
+        Stack: { lo: 1.4, c: [6.689279781888666, -2.2837510566099475, 0.5899482694086496] },
+        Swell: { lo: 1.3, c: [6.617828481237748, -2.2407948693743553, 0.5712834147678515] },
+        Ripen: { lo: 1.4, c: [6.715615284238963, -2.3255474802579412, 0.6366971708160895] },
       },
     },
 
@@ -198,12 +214,12 @@ export const DATA = deepFreeze({
       },
       // Applies to every C+ stock tank, 3-doser and 2-doser.
       stockTankVolume: { defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 },
-      ph: {
-        flower: { standard: [5.5, 5.7], high: [5.5, 5.6] },
-        vegRipen: { standard: [5.5, 6.0], high: [5.5, 5.8] },
-        flowerRecipes: ["Stack", "Swell"],
-        // Keyed by recipe.
-        highStrengthEc: { Veg: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 },
+      // Keyed by recipe.
+      phCeilingFit: {
+        Veg: { lo: 1.8, c: [7.0009713130620606, -2.5680272736835663, 0.7809889063496724] },
+        Stack: { lo: 1.1, c: [6.405986120360533, -2.0952469890808003, 0.473432462845578] },
+        Swell: { lo: 1.0, c: [6.369377076383701, -2.0998578582025647, 0.5002124440639382] },
+        Ripen: { lo: 1.0, c: [6.357212616177188, -2.102221064814537, 0.5080831498384406] },
       },
     },
   },
@@ -248,8 +264,6 @@ export const DATA = deepFreeze({
     dtrAgitateMinutes: [3, 5],
     reservoirUseWithinDays: [5, 7],
     typicalFeedEc: [2.0, 3.0],
-    warmLineC: 25,
-    warmLineF: 77,
     cplusStockUseWithinDays: 14,
     sterileReservoirCalHypoGPer100Gal: 1.2,
     sterileReservoirCalHypoPpm: 2,
