@@ -4,9 +4,9 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 const usageCalculator = readFileSync(new URL("../usage-calc.html", import.meta.url), "utf8");
-const feedCalculator = readFileSync(new URL("../feed-calc.html", import.meta.url), "utf8");
+const feedCalculator = readFileSync(new URL("./fixtures/legacy/feed-calc.html", import.meta.url), "utf8");
 const toolsIndex = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const cplusCalculator = readFileSync(new URL("../cplus-calc.html", import.meta.url), "utf8");
+const cplusCalculator = readFileSync(new URL("./fixtures/legacy/cplus-calc.html", import.meta.url), "utf8");
 const nutritionCoreSource = readFileSync(new URL("../src/nutrition-core.js", import.meta.url), "utf8").trimEnd();
 const nutritionCore = new Function(`${nutritionCoreSource}\nreturn FRA_NUTRITION_CORE;`)() as any;
 
@@ -261,9 +261,11 @@ describe("shared nutrition core contract", () => {
     try {
       mkdirSync(join(tempRoot, "scripts"));
       mkdirSync(join(tempRoot, "src"));
+      mkdirSync(join(tempRoot, "tests", "fixtures", "legacy"), { recursive: true });
       writeFileSync(join(tempRoot, "scripts", "sync-nutrition-core.ts"), readFileSync(new URL("../scripts/sync-nutrition-core.ts", import.meta.url)));
       writeFileSync(join(tempRoot, "src", "nutrition-core.js"), "const TEST_CORE = 1;\n");
-      ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html"].forEach(fileName => {
+      const legacy = "tests/fixtures/legacy/";
+      [`${legacy}feed-calc.html`, `${legacy}feed-calc-admin.html`, `${legacy}cplus-calc.html`, "usage-calc.html"].forEach(fileName => {
         writeFileSync(join(tempRoot, fileName), `<script>\n${GENERATED_START}\nold\n${GENERATED_END}\n</script>\n`);
       });
 
@@ -271,12 +273,12 @@ describe("shared nutrition core contract", () => {
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).toBe(1);
       expect(Bun.spawnSync(["bun", script, "--write"]).exitCode).toBe(0);
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).toBe(0);
-      expect(readFileSync(join(tempRoot, "feed-calc.html"), "utf8")).toContain("const TEST_CORE = 1;");
+      expect(readFileSync(join(tempRoot, legacy, "feed-calc.html"), "utf8")).toContain("const TEST_CORE = 1;");
 
-      writeFileSync(join(tempRoot, "feed-calc.html"), `${GENERATED_START}\nmissing end`);
+      writeFileSync(join(tempRoot, legacy, "feed-calc.html"), `${GENERATED_START}\nmissing end`);
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).not.toBe(0);
 
-      writeFileSync(join(tempRoot, "feed-calc.html"), `${GENERATED_END}\nwrong order\n${GENERATED_START}`);
+      writeFileSync(join(tempRoot, legacy, "feed-calc.html"), `${GENERATED_END}\nwrong order\n${GENERATED_START}`);
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).not.toBe(0);
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });

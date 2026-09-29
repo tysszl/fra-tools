@@ -3,6 +3,9 @@
 // runs the script fresh with its own state.
 import { readFileSync } from "node:fs";
 
+// The pre-rebuild feed pages, frozen as the parity reference.
+const LEGACY = new Set(["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html"]);
+
 function createClassList() {
   const classes = new Set<string>();
   return {
@@ -47,7 +50,7 @@ function createElementStub(id = "") {
 export type PageRun<T> = { api: T; element: (id: string) => Record<string, any> };
 
 export function compilePage<T>(fileName: string, exportNames: string[]) {
-  const html = readFileSync(new URL(`../../${fileName}`, import.meta.url), "utf8");
+  const html = readFileSync(new URL(LEGACY.has(fileName) ? `../fixtures/legacy/${fileName}` : `../../${fileName}`, import.meta.url), "utf8");
   const script = html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
   if (!script) throw new Error(`${fileName} has no inline script`);
   const exportsExpression = `({ ${exportNames
