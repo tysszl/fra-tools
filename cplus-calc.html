@@ -1849,14 +1849,6 @@ const EC_PRESETS = {
 
 const UNIT_FACTORS = FRA_NUTRITION_CORE.feedUnitFactors;
 
-// Front Row SI: rate (mL/gal) varies inversely with feed EC
-// Applied through day 21 of flower (phases: Veg, Stretch, Stack)
-const SI_RATE_TABLE = [
-  { below: 2.3, rate: 0.5 },
-  { below: 2.7, rate: 0.375 },
-  { below: 3.1, rate: 0.25 },
-  { below: 3.5, rate: 0.125 }
-];
 
 // pH Up (Potassium Carbonate): as-needed, small increments
 const PHUP_INCREMENT_G_GAL = 0.05;
@@ -2116,14 +2108,6 @@ const calcEcContribution = FEED_MATH.calculateEcContribution;
 const calcDosage = FEED_MATH.calculateDosage;
 const calcPhoszymeDosage = FEED_MATH.calculatePhoszymeDosage;
 
-// Front Row SI: rate in mL/gal based on feed EC (varies inversely)
-function calcSiRate(ec) {
-  for (const { below, rate } of SI_RATE_TABLE) {
-    if (ec < below) return rate;
-  }
-  if (ec < 3.5) return 0.125;
-  return 0;
-}
 
 function calcStockTanks(method, unit) {
   const met = isMetric(unit);
@@ -2469,8 +2453,7 @@ function fcStockNotes(is2Doser, usePhz) {
 
 function fcDtrNotes(usePhz) {
   const notes = [
-    "When using Front Row Si, reservoirs should be fully used within 48 hours.",
-    "Without Front Row Si, reservoirs should be used within 5–7 days.",
+    "Reservoirs should be used within 5–7 days.",
     "Avoid strong oxidizers, especially peroxides, in reservoirs. If running sterile, use the current FRA calcium-hypochlorite protocol.",
     "All feed charts assume RO water. Account for any starting-water EC in the total EC."
   ];
@@ -3712,8 +3695,7 @@ const I18N = {
     "Add RO water to target volume in each tank; mix for 10 more minutes.": "Agregue agua RO hasta el volumen objetivo en cada tanque; mezcle 10 minutos más.",
     "Validate and adjust each stock tank as necessary.": "Valide y ajuste cada tanque madre según sea necesario.",
     "Set each doser to its own injection rate from the chart; confirm final solution EC/PPM.": "Ajuste cada dosificador a su propia tasa de inyección según la tabla; confirme la EC/PPM de la solución final.",
-    "When using Front Row Si, reservoirs should be fully used within 48 hours.": "Al usar Front Row Si, los reservorios deben consumirse por completo en 48 horas.",
-    "Without Front Row Si, reservoirs should be used within 5–7 days.": "Sin Front Row Si, los reservorios deben consumirse en 5–7 días.",
+    "Reservoirs should be used within 5–7 days.": "Los reservorios deben consumirse en 5–7 días.",
     "Avoid mixing strong oxidizers, especially peroxides, into reservoirs. If running a sterile reservoir, use calcium hypochlorite at 1–3 g / 100 gallons.": "Evite mezclar oxidantes fuertes, especialmente peróxidos, en los reservorios. Si maneja un reservorio estéril, use hipoclorito de calcio a 1–3 g / 100 galones.",
     "All feed charts are based on using RO water. If your starting water has any EC, account for that in the total EC.": "Todas las tablas de alimentación suponen agua RO. Si su agua inicial tiene EC, inclúyala en la EC total.",
     "If using PhosZyme, add with Part B.": "Si usa PhosZyme, agréguelo con Part B.",
