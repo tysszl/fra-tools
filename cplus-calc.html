@@ -2345,7 +2345,6 @@ const BP_HIGHER_LOWER = [
   ["Higher CO₂", "Lower CO₂"],
   ["Tight environmental control", "Less environmental control"]
 ];
-const BP_SI_VS_EC = [["< 2.3", 0.5], ["2.3–2.7", 0.375], ["2.7–3.1", 0.25], ["3.1–3.5", 0.125], ["> 3.5", 0]];
 const BP_PHASE_LABELS = ["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"];
 
 function getSupplementRows(metric) {
@@ -2378,13 +2377,6 @@ function getSupplementRows(metric) {
       notes: "Microbial inoculant — amplifies mycorrhizal colonization."
     }
   ];
-}
-
-function getBrandedSiRateRows(metric) {
-  return BP_SI_VS_EC.map(([range, rate]) => [
-    range,
-    metric && rate ? (rate / CONSTANTS.L_per_gal).toFixed(2) : String(rate)
-  ]);
 }
 
 function getBrandedEcContributions(metric, usePhz) {
@@ -2628,7 +2620,7 @@ function renderBrandedPrint() {
     + `<div class="fc-cols">${fcH("Mixing Instructions", `<div class="fc-steps"><ol>${steps.map(step => `<li>${step}</li>`).join("")}</ol></div>`)}${fcH(isStock ? "Stock Concentrate Notes" : "Direct to Reservoir Notes", `<div class="fc-notes"><ul>${notes.map(note => `<li>${note}</li>`).join("")}</ul></div>`)}</div>`
     + `<div>${fcBand(isStock ? "Visual Guide: Prepare the Stock Concentrate" : "Visual Guide: Direct to Reservoir")}${guide}</div>`
     + (isStock ? fcStockTable(stock) : "")
-    + `<div class="fc-grid">${fcH("Additive Usage Rates", additives)}${fcH("Si Rate by Feed EC", fcTwoColTable("Feed EC", `Si (${metric ? "mL/L" : "mL/gal"})`, getBrandedSiRateRows(metric)))}</div>`
+    + fcH("Additive Usage Rates", additives)
     + fcFoot()
     + `</div>`;
 
@@ -3762,9 +3754,7 @@ const I18N = {
     "Validate and adjust stock tank as necessary (see Validation, below).": "Valide y ajuste el tanque madre según sea necesario (vea Validación, abajo).",
     "Validate and adjust each stock tank as necessary (see Validation, below).": "Valide y ajuste cada tanque madre según sea necesario (vea Validación, abajo).",
     "Measure EC and compare to the Valid. EC column.": "Mida la EC y compárela con la columna EC valid.",
-    "Si Rate by Feed EC": "Dosis de Si según la EC de alimentación",
     "Feed EC": "EC de alimentación",
-    "Si (mL/gal)": "Si (mL/gal)",
     // ── Print sheet ──
     "Week 1–2": "Semana 1–2",
     "Week 3–5": "Semana 3–5",

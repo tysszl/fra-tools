@@ -497,7 +497,7 @@ describe("shared nutrition core contract", () => {
     expect(printHtml).toContain("0.05–0.07 g/L");
     expect(printHtml).toContain("Heavy: 8 mL/L; Maint.: 4 mL/L");
     expect(printHtml).toContain("Weekly: 0.25 mL/L; Transplant: 0.5 mL/L");
-    expect(printHtml).toContain("Si (mL/L)");
+    expect(printHtml).not.toContain("Si Rate by Feed EC");
     expect(printHtml).toContain("EC per g/L");
     expect(printHtml).not.toContain("EC per g/gal");
   });
