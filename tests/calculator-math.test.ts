@@ -1031,3 +1031,22 @@ describe("3-Part 2-doser combined tank", () => {
     expect(api.stockConfigLabel()).toBe("3-2-2");
   });
 });
+
+describe("retired Standard Progression schedule", () => {
+  test("is no longer offered and points earlier-chart users to contact", () => {
+    const { api } = createRuntime<{ RECIPE_SCHEDULE_OPTIONS: Record<string, unknown>; LINES: Record<string, any> }>(
+      feedCalculator, "{ RECIPE_SCHEDULE_OPTIONS, LINES }");
+    expect(api.RECIPE_SCHEDULE_OPTIONS.standard).toBeUndefined();
+    expect(api.LINES["3part"].schedules.standard).toBeUndefined();
+    expect(feedCalculator).not.toContain(">Standard Progression<");
+    expect(feedCalculator).toContain("Using an earlier chart? Contact us at order@solsticeag.com");
+  });
+
+  test("an old ?rs=standard share link falls back to the default schedule", () => {
+    const search = "?rs=standard&rp_veg=Veg&rp_stretch=Stretch&rp_stack=Stack&rp_swell=Swell&rp_ripen=Ripen";
+    const { api } = createRuntime<{ state: Record<string, any>; LINES: Record<string, any> }>(
+      feedCalculator, "{ state, LINES }", search, true);
+    expect(api.state.recipeSchedule).toBe("commercial");
+    expect(api.state.phaseRecipe).toEqual(api.LINES["3part"].schedules.commercial);
+  });
+});

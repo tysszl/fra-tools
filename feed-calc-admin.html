@@ -1283,14 +1283,13 @@
     </div>
     <div class="toggle-group" id="recipe-schedule-group">
       <button class="toggle-btn active" data-val="commercial">Commercial (Stack → Swell)</button>
-      <button class="toggle-btn" data-val="standard">Standard Progression</button>
       <button class="toggle-btn" data-val="swell-flower">Swell Through Flower</button>
       <button class="toggle-btn" data-val="custom" disabled>Custom</button>
     </div>
+    <p class="config-note" id="earlier-chart-note">Using an earlier chart? Contact us at order@solsticeag.com or +1 844-420-6883.</p>
     <div class="info-drawer" id="recipe-schedule-drawer">
       <div class="info-drawer-content">
         <p><strong>Commercial (Stack → Swell)</strong> — the default chart — is the simplified production program: Veg / Moms on Veg, the Stack recipe through early flower (Wk 1–2), then Swell for the remainder, finishing on Ripen. The Swell phase steps down through mid-flower: weeks 3–5 run at the higher Swell EC (2.7 High / 2.2 Standard), weeks 6–8/9 at the lower Swell EC (2.4 High / 2.0 Standard), before Ripen. Custom EC values override this.</p>
-        <p><strong>Standard Progression</strong> uses the full Veg → Stretch → Stack → Swell → Ripen recipe sequence — the "craft" chart for single-variety rooms that taper recipes across the cycle.</p>
         <p><strong>Swell Through Flower</strong> keeps Veg / Moms on the Veg recipe, then runs the Swell recipe for the entire flower cycle — the simplest single-recipe flower program. As modern growing methods (high-intensity LED, under-canopy lighting, precision irrigation) have raised average feed EC, Swell delivers more favorable outcomes at those higher EC levels. Target EC still follows the selected EC preset or your custom EC values.</p>
         <p><strong>Custom</strong> appears when individual recipe dropdowns in the feed schedule have been changed manually.</p>
       </div>
@@ -1800,7 +1799,6 @@ const LINES = {
     defaultMethod: "3-2-2",
     schedules: {
       commercial:     { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" },
-      standard:       { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" },
       "swell-flower": { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" }
     }
   }
@@ -1814,11 +1812,11 @@ function formatTargetEC(value) { return Number(value).toFixed(1); }
 
 // AIDEV-NOTE: Commercial is the DEFAULT schedule (R&D Jun 10 2026). "Stack Through
 // Flower" was removed the same day — replaced by "Swell Through Flower" as the
-// single-recipe flower option. Old ?rs=stack-flower links fall back to the default.
+// single-recipe flower option. Standard Progression was retired Sep 29 2026 (Tyler).
+// Links to a retired schedule fall back to the default, per-phase recipes included.
 // Per-line phaseRecipe maps live in LINES[line].schedules (C+ has no Stretch recipe).
 const RECIPE_SCHEDULE_OPTIONS = {
   commercial:     { label: "Commercial (Stack → Swell)", selectable: true },
-  standard:       { label: "Standard Progression", selectable: true },
   "swell-flower": { label: "Swell Through Flower", selectable: true },
   custom:         { label: "Custom", printLabel: "Custom Recipe Schedule", selectable: false },
   "locked-swell": { label: "Swell Recipe Locked", selectable: false, lockedOnly: true }
@@ -1849,6 +1847,7 @@ const VALID_APPS    = ["stock", "direct"];
 const VALID_UNITS   = Object.keys(UNIT_FACTORS);
 const VALID_PRESETS = ["high", "standard", "custom"];
 const VALID_RECIPE_SCHEDULES = Object.keys(LINES["3part"].schedules);
+const RETIRED_RECIPE_SCHEDULES = ["standard", "stack-flower"];
 const VALID_DOSERS  = ["3", "2"];
 const VALID_PHZ     = ["yes", "no"];
 const VALID_METHODS = ["4-3-3", "3-2-2", "1-1-1", "custom"];
@@ -3150,7 +3149,8 @@ function loadFromURL() {
   if (p.has("rs") && VALID_RECIPE_SCHEDULES.includes(p.get("rs")) && state.doserMode !== "2") {
     applyRecipeSchedule(p.get("rs"));
   }
-  if (state.doserMode !== "2") {
+  const retiredSchedule = RETIRED_RECIPE_SCHEDULES.includes(p.get("rs"));
+  if (state.doserMode !== "2" && !retiredSchedule) {
     PHASES.forEach(ph => {
       const rp = p.get(`rp_${ph.toLowerCase()}`);
       if (rp && LINE().recipeNames.includes(rp)) {
