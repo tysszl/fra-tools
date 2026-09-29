@@ -1,6 +1,6 @@
 // @ts-check
 // FRA calculation engine: every number and calculation behind the Feed Chart (both
-// lines, customer and team modes) and the usage estimate. Pure ES modules; no DOM.
+// lines, customer and team modes), pH Up, pH Down, and the usage estimate. Pure ES modules; no DOM.
 export { DATA, deepFreeze, getLine } from "./data.js";
 export { SOURCES, sourceFor } from "./sources.js";
 export {
@@ -47,16 +47,19 @@ export {
   extraDecimals,
   twoDoserTank2TargetEc,
 } from "./chart.js";
-export { dripperPhRange, formatPhRange, phRanges } from "./ph.js";
+export { dripperPhRange, formatPhRange, phLimit, phRanges } from "./ph.js";
 export { formatRange, supplementRates } from "./supplements.js";
 export {
-  usageBagsNeeded,
-  usageEstimate,
-  usageProductAmount,
-  usageProductCost,
-  usageProducts,
-  usageSiRate,
-} from "./usage.js";
+  phUpAlkalinityCredit,
+  phUpDose,
+  phUpDoseTo59,
+  phUpStockMlPerGal,
+  phUpStockPercent,
+  phUpTarget,
+  phUpTargetMultiplier,
+} from "./phup.js";
+export { phDownDose, phDownReference } from "./phdown.js";
+export { usageColumns, usageCost, usageEstimate, usageProducts, usageUnitsNeeded } from "./usage.js";
 
 /** @param {number} value */
 export function formatTargetEc(value) {

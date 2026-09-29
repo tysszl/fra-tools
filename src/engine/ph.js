@@ -35,11 +35,12 @@ export function phLimit(line, recipe, ec) {
  * @param {LineId} line
  * @param {string} recipe
  * @param {number} ec
+ * @param {number} [limitOffset]  Added to the modeled limit before rounding (warm lines: −0.08).
  * @returns {{ range: readonly number[], ceiling: number, limit: number, atLine: boolean }}
  */
-export function dripperPhRange(line, recipe, ec) {
+export function dripperPhRange(line, recipe, ec, limitOffset = 0) {
   const rule = DATA.dripperPh;
-  const limit = phLimit(line, recipe, Number(ec));
+  const limit = phLimit(line, recipe, Number(ec)) + limitOffset;
   const step = 10 ** rule.decimals;
   const rounded = Number.isFinite(limit) ? Math.round(limit * step) / step : rule.cap;
   const ceiling = Math.min(rule.cap, Math.max(rule.floor, rounded));

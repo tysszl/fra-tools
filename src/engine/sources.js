@@ -89,14 +89,34 @@ export const SOURCES = Object.freeze({
   "reference.threePartTank2EmptiesFasterApprox": "undocumented",
   "reference.injectorBandPercent": "undocumented",
 
-  "usage.flowerRecipe": "differs from docs: audit N14 (all flower costed as Swell)",
-  "usage.phUpGPerGal": "differs from docs: audit N14 (0.20 g/gal on every gallon, incl. veg)",
+  "phUp.curves": "chemistry-model PHREEQC refit 2026-09-29 (calculator-fits-2026-09-29/powfit.json; dose to pH 5.9, RO, 25 °C, air CO2); anchors Stack 3.0 = 0.200 and Swell 3.0 = 0.250 g/gal match the trials (ALK § Level 3); audit N15",
+  "phUp.curves.cplus": "chemistry-model PHREEQC refit 2026-09-29 (powfit.json); no bench check yet (ALK § 3e)",
+  "phUp.fitEc": "chemistry-model PHREEQC refit 2026-09-29 (fit range EC 1.0–3.5)",
+  "phUp.targetMultiplier": "chemistry-model PHREEQC refit 2026-09-29 (median dose(target)/dose(5.9) over nine recipes, EC 1.4–3.5; ±0.02)",
+  "phUp.defaultTargetMax": "refit memo 2026-09-29 § 3 (target = printed ceiling − 0.1, never above 5.9 or below 5.5; TS § pH Management: 0.2–0.25 g/gal brings 3 EC flower to ~5.9)",
+  "phUp.targetBelowCeiling": "refit memo 2026-09-29 § 3 (target = printed ceiling − 0.1)",
+  "phUp.warmLimitOffset": "ALK § 3b (30 °C limit 0.07–0.09 lower); TS § pH Management",
+  "phUp.maxGPerGal": "TS § pH Management (0.2–0.25 g/gal max)",
+  "phUp.alkPpmPerGPerGal": "TS § pH Management (0.1 g/gal K2CO3 ≈ 19 ppm alkalinity); ALK § Level 3",
+  "phUp.stockPresets": "undocumented (pH Up page presets: 20 g/gal for D14MZ2, 100 g/gal for D14MZ3000)",
+  "phUp.customStock": "undocumented (page input default and limits)",
+  "phUp.defaultReservoirGal": "undocumented (page default)",
+  "phUp.doseDecimals": "undocumented (page display rounding)",
+
+  "phDown.mlPerGalPerPpm": "arithmetic from the acid's composition (70% H3PO4, density 1.526, one proton); audit matches",
+  "phDown.defaultTargetPpm": "CL 2026-09-25 (20 ppm default target); TS § pH Management (20 ppm review trigger)",
+  "phDown.vegTargetPpm": "CL 2026-09-25 (15 ppm for Veg)",
+  "phDown.reviewAbovePpm": "TS § pH Management (review water treatment above ~20 ppm); ALK § 3a",
+  "phDown.defaultStartPpm": "undocumented (page example value)",
+  "phDown.defaultVolumeGal": "undocumented (page default)",
+  "phDown.referencePpm": "undocumented (quick-reference rows)",
+
   "usage.triologicMlPerTreatedGal": "TS § Product Usage › Triologic",
-  "usage.siRateByEc": "TS § Product Usage › Front Row Si (DTR/root drench table); Si is foliar-only per CL 09-29: audit N10",
+  "usage.siFoliarMlPerGal": "TS § Product Usage › Front Row Si (foliar 0.5–2 mL/gal; budgets at the top of the range); Si is foliar-only per CL 09-29",
   "usage.bagRoundUpDecimals": "undocumented (page rounding)",
   "usage.productDefaults": "undocumented (package sizes)",
   "usage.additiveDefaults": "undocumented (package sizes)",
-  "usage.defaults": "undocumented (page defaults; see audit N14)",
+  "usage.defaults": "refit memo 2026-09-29 § 3 worked example (veg 2 wk × 1,000 gal; flower 2/3/3/1 wk × 10,000 gal); cycles per year undocumented",
 });
 
 /**

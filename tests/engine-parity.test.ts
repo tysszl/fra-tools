@@ -1,5 +1,5 @@
 // Cross-check: runs the pre-rebuild pages (tests/fixtures/legacy/feed-calc.html,
-// feed-calc-admin.html, cplus-calc.html, and the live usage-calc.html) through their real
+// feed-calc-admin.html, cplus-calc.html) through their real
 // startup path from URL params, and asserts the engine in src/engine reproduces every
 // number they show, except where a named exception (EXCEPTIONS below) records one of
 // Tyler's 2026-09-29 rulings. Each exception checks the allowed difference exactly.
@@ -471,50 +471,5 @@ describe("engine reproduces the current feed pages", () => {
   test("every named exception was exercised", () => {
     console.log(Object.entries(applied).map(([k, n]) => `${k}: ${n}`).join(", "));
     for (const id of Object.keys(EXCEPTIONS) as ExceptionId[]) expect(applied[id]).toBeGreaterThan(0);
-  });
-});
-
-describe("engine reproduces the usage calculator", () => {
-  const runUsage = compilePage<any>("usage-calc.html", ["state", "calcAll", "setBase", "buildProductList"]);
-  const bases = [["fra", "3part"], ["cplus", "cplus"]] as const;
-  const cases: Array<{ base: string; lineId: "3part" | "cplus"; vegEc: number; flowerEc: number; additives: boolean; phz: boolean; tri: number }> = [];
-  for (const [base, lineId] of bases) for (const vegEc of [3.0, 2.5, 1.0, 0.05]) for (const flowerEc of [3.0, 2.2, 3.6, 3.3, 2.7]) {
-    for (const additives of [false, true]) for (const phz of [false, true]) for (const tri of [0, 450.5]) {
-      cases.push({ base, lineId, vegEc, flowerEc, additives, phz, tri });
-    }
-  }
-
-  test(`${cases.length} usage cases match`, () => {
-    const mismatches: string[] = [];
-    for (const c of cases) {
-      const { api } = runUsage("");
-      api.state.base = c.base;
-      api.state.products = api.buildProductList();
-      api.state.veg = { feedEC: c.vegEc, weeks: 3, galPerWeek: 1250, triologicGalPerWeek: c.tri };
-      api.state.flower = { feedEC: c.flowerEc, weeks: 9, galPerWeek: 10000, triologicGalPerWeek: c.tri * 2 };
-      api.state.products.forEach((p: any) => {
-        if (p.isBase) return;
-        p.included = p.name === "PhosZyme" ? c.phz : c.additives;
-      });
-      const page = api.calcAll();
-      const engine = E.usageEstimate({
-        lineId: c.lineId,
-        veg: api.state.veg,
-        flower: api.state.flower,
-        products: api.state.products.map((p: any) => ({ ...p })),
-      });
-      if (!Bun.deepEquals(page, engine, true)) mismatches.push(`${JSON.stringify(c)}\n  page:   ${JSON.stringify(page)}\n  engine: ${JSON.stringify(engine)}`);
-    }
-    expect(mismatches).toEqual([]);
-  });
-
-  test("the page's default product list matches the engine's (package sizes)", () => {
-    for (const [base, lineId] of bases) {
-      const { api } = runUsage("");
-      api.state.base = base;
-      const page = api.buildProductList().map(({ price: _price, ...rest }: any) => rest);
-      const engine = E.usageProducts(lineId).map(({ price: _price, ...rest }) => rest);
-      expect(page).toEqual(engine);
-    }
   });
 });

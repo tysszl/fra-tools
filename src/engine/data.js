@@ -271,13 +271,59 @@ export const DATA = deepFreeze({
     injectorBandPercent: [0.2, 2.0],
   },
 
-  // Usage estimate (today's usage-calc.html). Prices are inputs, never stored here.
+  // pH Up (K2CO3). Dose to pH 5.9 on RO water = k·EC^n g/gal per recipe, [k, n].
+  // Other targets scale the 5.9 dose by one multiplier per target (linear between
+  // points, clamped to the ends). Source alkalinity credits 1 g/gal per 190 ppm CaCO3.
+  phUp: {
+    curves: {
+      "3part": {
+        Veg: [0.018323, 1.28918],
+        Stretch: [0.040147, 1.29133],
+        Stack: [0.048763, 1.28618],
+        Swell: [0.061424, 1.27704],
+        Ripen: [0.067746, 1.27110],
+      },
+      cplus: {
+        Veg: [0.024306, 1.29953],
+        Stack: [0.065128, 1.29144],
+        Swell: [0.090494, 1.27285],
+        Ripen: [0.104776, 1.26103],
+      },
+    },
+    fitEc: [1.0, 3.5],
+    targetMultiplier: [[5.5, 0.42], [5.6, 0.53], [5.7, 0.66], [5.8, 0.81], [5.9, 1.00], [6.0, 1.22]],
+    // Default target: the column's printed ceiling minus 0.1, never above 5.9 or below 5.5.
+    defaultTargetMax: 5.9,
+    targetBelowCeiling: 0.1,
+    // Warm lines: the ceiling is taken from the limit minus this offset.
+    warmLimitOffset: 0.08,
+    maxGPerGal: 0.25,
+    alkPpmPerGPerGal: 190,
+    // Stock concentrations, g of pH Up per gal of stock.
+    stockPresets: { mz2: 20, mz3000: 100 },
+    customStock: { defaultGPerGal: 50, min: 1, max: 200 },
+    defaultReservoirGal: 100,
+    doseDecimals: 3,
+  },
+
+  // pH Down (70% phosphoric acid). mL of acid per gal of water per ppm of alkalinity
+  // (as CaCO3) neutralized: (ppm / 50) × 98 / 1068.2 × 3.785, where 50 = eq wt CaCO3,
+  // 98 = MW H3PO4 (one proton), 1068.2 = mg H3PO4 per mL of 70% acid (density 1.526).
+  phDown: {
+    mlPerGalPerPpm: 0.006946,
+    defaultStartPpm: 140,
+    defaultTargetPpm: 20,
+    vegTargetPpm: 15,
+    defaultVolumeGal: 1,
+    reviewAbovePpm: 20,
+    referencePpm: [20, 40, 60, 80, 100, 120, 150, 200, 250, 300],
+  },
+
+  // Usage estimate for one cycle, column by column on the customer's feed schedule.
+  // Prices are inputs (an optional untracked prices.json), never stored here.
   usage: {
-    flowerRecipe: "Swell",
-    phUpGPerGal: 0.20,
     triologicMlPerTreatedGal: 1,
-    // Si mL/gal by feed EC: 0 when EC > zeroAbove; else the first band with EC >= min; else below.
-    siRateByEc: { zeroAbove: 3.5, bands: [[3.1, 0.125], [2.7, 0.25], [2.3, 0.375]], below: 0.5 },
+    siFoliarMlPerGal: 2,
     bagRoundUpDecimals: 1,
     productDefaults: {
       "3part": {
@@ -294,12 +340,15 @@ export const DATA = deepFreeze({
     additiveDefaults: [
       { name: "PhosZyme", unitSize: 25, unitType: "lbs" },
       { name: "pH Up", unitSize: 25, unitType: "lbs" },
-      { name: "Si", unitSize: 1, unitType: "gal" },
       { name: "Triologic", unitSize: 1, unitType: "gal" },
+      { name: "Si", unitSize: 1, unitType: "gal" },
     ],
     defaults: {
-      veg: { feedEC: 3.0, weeks: 2, galPerWeek: 1000, triologicGalPerWeek: 0 },
-      flower: { feedEC: 3.0, weeks: 9, galPerWeek: 10000, triologicGalPerWeek: 0 },
+      vegWeeks: 2,
+      vegGalPerWeek: 1000,
+      // Flower weeks per chart column: Wk 1–2, Wk 3–5, Wk 6–8/9, Final.
+      flowerWeeks: { Stretch: 2, Stack: 3, Swell: 3, Ripen: 1 },
+      flowerGalPerWeek: 10000,
       cyclesPerYear: 5,
     },
   },

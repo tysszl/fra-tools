@@ -1,162 +1,159 @@
 // @ts-check
-// Usage estimate (today's usage-calc.html): product amounts, bags, and cost for a
-// veg + flower cycle. Prices are inputs; this module stores none.
+// Usage estimate for one cycle, column by column on the feed schedule: each chart
+// column's recipe and EC, its weeks and gallons, and the products it uses. Prices are
+// inputs; this module stores none.
 import { DATA, getLine } from "./data.js";
 import { doseGramsPerGallon, phoszymeAdjustment } from "./dose.js";
+import { phUpDose } from "./phup.js";
 
 /** @typedef {import("./data.js").LineId} LineId */
-/** @typedef {import("./data.js").Role} Role */
-/** @typedef {{ feedEC: number, weeks: number, galPerWeek: number, triologicGalPerWeek: number }} UsagePhase */
+/** @typedef {import("./data.js").Phase} Phase */
+/**
+ * @typedef {object} UsageInput
+ * @property {LineId} lineId
+ * @property {string} [schedule]                 "commercial" (default) or "swell-flower"
+ * @property {Partial<Record<Phase, number>>} ec Target EC per chart column (final, incl. PhosZyme).
+ * @property {number} vegWeeks
+ * @property {number} vegGalPerWeek
+ * @property {Partial<Record<Phase, number>>} flowerWeeks  Stretch, Stack, Swell, Ripen columns.
+ * @property {number} flowerGalPerWeek
+ * @property {boolean} [phoszyme]
+ * @property {boolean} [phUp]
+ * @property {number} [alkPpm]                   Source alkalinity, ppm as CaCO3.
+ * @property {boolean} [triologic]
+ * @property {number} [triologicVegGalPerWeek]   Gallons treated per week.
+ * @property {number} [triologicFlowerGalPerWeek]
+ * @property {boolean} [si]
+ * @property {number} [siFoliarGal]              Foliar spray gallons per cycle.
+ * @property {number} [siMlPerGal]
+ */
 /**
  * @typedef {object} UsageProduct
- * @property {string} name        Product name ("Part A", "CaNO3", "PhosZyme", "pH Up", "Si", "Triologic").
- * @property {number} price       Price per unit (bag or jug).
- * @property {number} unitSize    lb per bag, or gal per jug.
- * @property {string} unitType    "lbs" or "gal".
- * @property {boolean} isBase     True for the line's three nutrient products.
- * @property {boolean} [included] Additives only.
+ * @property {string} name
+ * @property {number} unitSize   lb per bag, or gal per jug.
+ * @property {string} unitType   "lbs" or "gal".
+ * @property {boolean} isBase
  */
 
-/**
- * Si mL/gal in the feed by EC (audit N10: Si is now foliar only).
- * @param {number} feedEC
- */
-export function usageSiRate(feedEC) {
-  const table = DATA.usage.siRateByEc;
-  if (feedEC > table.zeroAbove) return 0;
-  for (const [min, rate] of table.bands) if (feedEC >= min) return rate;
-  return table.below;
+/** @param {unknown} value */
+function nonNegative(value) {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 /**
+ * Products in display order with their package sizes.
  * @param {LineId} lineId
- * @param {string} productName
- * @returns {Role | undefined}
- */
-function roleForProduct(lineId, productName) {
-  const byRole = getLine(lineId).productsByRole;
-  return /** @type {Role[]} */ (Object.keys(byRole)).find(role => byRole[role] === productName);
-}
-
-/**
- * Product list with the page's defaults and the given prices (by product name).
- * @param {LineId} lineId
- * @param {Record<string, number>} [prices]
  * @returns {UsageProduct[]}
  */
-export function usageProducts(lineId, prices = {}) {
+export function usageProducts(lineId) {
   const defaults = /** @type {Record<string, { unitSize: number, unitType: string }>} */ (DATA.usage.productDefaults[lineId]);
-  const base = Object.values(getLine(lineId).productsByRole).map(name => ({
-    name, price: prices[name] || 0, unitSize: defaults[name].unitSize, unitType: defaults[name].unitType, isBase: true,
-  }));
-  const adds = DATA.usage.additiveDefaults.map(a => ({
-    name: a.name, price: prices[a.name] || 0, unitSize: a.unitSize, unitType: a.unitType, isBase: false, included: false,
-  }));
+  const base = Object.values(getLine(lineId).productsByRole).map(name => ({ name, ...defaults[name], isBase: true }));
+  const adds = DATA.usage.additiveDefaults.map(a => ({ ...a, isBase: false }));
   return [...base, ...adds];
 }
 
 /**
- * Amount of one product for one phase: lb for dry products, gal for liquids.
- * @param {object} args
- * @param {LineId} args.lineId
- * @param {string} args.productName
- * @param {"veg" | "flower"} args.phaseName
- * @param {UsagePhase} args.phase
- * @param {number} args.phaseVolume  gal of feed in the phase
- * @param {boolean} args.phoszymeIncluded
+ * Each chart column with its recipe, EC, weeks, gallons, and pH Up dose.
+ * @param {UsageInput} input
  */
-export function usageProductAmount({ lineId, productName, phaseName, phase, phaseVolume, phoszymeIncluded }) {
-  const { gramsPerPound, millilitersPerGallon } = DATA.units;
-  const usage = DATA.usage;
-  const role = roleForProduct(lineId, productName);
-  if (role) {
-    const recipeName = phaseName === "veg" ? "Veg" : usage.flowerRecipe;
-    // The PhosZyme reduction always uses the flower recipe; DTR PhosZyme is recipe-independent.
-    const baseFertilizerEC = phoszymeAdjustment({
-      lineId, recipeName: usage.flowerRecipe, targetEc: phase.feedEC, application: "direct", included: phoszymeIncluded,
-    }).baseTargetEc;
-    return phaseVolume * doseGramsPerGallon(lineId, recipeName, role, baseFertilizerEC) / gramsPerPound;
+export function usageColumns(input) {
+  const line = getLine(input.lineId);
+  const schedule = /** @type {Record<string, Record<Phase, string>>} */ (line.schedules)[input.schedule ?? DATA.recipeSchedules.defaultSchedule]
+    ?? line.schedules.commercial;
+  return DATA.phases.map(phase => {
+    const recipe = schedule[phase];
+    const ec = nonNegative(input.ec[phase]);
+    const veg = phase === "Veg";
+    const weeks = veg ? nonNegative(input.vegWeeks) : nonNegative(input.flowerWeeks[phase]);
+    const gallons = weeks * (veg ? nonNegative(input.vegGalPerWeek) : nonNegative(input.flowerGalPerWeek));
+    const phUp = phUpDose({ line: input.lineId, recipe, ec, alkPpm: input.alkPpm ?? 0 });
+    return { phase, recipe, ec, weeks, gallons, phUp };
+  });
+}
+
+/**
+ * Amount of each product per column: lb for dry products, gal for liquids.
+ * @param {UsageInput} input
+ */
+export function usageEstimate(input) {
+  const { gramsPerPound, millilitersPerGallon, litersPerGallon } = DATA.units;
+  const line = getLine(input.lineId);
+  const columns = usageColumns(input);
+  const totalGal = columns.reduce((sum, c) => sum + c.gallons, 0);
+  /** @type {Record<string, string>} */
+  const roleByName = Object.fromEntries(Object.entries(line.productsByRole).map(([role, name]) => [name, role]));
+
+  /** @param {UsageProduct} product */
+  function perColumn(product) {
+    const role = roleByName[product.name];
+    return columns.map(c => {
+      if (role) {
+        const base = phoszymeAdjustment({
+          lineId: input.lineId, recipeName: c.recipe, targetEc: c.ec, application: "direct", included: Boolean(input.phoszyme),
+        }).baseTargetEc;
+        return c.gallons * doseGramsPerGallon(input.lineId, c.recipe, /** @type {any} */ (role), base) / gramsPerPound;
+      }
+      if (product.name === "PhosZyme") return input.phoszyme ? c.gallons * DATA.phoszyme.directGramsPerGallon / gramsPerPound : 0;
+      if (product.name === "pH Up") return input.phUp ? c.gallons * c.phUp.gPerGal / gramsPerPound : 0;
+      if (product.name === "Triologic") {
+        if (!input.triologic) return 0;
+        const perWeek = c.phase === "Veg" ? input.triologicVegGalPerWeek : input.triologicFlowerGalPerWeek;
+        return c.weeks * nonNegative(perWeek) * DATA.usage.triologicMlPerTreatedGal / millilitersPerGallon;
+      }
+      return 0;
+    });
   }
-  if (productName === "Triologic") {
-    const treatedVolume = phase.weeks * phase.triologicGalPerWeek;
-    return treatedVolume * usage.triologicMlPerTreatedGal / millilitersPerGallon;
-  }
-  if (productName === "PhosZyme") return phaseVolume * DATA.phoszyme.directGramsPerGallon / gramsPerPound;
-  if (productName === "pH Up") return phaseVolume * usage.phUpGPerGal / gramsPerPound;
-  if (productName === "Si") return phaseVolume * usageSiRate(phase.feedEC) / millilitersPerGallon;
-  return 0;
+
+  const products = usageProducts(input.lineId).map(product => {
+    let byColumn = perColumn(product);
+    let amount = byColumn.reduce((sum, v) => sum + v, 0);
+    let included = product.isBase || Boolean(/** @type {any} */ (input)[{ PhosZyme: "phoszyme", "pH Up": "phUp", Triologic: "triologic", Si: "si" }[product.name] ?? ""]);
+    if (product.name === "Si") {
+      // Foliar only, not in the feed: spray gallons × mL/gal.
+      const ml = input.siMlPerGal === undefined ? DATA.usage.siFoliarMlPerGal : nonNegative(input.siMlPerGal);
+      amount = input.si ? nonNegative(input.siFoliarGal) * ml / millilitersPerGallon : 0;
+      byColumn = columns.map(() => 0);
+    }
+    return { ...product, included, byColumn, amount, units: usageUnitsNeeded(amount, product.unitSize) };
+  });
+  return { columns, products, totalGal, totalL: totalGal * litersPerGallon };
 }
 
 /**
  * Bags (or jugs) needed, rounded up to 0.1.
- * @param {number} totalAmount
+ * @param {number} amount
  * @param {number} unitSize
  */
-export function usageBagsNeeded(totalAmount, unitSize) {
-  if (unitSize <= 0) return 0;
-  const f = Math.pow(10, DATA.usage.bagRoundUpDecimals);
-  return Math.ceil(totalAmount / unitSize * f) / f;
+export function usageUnitsNeeded(amount, unitSize) {
+  if (!(unitSize > 0)) return 0;
+  const f = 10 ** DATA.usage.bagRoundUpDecimals;
+  return Math.ceil(amount / unitSize * f - 1e-9) / f;
 }
 
 /**
- * @param {number} totalAmount
- * @param {number} price
- * @param {number} unitSize
+ * Cost of the estimate at the given prices (per bag or jug, by product name). Products
+ * without a price cost nothing and are listed in `unpriced`.
+ * @param {ReturnType<typeof usageEstimate>} estimate
+ * @param {Record<string, number | null | undefined>} prices
+ * @param {number} [cyclesPerYear]
  */
-export function usageProductCost(totalAmount, price, unitSize) {
-  if (unitSize <= 0 || price <= 0) return 0;
-  return totalAmount * (price / unitSize);
-}
-
-/**
- * Full estimate for one cycle.
- * @param {object} args
- * @param {LineId} args.lineId
- * @param {UsagePhase} args.veg
- * @param {UsagePhase} args.flower
- * @param {UsageProduct[]} args.products
- */
-export function usageEstimate({ lineId, veg, flower, products }) {
-  const L = DATA.units.litersPerGallon;
-  const vegVol = veg.weeks * veg.galPerWeek;
-  const flowerVol = flower.weeks * flower.galPerWeek;
-  const totalVol = vegVol + flowerVol;
-  const phoszymeIncluded = Boolean(products.find(p => p.name === "PhosZyme")?.included);
-  const results = {
-    vegVol, flowerVol, totalVol,
-    totalVolL: totalVol * L,
-    /** @type {any[]} */
-    products: [],
-    totalCost: 0,
-    costPerGal: 0,
-    costPerL: 0,
+export function usageCost(estimate, prices, cyclesPerYear = 1) {
+  /** @type {string[]} */
+  const unpriced = [];
+  const lines = estimate.products.filter(p => p.included).map(p => {
+    const price = Number(prices[p.name]);
+    const priced = Number.isFinite(price) && price > 0;
+    if (!priced && p.amount > 0) unpriced.push(p.name);
+    const cost = priced ? p.amount * price / p.unitSize : 0;
+    return { name: p.name, cost };
+  });
+  const total = lines.reduce((sum, l) => sum + l.cost, 0);
+  return {
+    lines,
+    total,
+    perGal: estimate.totalGal > 0 ? total / estimate.totalGal : 0,
+    perYear: total * Math.max(0, cyclesPerYear),
+    unpriced,
   };
-  for (const product of products) {
-    if (!product.isBase && !product.included) {
-      results.products.push({
-        name: product.name, unitType: product.unitType, isBase: product.isBase,
-        vegAmount: 0, flowerAmount: 0, totalAmount: 0, bags: 0,
-        vegCost: 0, flowerCost: 0, totalCost: 0, costPerGal: 0,
-      });
-      continue;
-    }
-    const common = { lineId, productName: product.name, phoszymeIncluded };
-    const vegAmount = usageProductAmount({ ...common, phaseName: "veg", phase: veg, phaseVolume: vegVol });
-    const flowerAmount = usageProductAmount({ ...common, phaseName: "flower", phase: flower, phaseVolume: flowerVol });
-    const totalAmount = vegAmount + flowerAmount;
-    const bags = usageBagsNeeded(totalAmount, product.unitSize);
-    const vegCost = usageProductCost(vegAmount, product.price, product.unitSize);
-    const flowerCost = usageProductCost(flowerAmount, product.price, product.unitSize);
-    const totalCost = vegCost + flowerCost;
-    results.products.push({
-      name: product.name, unitType: product.unitType, isBase: product.isBase,
-      vegAmount, flowerAmount, totalAmount, bags,
-      vegCost, flowerCost, totalCost,
-      costPerGal: totalVol > 0 ? totalCost / totalVol : 0,
-    });
-    results.totalCost += totalCost;
-  }
-  results.costPerGal = totalVol > 0 ? results.totalCost / totalVol : 0;
-  results.costPerL = totalVol > 0 ? results.totalCost / (totalVol * L) : 0;
-  return results;
 }

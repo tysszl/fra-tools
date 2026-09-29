@@ -106,9 +106,19 @@ describe("approval snapshot", () => {
 
   test("usage numbers", () => {
     expect(DATA.usage).toMatchObject({
-      flowerRecipe: "Swell", phUpGPerGal: 0.2, triologicMlPerTreatedGal: 1,
-      siRateByEc: { zeroAbove: 3.5, bands: [[3.1, 0.125], [2.7, 0.25], [2.3, 0.375]], below: 0.5 },
+      triologicMlPerTreatedGal: 1, siFoliarMlPerGal: 2,
+      defaults: { vegWeeks: 2, vegGalPerWeek: 1000, flowerWeeks: { Stretch: 2, Stack: 3, Swell: 3, Ripen: 1 }, flowerGalPerWeek: 10000 },
     });
+  });
+
+  test("pH Up numbers", () => {
+    expect(DATA.phUp).toMatchObject({
+      targetMultiplier: [[5.5, 0.42], [5.6, 0.53], [5.7, 0.66], [5.8, 0.81], [5.9, 1.0], [6.0, 1.22]],
+      defaultTargetMax: 5.9, targetBelowCeiling: 0.1, warmLimitOffset: 0.08, maxGPerGal: 0.25, alkPpmPerGPerGal: 190,
+      stockPresets: { mz2: 20, mz3000: 100 },
+    });
+    expect(DATA.phUp.curves["3part"].Stack).toEqual([0.048763, 1.28618]);
+    expect(DATA.phUp.curves.cplus.Swell).toEqual([0.090494, 1.27285]);
   });
 
   test("DATA is frozen", () => {
@@ -129,10 +139,11 @@ describe("sources", () => {
 
   test("audit differences are marked", () => {
     expect(E.sourceFor("lines.3part.stockMethods.2-doser.rates.partB")).toContain("audit N2");
-    expect(E.sourceFor("usage.siRateByEc.below")).toContain("audit N10");
+    expect(E.sourceFor("usage.siFoliarMlPerGal")).toContain("foliar");
     expect(E.sourceFor("lines.cplus.phCeilingFit.Stack.c")).toContain("PHREEQC");
     expect(E.sourceFor("dripperPh.cap")).toContain("N12");
-    expect(E.sourceFor("usage.phUpGPerGal")).toContain("audit N14");
+    expect(E.sourceFor("phUp.curves.3part.Stack")).toContain("N15");
+    expect(E.sourceFor("phUp.curves.cplus.Stack")).toContain("no bench check");
   });
 });
 
@@ -356,22 +367,66 @@ describe("supplements", () => {
 });
 
 describe("usage", () => {
-  test("Si rate bands", () => {
-    expect([3.6, 3.5, 3.1, 3.0, 2.7, 2.69, 2.3, 2.29].map(E.usageSiRate)).toEqual([0, 0.125, 0.125, 0.25, 0.25, 0.375, 0.375, 0.5]);
+  const base = {
+    lineId: "3part" as const,
+    ec: DATA.ecPresets.high,
+    vegWeeks: 2, vegGalPerWeek: 1000,
+    flowerWeeks: DATA.usage.defaults.flowerWeeks, flowerGalPerWeek: 10000,
+  };
+  const amount = (est: any, name: string) => est.products.find((p: any) => p.name === name).amount;
+
+  test("columns follow the Commercial schedule and preset ECs", () => {
+    const cols = E.usageColumns(base);
+    expect(cols.map(c => `${c.recipe} ${c.ec} ${c.gallons}`)).toEqual([
+      "Veg 3 2000", "Stack 3 20000", "Swell 2.7 30000", "Swell 2.4 30000", "Ripen 1.8 10000",
+    ]);
+    expect(E.usageColumns({ ...base, schedule: "swell-flower" }).map(c => c.recipe)).toEqual(["Veg", "Swell", "Swell", "Swell", "Swell"]);
   });
 
-  test("amounts and bags", () => {
-    const products = E.usageProducts("3part", { "Part A": 100 });
-    const result = E.usageEstimate({
-      lineId: "3part",
-      veg: { feedEC: 3, weeks: 2, galPerWeek: 1000, triologicGalPerWeek: 0 },
-      flower: { feedEC: 3, weeks: 9, galPerWeek: 10000, triologicGalPerWeek: 0 },
-      products,
-    });
-    const partA = result.products[0];
-    expect(partA.vegAmount).toBeCloseTo(2000 * 3 * 0.6428571428571 / 0.306 / 454, 10);
-    expect(partA.bags).toBe(Math.ceil(partA.totalAmount / 25 * 10) / 10);
-    expect(partA.totalCost).toBeCloseTo(partA.totalAmount * 4, 10);
+  test("base products sum each column's recipe dose", () => {
+    const est = E.usageEstimate(base);
+    const expected = E.usageColumns(base).reduce((sum, c) => sum + c.gallons * E.doseGramsPerGallon("3part", c.recipe, "partA", c.ec) / 454, 0);
+    expect(amount(est, "Part A")).toBeCloseTo(expected, 9);
+    expect(est.totalGal).toBe(92000);
+  });
+
+  test("PhosZyme takes 0.088 EC off the base and adds 0.4 g/gal", () => {
+    const withPhz = E.usageEstimate({ ...base, phoszyme: true });
+    expect(amount(withPhz, "PhosZyme")).toBeCloseTo(92000 * 0.4 / 454, 9);
+    expect(amount(withPhz, "Part A")).toBeLessThan(amount(E.usageEstimate(base), "Part A"));
+  });
+
+  test("pH Up = refit curve × target multiplier − alkalinity / 190, per column", () => {
+    const ro = E.usageEstimate({ ...base, phUp: true, alkPpm: 0 });
+    const expected = E.usageColumns(base).reduce((sum, c) =>
+      sum + c.gallons * E.phUpDoseTo59("3part", c.recipe, c.ec) * E.phUpTargetMultiplier(E.phUpTarget("3part", c.recipe, c.ec).target) / 454, 0);
+    expect(amount(ro, "pH Up")).toBeCloseTo(expected, 9);
+    expect(amount(ro, "pH Up")).toBeCloseTo(25.9, 1);
+    expect(amount(E.usageEstimate({ ...base, phUp: true, alkPpm: 10 }), "pH Up")).toBeLessThan(amount(ro, "pH Up"));
+    expect(amount(E.usageEstimate({ ...base, phUp: true, alkPpm: 30 }), "pH Up")).toBe(0);
+    expect(amount(E.usageEstimate(base), "pH Up")).toBe(0);
+  });
+
+  test("Triologic per treated gallon; Si only as foliar", () => {
+    const est = E.usageEstimate({ ...base, triologic: true, triologicVegGalPerWeek: 500, triologicFlowerGalPerWeek: 1000, si: true, siFoliarGal: 400 });
+    expect(amount(est, "Triologic")).toBeCloseTo((2 * 500 + 9 * 1000) / 3785, 9);
+    expect(amount(est, "Si")).toBeCloseTo(400 * 2 / 3785, 9);
+    expect(est.products.find((p: any) => p.name === "Si").byColumn).toEqual([0, 0, 0, 0, 0]);
+  });
+
+  test("bags round up to 0.1 and cost uses supplied prices only", () => {
+    expect(E.usageUnitsNeeded(26, 25)).toBe(1.1);
+    expect(E.usageUnitsNeeded(25, 25)).toBe(1);
+    const est = E.usageEstimate(base);
+    const cost = E.usageCost(est, { "Part A": 100 }, 5);
+    expect(cost.total).toBeCloseTo(amount(est, "Part A") * 4, 9);
+    expect(cost.perYear).toBeCloseTo(cost.total * 5, 9);
+    expect(cost.unpriced).toEqual(["Part B", "Bloom"]);
+  });
+
+  test("the engine holds no prices", () => {
+    const text = JSON.stringify(DATA);
+    expect(text).not.toMatch(/price/i);
   });
 });
 
