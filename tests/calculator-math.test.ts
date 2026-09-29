@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 const feedCalculator = readFileSync(new URL("./fixtures/legacy/feed-calc.html", import.meta.url), "utf8");
-const toolsIndex = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+const toolsIndex = readFileSync(new URL("../src/pages/hub.js", import.meta.url), "utf8");
 const cplusCalculator = readFileSync(new URL("./fixtures/legacy/cplus-calc.html", import.meta.url), "utf8");
 const nutritionCoreSource = readFileSync(new URL("../src/nutrition-core.js", import.meta.url), "utf8").trimEnd();
 const nutritionCore = new Function(`${nutritionCoreSource}\nreturn FRA_NUTRITION_CORE;`)() as any;
@@ -14,8 +14,8 @@ const GENERATED_END = "// END GENERATED: nutrition-core";
 
 describe("public calculator navigation", () => {
   test("lists the customer tools and no team tools", () => {
-    for (const href of ["feed-calc.html", "ph-up-calc.html", "ph-down-calc.html", "cplus-calc.html"]) expect(toolsIndex).toContain(`href="${href}"`);
-    for (const href of ["usage-calc.html", "feed-calc-admin.html", "cal-hypo/"]) expect(toolsIndex).not.toContain(`href="${href}"`);
+    for (const href of ["feed-calc.html", "ph-up-calc.html", "ph-down-calc.html", "cplus-calc.html"]) expect(toolsIndex).toContain(`tool("${href}"`);
+    for (const href of ["usage-calc.html", "feed-calc-admin.html", "cal-hypo/"]) expect(toolsIndex).not.toContain(href);
   });
 
   test("brands the feed calculator and collapses customization by default", () => {

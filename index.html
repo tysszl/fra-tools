@@ -1,227 +1,24 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Front Row Ag · Tools</title>
-<style>
-  :root {
-    --bg: #0d0d0d;
-    --card: #161616;
-    --card-border: #2a2a2a;
-    --accent: #3ee6b6;
-    --accent-dim: rgba(62,230,182,0.15);
-    --text: #e8e8e8;
-    --text-dim: #c0c0c0;
-    --text-muted: #a0a0a0;
-    --card-hover: #1a1a1a;
-  }
-
-  /* ── Light Mode ──────────────────────── */
-  body.light {
-    --bg: #f5f6f8;
-    --card: #ffffff;
-    --card-border: #e2e5ea;
-    --accent: #1a7a5a;
-    --accent-dim: rgba(26,122,90,0.12);
-    --text: #1a1d23;
-    --text-dim: #474c53;
-    --text-muted: #5a6069;
-    --card-hover: #f0f2f5;
-  }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    line-height: 1.5;
-    min-height: 100vh;
-    padding: 40px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .container {
-    position: relative;
-    width: 100%;
-    max-width: 640px;
-  }
-
-  /* ── Theme Toggle ────────────────────── */
-  .theme-toggle {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    border: 1px solid var(--card-border);
-    background: var(--card);
-    color: var(--text-muted);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.15s;
-    padding: 0;
-  }
-  .theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
-  .theme-toggle:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-    box-shadow: 0 0 0 4px var(--accent-dim);
-  }
-  .theme-toggle svg { width: 16px; height: 16px; }
-
-  header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
-  /* Two logo files, one per theme — never a CSS filter (see feed-calc.html). */
-  .logo {
-    max-width: 180px;
-    height: auto;
-    margin: 0 auto 20px;
-  }
-  .logo--light { display: none; }
-  body.light .logo--dark { display: none; }
-  body.light .logo--light { display: block; }
-
-  h1 {
-    font-size: 24px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    margin-bottom: 8px;
-  }
-
-  .tagline {
-    color: var(--text-muted);
-    font-size: 14px;
-  }
-
-  .tools {
-    display: grid;
-    gap: 12px;
-  }
-
-  .tool {
-    display: block;
-    background: var(--card);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 20px 22px;
-    color: var(--text);
-    text-decoration: none;
-    transition: border-color 120ms ease, transform 120ms ease, background 120ms ease;
-  }
-
-  .tool:hover,
-  .tool:focus-visible {
-    border-color: var(--accent);
-    background: var(--card-hover);
-    outline: none;
-  }
-
-  .tool-name {
-    font-size: 17px;
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: 4px;
-  }
-
-  .tool-desc {
-    font-size: 14px;
-    color: var(--text-dim);
-  }
-
-  footer {
-    margin-top: 48px;
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  footer a {
-    color: var(--text-muted);
-    text-decoration: none;
-    border-bottom: 1px solid transparent;
-  }
-
-  footer a:hover {
-    color: var(--accent);
-    border-bottom-color: var(--accent);
-  }
-</style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f7f6">
+<title>Calculator Tools · Front Row Ag</title>
+<meta name="description" content="Front Row Ag calculator tools: feed charts, pH Up and pH Down dosing.">
+<link rel="canonical" href="https://tools.frontrowag.com/">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="shared/fra.css">
 </head>
 <body>
-  <div class="container">
-    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle light/dark mode">
-      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-      </svg>
-    </button>
-
-    <header>
-      <img src="logo.png" alt="Front Row Ag" class="logo logo--dark">
-      <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="logo logo--light">
-      <h1>Calculator Tools</h1>
-      <p class="tagline">Feed, pH, and water-treatment calculators</p>
-    </header>
-
-    <div class="tools">
-      <a class="tool" href="feed-calc.html">
-        <div class="tool-name">Feed Calculator</div>
-        <div class="tool-desc">Stock concentrate and direct-to-reservoir dosing across all growth stages.</div>
-      </a>
-
-      <a class="tool" href="ph-up-calc.html">
-        <div class="tool-name">pH Up Calculator</div>
-        <div class="tool-desc">Dosing rates for raising reservoir pH with FRA pH Up.</div>
-      </a>
-
-      <a class="tool" href="ph-down-calc.html">
-        <div class="tool-name">pH Down Calculator</div>
-        <div class="tool-desc">Dosing rates for lowering reservoir pH with FRA pH Down.</div>
-      </a>
-
-      <a class="tool" href="cal-hypo/">
-        <div class="tool-name">Calcium Hypochlorite Calculator</div>
-        <div class="tool-desc">DryTec stock recipes, injection rates, direct dosing, and field-verification guidance.</div>
-      </a>
-    </div>
-
-    <footer>
-      <a href="https://frontrowag.com">frontrowag.com</a>
-    </footer>
-  </div>
-
-<script>
-// Same theme behavior as feed-calc.html: dark by default, ?t=light|dark overrides,
-// and the choice persists under the Feed Calculator's key so the two pages agree.
-const ICON_SUN = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-const ICON_MOON = '<path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>';
-
-function toggleTheme() {
-  const isLight = document.body.classList.toggle('light');
-  try { localStorage.setItem('fra-feed-theme', isLight ? 'light' : 'dark'); } catch (e) {}
-  document.getElementById('theme-icon').innerHTML = isLight ? ICON_MOON : ICON_SUN;
-}
-
-function loadTheme() {
-  let savedTheme = null;
-  try { savedTheme = localStorage.getItem('fra-feed-theme'); } catch (e) {}
-  const theme = new URLSearchParams(window.location.search).get('t') || savedTheme || 'dark';
-  if (theme === 'light') {
-    document.body.classList.add('light');
-    document.getElementById('theme-icon').innerHTML = ICON_MOON;
-  }
-}
-
-loadTheme();
+<div id="app"></div>
+<!-- Tools: feed-calc.html, ph-up-calc.html, ph-down-calc.html, cplus-calc.html (links render from src/pages/hub.js). -->
+<script type="module">
+import { mount } from "./src/pages/hub.js";
+mount(document.getElementById("app"));
 </script>
 </body>
 </html>
