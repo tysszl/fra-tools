@@ -375,7 +375,11 @@ export function mount(root) {
     const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
     const head = `<tr><th></th>${cols.map(c => `<th>${esc(c.long)}</th>`).join("")}</tr>`;
     const row = (label, cls, cells) => `<tr class="${cls}"><th>${esc(label)}</th>${cells.join("")}</tr>`;
-    const warnings = cols.flatMap(c => c.warnings.map(w => `${c.long}: ${w}.`));
+    // One line per warning, naming every column it applies to.
+    /** @type {Map<string, string[]>} */
+    const byWarning = new Map();
+    cols.forEach(c => c.warnings.forEach(w => byWarning.set(w, [...(byWarning.get(w) ?? []), c.long])));
+    const warnings = [...byWarning].map(([w, names]) => `${names.join(", ")}: ${w}.`);
     const notes = [
       ...(state.alk > DATA.phDown.reviewAbovePpm ? [COPY.alkHigh] : []),
       ...(cols.some(c => c.d.atLine) ? [atLineText(cols)] : []),
