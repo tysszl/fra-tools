@@ -18,5 +18,6 @@ Public GitHub Pages repo for Front Row Ag calculator tools at `tools.frontrowag.
 
 - Tools are single-file HTML with inline CSS/JS and no build step.
 - Shared nutrition values and math live only in `src/nutrition-core.js`. Do not hand-edit the generated core blocks in calculator HTML.
+- `src/engine/` is the rebuilt pages' calculation engine (ES modules, every number with its source in `sources.js`). Until cut-over, change a number in the current pages and the engine together; `tests/engine-parity.test.ts` fails on any difference.
 - After changing nutrition math, run `bun scripts/sync-nutrition-core.ts --write`, then `bun scripts/sync-nutrition-core.ts --check` and `bun test`.
 - Verify changed tools in a browser before pushing. Settings sit inside the collapsed "Customize your feed chart" panel; open it before checking them. For printed charts, export the PDF and inspect every page.
