@@ -3,70 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f6f7f6">
   <link rel="canonical" href="https://tools.frontrowag.com/cal-hypo/">
-  <title>Front Row Ag · Calcium Hypochlorite Reference</title>
+  <title>Calcium Hypochlorite · Front Row Ag</title>
+  <link rel="icon" href="../logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="../shared/fra.css">
   <style>
+    /* Page names mapped onto the shared tokens in shared/fra.css (light and dark). */
     :root {
-      color-scheme: dark;
-      --bg: #0c0f11;
-      --housing: #14191c;
-      --panel: #1a2024;
-      --panel-strong: #20282d;
-      --line: #303a40;
-      --line-strong: #46535b;
-      --text: #edf2f0;
-      --text-soft: #b7c1be;
-      --text-muted: #84908d;
-      --mint: #48dfb2;
-      --mint-soft: #173b32;
-      --chlorine: #61b8dc;
-      --chlorine-soft: #173442;
-      --amber: #e1ad5c;
-      --danger: #ff8a7c;
-      --shadow: rgba(0, 0, 0, 0.35);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    body.light {
-      color-scheme: light;
-      --bg: #eef2f1;
-      --housing: #fbfcfc;
-      --panel: #f3f6f5;
-      --panel-strong: #e8eeec;
-      --line: #d0d9d6;
-      --line-strong: #aab7b3;
-      --text: #18201e;
-      --text-soft: #485652;
-      --text-muted: #687670;
-      --mint: #087c5d;
-      --mint-soft: #d9eee8;
-      --chlorine: #126f96;
-      --chlorine-soft: #dcecf3;
-      --amber: #8a5a0d;
-      --danger: #a43428;
-      --shadow: rgba(37, 58, 51, 0.12);
+      --housing: var(--surface);
+      --panel: var(--surface-2);
+      --panel-strong: var(--chip);
+      --line-strong: var(--chip-line);
+      --text: var(--ink);
+      --text-soft: var(--ink-2);
+      --text-muted: var(--muted);
+      --mint: var(--accent);
+      --mint-soft: var(--accent-soft);
+      --chlorine: var(--c-b);
+      --chlorine-soft: color-mix(in srgb, var(--c-b) 9%, var(--surface));
+      --amber: var(--warn);
+      --danger: var(--accent);
+      --shadow: transparent;
     }
     * { box-sizing: border-box; }
     html, body { max-width: 100%; overflow-x: hidden; }
-    html { background: var(--bg); }
-    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); line-height: 1.45; }
+    body { min-height: 100vh; }
     button, input, select { font: inherit; }
     button, select, summary { cursor: pointer; }
     :focus-visible { outline: 3px solid var(--chlorine); outline-offset: 2px; }
     [hidden] { display: none !important; }
-    .shell { width: min(100% - 24px, 680px); margin: 0 auto; padding: 22px 0 48px; }
-    .masthead { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 16px; align-items: start; margin-bottom: 18px; }
+    .shell { max-width: 760px; }
+    .masthead { margin: 0 0 18px; }
     .eyebrow, .instrument-label, .readout-kicker, .micro-label {
-      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-family: var(--num);
       font-size: 0.7rem;
       font-weight: 750;
       letter-spacing: 0.07em;
       text-transform: uppercase;
     }
-    .eyebrow { margin: 0 0 6px; color: var(--mint); }
-    h1 { margin: 0; max-width: 15ch; font-size: clamp(1.55rem, 5vw, 2.1rem); line-height: 1.03; letter-spacing: -0.035em; }
-    .basis { margin: 10px 0 0; max-width: 58ch; color: var(--text-muted); font-size: 0.84rem; }
-    .theme-toggle { width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: var(--housing); color: var(--text-soft); box-shadow: 0 5px 18px var(--shadow); }
-    .instrument { overflow: hidden; border: 1px solid var(--line-strong); border-radius: 16px; background: var(--housing); box-shadow: 0 18px 54px var(--shadow); }
+    .eyebrow { margin: 14px 0 0; color: var(--accent); }
+    .masthead h1.title { margin-top: 4px; }
+    .basis { margin: 6px 0 0; max-width: 60ch; color: var(--text-muted); font-size: 14px; }
+    .instrument { overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--housing); box-shadow: 0 18px 54px var(--shadow); }
     .instrument-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 9px 14px; border-bottom: 1px solid var(--line); background: var(--panel); }
     .instrument-label { color: var(--text-muted); }
     .unit-toggle { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
@@ -81,39 +63,39 @@
     .mode-heading { display: flex; align-items: start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
     .mode-heading h2 { margin: 0; font-size: 1.08rem; letter-spacing: -0.015em; }
     .mode-heading p { margin: 4px 0 0; color: var(--text-muted); font-size: 0.81rem; }
-    .mode-mark { color: var(--chlorine); font: 700 0.75rem/1 ui-monospace, "SFMono-Regular", monospace; }
+    .mode-mark { color: var(--chlorine); font: 700 0.75rem/1 var(--num); }
     .workflow-stack { display: grid; gap: 18px; }
-    .workflow-section { padding: 16px; border: 1px solid var(--line); background: var(--panel); }
-    .workflow-section + .workflow-section { border-top: 4px solid var(--line-strong); }
+    .workflow-section { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--panel); }
+    
     .workflow-heading { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; align-items: start; margin-bottom: 15px; }
-    .workflow-number { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--mint); border-radius: 50%; color: var(--mint); font: 760 0.78rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .workflow-number { display: grid; place-items: center; width: 30px; height: 30px; border: 1px solid var(--mint); border-radius: 50%; color: var(--mint); font: 760 0.78rem/1 var(--num); }
     .workflow-heading h3 { margin: 0; font-size: 0.98rem; letter-spacing: -0.01em; }
     .workflow-heading p { margin: 3px 0 0; color: var(--text-muted); font-size: 0.76rem; }
     .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-    .field { min-width: 0; }
+    .field { min-width: 0; padding: 0; border: 0; }
     .field.wide { grid-column: 1 / -1; }
     label { display: block; margin-bottom: 6px; color: var(--text-soft); font-size: 0.78rem; font-weight: 680; }
     .control-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
     input, select { width: 100%; min-height: 44px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-variant-numeric: tabular-nums; }
-    input { min-width: 0; padding: 9px 11px; border-radius: 8px; font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 700; }
+    input { min-width: 0; padding: 9px 11px; border-radius: 8px; font-family: var(--num); font-weight: 700; }
     select { padding: 8px 30px 8px 10px; border-radius: 8px; }
     .control-pair input { border-radius: 8px 0 0 8px; }
     .control-pair select, .control-pair .fixed-unit { width: auto; min-width: 98px; margin-left: -1px; border-radius: 0 8px 8px 0; }
-    .fixed-unit { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text-muted); font: 700 0.74rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .fixed-unit { display: flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 10px; border: 1px solid var(--line); background: var(--panel); color: var(--text-muted); font: 700 0.74rem/1 var(--num); }
     input:hover, select:hover { border-color: var(--line-strong); }
     input[aria-invalid="true"] { border-color: var(--danger); }
     .field-note, .field-error { min-height: 1.05em; margin: 5px 0 0; font-size: 0.71rem; }
     .field-note { color: var(--text-muted); }
     .field-error { color: var(--danger); }
-    .readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; margin-top: 20px; padding: 17px 18px 16px; border: 1px solid var(--chlorine); border-left-width: 5px; background: var(--chlorine-soft); }
+    .readout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; margin-top: 20px; padding: 17px 18px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
     .readout-kicker { display: block; margin-bottom: 7px; color: var(--chlorine); }
     .readout-label { display: block; color: var(--text-soft); font-size: 0.76rem; }
-    .readout-value { color: var(--text); font: 760 clamp(1.7rem, 8vw, 2.65rem)/1 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: -0.05em; white-space: nowrap; }
+    .readout-value { color: var(--text); font: 650 clamp(1.7rem, 8vw, 2.65rem)/1 var(--num); letter-spacing: -0.05em; white-space: nowrap; }
     .readout-action { grid-column: 1 / -1; margin: 0; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--chlorine) 35%, transparent); color: var(--text-soft); font-size: 0.83rem; }
     .secondary-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
     .secondary-result { padding: 12px 13px; border: 1px solid var(--line); background: var(--panel); }
     .secondary-result span { display: block; color: var(--text-muted); font-size: 0.72rem; }
-    .secondary-result strong { display: block; margin-top: 4px; color: var(--text); font: 740 1rem/1.2 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .secondary-result strong { display: block; margin-top: 4px; color: var(--text); font: 740 1rem/1.2 var(--num); }
     .equipment-note { margin: 10px 0 0; padding: 10px 12px; border-left: 3px solid var(--mint); background: var(--mint-soft); color: var(--text-soft); font-size: 0.76rem; }
     .equipment-note.warning { border-left-color: var(--amber); background: color-mix(in srgb, var(--amber) 10%, transparent); }
     details.tool-detail { margin-top: 14px; border: 1px solid var(--line); background: var(--panel); }
@@ -124,26 +106,26 @@
     .prep-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
     .prep-result { padding: 13px; border: 1px solid var(--line); background: var(--bg); }
     .prep-result span { display: block; color: var(--text-muted); font-size: 0.71rem; }
-    .prep-result strong { display: block; margin-top: 5px; color: var(--text); font: 760 1.15rem/1.15 ui-monospace, "SFMono-Regular", Consolas, monospace; }
+    .prep-result strong { display: block; margin-top: 5px; color: var(--text); font: 760 1.15rem/1.15 var(--num); }
     .solubility-note { margin: 9px 0 0; color: var(--text-muted); font-size: 0.71rem; }
     .quick-reference { margin-top: 18px; padding: 16px; border: 1px solid var(--line-strong); background: var(--panel); }
     .quick-reference-header { display: flex; align-items: start; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
     .quick-reference h3 { margin: 0; font-size: 0.96rem; letter-spacing: -0.01em; }
     .quick-reference-header p { margin: 3px 0 0; color: var(--text-muted); font-size: 0.74rem; }
-    .quick-reference-badge { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--chlorine); color: var(--chlorine); font: 750 0.64rem/1 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+    .quick-reference-badge { flex: 0 0 auto; padding: 4px 7px; border: 1px solid var(--chlorine); color: var(--chlorine); font: 750 0.64rem/1 var(--num); letter-spacing: 0.06em; text-transform: uppercase; }
     .quick-table-wrap { overflow-x: auto; border: 1px solid var(--line); }
     .quick-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.74rem; }
     .quick-table th { padding: 9px 10px; border-bottom: 1px solid var(--line-strong); background: var(--bg); color: var(--text-muted); font-size: 0.67rem; font-weight: 750; letter-spacing: 0.04em; text-align: left; text-transform: uppercase; }
     .quick-table th:nth-child(1), .quick-table th:nth-child(2), .quick-table td:nth-child(1), .quick-table td:nth-child(2) { text-align: right; white-space: nowrap; }
     .quick-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); color: var(--text-soft); vertical-align: top; }
     .quick-table tr:last-child td { border-bottom: 0; }
-    .quick-table td:nth-child(1), .quick-table td:nth-child(2) { color: var(--text); font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-weight: 740; }
-    .quick-table .quick-table-group-heading { padding: 8px 10px; border-bottom: 1px solid var(--line-strong); text-align: left; white-space: normal; }
+    .quick-table td:nth-child(1), .quick-table td:nth-child(2) { color: var(--text); font-family: var(--num); font-weight: 740; }
+    .quick-table th.quick-table-group-heading { padding: 8px 10px; border-bottom: 1px solid var(--line-strong); text-align: left; white-space: normal; }
     .quick-table tbody + tbody .quick-table-group-heading { border-top: 5px solid var(--panel); }
-    .quick-table-group.recommended .quick-table-group-heading { background: color-mix(in srgb, var(--mint) 12%, var(--bg)); }
+    .quick-table-group.recommended .quick-table-group-heading { background: color-mix(in srgb, var(--c-a) 12%, var(--bg)); }
     .quick-table-group.demand .quick-table-group-heading { background: color-mix(in srgb, var(--chlorine) 10%, var(--bg)); }
     .quick-table-group.cleaning .quick-table-group-heading { background: color-mix(in srgb, var(--amber) 12%, var(--bg)); }
-    .quick-table-group-label { margin-right: 8px; color: var(--text); font: 760 0.66rem/1.2 ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.06em; text-transform: uppercase; }
+    .quick-table-group-label { margin-right: 8px; color: var(--text); font: 760 0.66rem/1.2 var(--num); letter-spacing: 0.06em; text-transform: uppercase; }
     .quick-table-group-note { color: var(--text-muted); font-size: 0.67rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
     .quick-reference-note { margin: 10px 0 0; color: var(--text-muted); font-size: 0.7rem; }
     .field-check { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--mint); background: var(--panel); }
@@ -162,8 +144,6 @@
     .safety li::marker { color: var(--amber); }
     .footer-note { margin: 13px 2px 0; color: var(--text-muted); font-size: 0.72rem; }
     @media (max-width: 520px) {
-      .shell { width: min(100% - 16px, 680px); padding-top: 14px; }
-      .masthead { margin: 0 6px 14px; }
       .workbench { padding: 16px 14px 18px; }
       .field-grid, .secondary-results, .prep-results { grid-template-columns: 1fr; gap: 12px; }
       .field.wide { grid-column: auto; }
@@ -173,24 +153,28 @@
       .quick-table-group-note { display: block; margin-top: 3px; }
       .safety ul { grid-template-columns: 1fr; }
     }
+    .page-actions { display: flex; gap: 8px; margin-top: 14px; }
+    select, input { font-family: inherit; }
+    select { font-size: 14px; }
     @media (max-width: 320px) {
-      .shell { width: 100%; padding-top: 10px; }
-      .masthead { margin-right: 10px; margin-left: 10px; }
       .instrument { border-right: 0; border-left: 0; border-radius: 0; }
       .workbench { padding-right: 12px; padding-left: 12px; }
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <header class="masthead">
-      <div>
-        <p class="eyebrow">Front Row Ag · Team reference</p>
-        <h1>Calcium hypochlorite calculator</h1>
-        <p class="basis">Select the stock recipe, enter the target, and use the calculated rate. Calculations use DryTec's guaranteed minimum 65% available chlorine.</p>
-      </div>
-      <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Toggle light and dark theme">◐</button>
+  <main class="app shell">
+    <header class="bar" data-bar>
+      <a class="bar__home" href="../"><img class="bar__logo bar__logo--light" src="../assets/feed-chart/logo-dark.png" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="../assets/feed-chart/logo-white.png" alt="Front Row Ag"></a>
+      <span class="bar__tool">Calcium Hypochlorite</span><span class="bar__sp"></span>
+      <button class="ib" type="button" id="theme-toggle" data-act="theme" aria-label="Switch light or dark theme"></button>
     </header>
+    <div class="masthead">
+      <a class="backlink" href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>All tools</a>
+      <p class="eyebrow">Front Row Ag · Team reference</p>
+      <h1 class="title">Calcium hypochlorite calculator</h1>
+      <p class="basis">Select the stock recipe, enter the target, and use the calculated rate. Calculations use DryTec's guaranteed minimum 65% available chlorine.</p>
+    </div>
 
     <section class="instrument" aria-label="Calcium hypochlorite calculator">
       <div class="instrument-topbar">
@@ -373,8 +357,11 @@
         </details>
       </div>
     </section>
+    <div class="page-actions"><button class="btn btn--primary" type="button" data-act="pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Export PDF</button></div>
     <p class="footer-note">Calculated chlorine values are theoretical applied doses. Field decisions use measured free chlorine at the applicable endpoint.</p>
+    <footer class="foot"><div><b>Front Row Ag</b> · order@solsticeag.com · +1 844-420-6883 · <a href="https://www.frontrowag.com">frontrowag.com</a></div><div><a href="../">All calculator tools</a></div></footer>
   </main>
+  <div class="print-root" data-print></div>
 
 <script>
 // AIDEV-NOTE: Product composition is 68% calcium hypochlorite. Dose calculations use the guaranteed-minimum 65% available chlorine.
@@ -911,14 +898,6 @@ function activateUiMode(mode, focus = false) {
 }
 
 function initCalHypoCalculator() {
-  const savedTheme = localStorage.getItem("fra-cal-hypo-theme");
-  const prefersLight = typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: light)").matches;
-  document.body.classList.toggle("light", savedTheme ? savedTheme === "light" : prefersLight);
-  document.getElementById("theme-toggle").addEventListener("click", () => {
-    const light = !document.body.classList.contains("light");
-    document.body.classList.toggle("light", light);
-    localStorage.setItem("fra-cal-hypo-theme", light ? "light" : "dark");
-  });
   document.querySelectorAll("[data-unit-system]").forEach(button => button.addEventListener("click", () => {
     activeUiState = changeUiUnitSystem(activeUiState, button.dataset.unitSystem);
     renderUi();
@@ -1001,5 +980,6 @@ if (typeof document !== "undefined") {
   else initCalHypoCalculator();
 }
 </script>
+<script type="module" src="../src/pages/calhypo.js"></script>
 </body>
 </html>
