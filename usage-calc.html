@@ -1185,14 +1185,14 @@ const BASE_CONFIG = {
 
 const ADDITIVE_COLORS = {
   PhosZyme: '#d45e78',
-  'Clean Up': '#8bb83a',
+  'pH Up': '#8bb83a',
   Si: '#8866cc',
   Triologic: '#d4c040'
 };
 
 const ADDITIVE_DEFAULTS = [
   { name: 'PhosZyme', unitSize: 25, unitType: 'lbs' },
-  { name: 'Clean Up', unitSize: 25, unitType: 'lbs' },
+  { name: 'pH Up',    unitSize: 25, unitType: 'lbs' },
   { name: 'Si',       unitSize: 1,  unitType: 'gal' },
   { name: 'Triologic',unitSize: 1,  unitType: 'gal' }
 ];
@@ -1209,7 +1209,7 @@ const TRIOLOGIC_ML_PER_TREATED_GAL = 1;
 
 const FLAT_RATES = {
   PhosZyme:  { rate: PHOSZYME_RATE_G_PER_GAL, divBy: LBS_PER_GAL_DIVISOR },
-  'Clean Up':{ rate: 0.20, divBy: LBS_PER_GAL_DIVISOR },
+  'pH Up':   { rate: 0.20, divBy: LBS_PER_GAL_DIVISOR },
   Si:        { rate: 0,    divBy: ML_PER_GAL, dynamic: true }
 };
 
