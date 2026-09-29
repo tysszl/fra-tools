@@ -423,6 +423,19 @@ td.pc, th.pc { color: var(--pc); }
 .plot text { font-family: var(--sans); fill: var(--muted); }
 .plot .grid { stroke: var(--line); stroke-width: 1; }
 .plot .curve { fill: none; stroke-width: 2; }
+.split { display: grid; gap: 0 20px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .split { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; } }
+.ref .s { font-size: 11.5px; color: var(--faint); font-weight: 500; }
+.ref td { vertical-align: middle; }
+.ref.usage td, .ref.usage th { padding-left: 8px; padding-right: 8px; }
+.ref.usage td:first-child, .ref.usage th:first-child { padding-left: 14px; }
+@media (max-width: 560px) {
+  .ref { font-size: 13px; }
+  .ref td, .ref th { padding-left: 4px; padding-right: 4px; }
+  .ref td:first-child, .ref th:first-child { padding-left: 12px; }
+  .ref td:last-child, .ref th:last-child { padding-right: 12px; }
+  .ref.usage .input { width: 64px !important; }
+}
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 4px; font-size: 12.5px; color: var(--ink-2); }
 .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }
 .warnline { display: block; font-size: 11.5px; color: var(--warn); font-weight: 600; margin-top: 3px; white-space: normal; }
