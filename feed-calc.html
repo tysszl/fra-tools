@@ -3018,7 +3018,7 @@ function updateURL() {
     if (state.recipeSchedule !== "commercial") p.set("rs", state.recipeSchedule);
     if (state.recipeSchedule === "custom") {
       PHASES.forEach(ph => {
-        if (state.phaseRecipe[ph] !== ph) p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
+        p.set(`rp_${ph.toLowerCase()}`, state.phaseRecipe[ph]);
       });
     }
   }

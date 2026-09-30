@@ -636,6 +636,19 @@ describe("shared nutrition core contract", () => {
     expect(restored.api.calcStockTanks("1-1-1", "mL/gal").rows[0].vol).toBe(1000);
   });
 
+  test("a custom recipe schedule survives the share-link round trip", () => {
+    const first = createCplusFeedRuntime("?p=custom&ec_veg=2.4&ec_stretch=2.4&ec_stack=2.4&ec_swell=2.4&ec_ripen=1.8&rp_stack=Stack");
+    first.api.loadFromURL();
+    expect(first.api.state.phaseRecipe.Stack).toBe("Stack");
+    first.api.updateURL();
+    const shared = first.getReplacedUrl();
+    expect(shared).toContain("rp_stack=Stack");
+
+    const second = createCplusFeedRuntime(shared.slice(shared.indexOf("?")));
+    second.api.loadFromURL();
+    expect(second.api.state.phaseRecipe).toEqual(first.api.state.phaseRecipe);
+  });
+
   describe("Component Plus controlled 2-doser options", () => {
     function configureTwoDoser(api: ReturnType<typeof createCplusFeedRuntime>["api"]) {
       api.state.doserMode = "2";
