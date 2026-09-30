@@ -506,7 +506,9 @@ td.pc, th.pc { color: var(--pc); }
 .s-notes--fill { min-height: 0; }
 .s-lines { flex: 1; background-image: repeating-linear-gradient(transparent 0 23px, #e3e6e4 23px 24px); }
 .s-art { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px solid #e4e7e5; border-radius: 6px; padding: 8px 10px 10px; }
-.s-art__panel svg { width: 100%; height: 1.1in; display: block; }
+.s-art__panel svg { width: 100%; height: 1.5in; display: block; }
+.s-art--cplus .fa { --part: #d9a23a; --part-l: #e8c078; --part-d: #a87a22; }
+.s-line svg { width: 100%; height: 2in; display: block; }
 .s-art__panel figcaption { font-size: 9px; line-height: 1.35; color: #353b39; display: flex; gap: 5px; align-items: flex-start; margin-top: 2px; }
 .s-art__n { flex: none; width: 14px; height: 14px; border-radius: 50%; background: #141716; color: #fff; font: 700 8px/14px var(--sans); text-align: center; }
 .s-block { margin-top: 14px; }

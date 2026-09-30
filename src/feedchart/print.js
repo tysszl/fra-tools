@@ -3,7 +3,7 @@
 // page 2 is the mixing procedure, stock table with validation, and additive rates.
 import { DATA } from "../engine/index.js";
 import { esc } from "./content.js";
-import { stepArt } from "./art.js";
+import { doserArt, stepArt } from "./art.js";
 
 /** @typedef {import("./content.js").View} View */
 /** @typedef {(key: string, vars?: Record<string, string | number>) => string} T */
@@ -64,6 +64,9 @@ function pageOne(view, t, assets, total) {
   const contribution = direct
     ? `<div class="s-block"><div class="s-h">${esc(t("ec.contribution"))}</div><table class="s-mini"><tbody>${view.ecContribution.map(([name, ec]) => `<tr><td>${esc(name)}</td><td class="r num">${esc(ec)}</td></tr>`).join("")}</tbody></table><p class="s-note">${esc(t("ec.perUnit", { unit: view.unit === "g/L" ? "g/L" : "g/gal" }))}</p></div>`
     : "";
+  const line = !direct && view.settings.doserCount === 2
+    ? `<div class="s-block"><div class="s-h">${esc(t("print.artTitle.line"))}</div>${doserArt({ cplus: view.settings.line === "cplus" })}</div>`
+    : "";
 
   return `<section class="sheet">`
     + head(view, t, assets, t("print.feedChart"), true)
@@ -72,7 +75,7 @@ function pageOne(view, t, assets, total) {
     + warns.map(n => `<p class="s-warn">${esc(n)}</p>`).join("")
     + `<p class="s-note"><i>${esc(t("chart.disclaimer"))}</i></p>`
     + `<div class="s-two"><div><div class="s-h">${esc(t("ec.higherLower"))}</div>${hl}</div>`
-    + `<div><div class="s-h">${esc(t("ec.considerations"))}</div><p class="s-p">${esc(t("ec.considerationsBody"))}</p>${contribution}</div></div>`
+    + `<div><div class="s-h">${esc(t("ec.considerations"))}</div><p class="s-p">${esc(t("ec.considerationsBody"))}</p>${contribution}${line}</div></div>`
     + `<div class="s-notes"><div class="s-h">${esc(t("print.notes"))}</div><div class="s-lines"></div></div>`
     + foot(1, total, t)
     + `</section>`;
@@ -81,6 +84,7 @@ function pageOne(view, t, assets, total) {
 /** @param {View} view @param {T} t @param {{ logo: string, qr: string }} assets @param {number} total */
 function pageTwo(view, t, assets, total) {
   const stockMode = view.settings.application === "stock";
+  const cplus = view.settings.line === "cplus";
   const metric = view.unit === "mL/L" || view.unit === "g/L";
   const ref = DATA.reference;
   const validation = metric ? DATA.validation.metric : DATA.validation.us;
@@ -100,7 +104,7 @@ function pageTwo(view, t, assets, total) {
 
   const steps = `<div><div class="s-h">${esc(t("print.mixing"))}</div><ol class="s-list">${view.steps.map(step => `<li>${esc(step)}</li>`).join("")}</ol></div>`;
   const notes = `<div><div class="s-h">${esc(t(stockMode ? "sec.notes.stock" : "sec.notes.direct"))}</div><ul class="s-list">${view.notes.map(note => `<li>${esc(note)}</li>`).join("")}</ul></div>`;
-  const art = `<div class="s-block"><div class="s-h">${esc(t(stockMode ? "print.artTitle.stock" : "print.artTitle.direct"))}</div>${stepArt(stockMode ? "stock" : "direct", captions.map(esc))}</div>`;
+  const art = `<div class="s-block"><div class="s-h">${esc(t(stockMode ? "print.artTitle.stock" : "print.artTitle.direct"))}</div>${stepArt(stockMode ? "stock" : "direct", captions.map(esc), { cplus })}</div>`;
 
   let stock = "";
   if (stockMode) {
