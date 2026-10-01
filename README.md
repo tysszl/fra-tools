@@ -12,7 +12,7 @@ Front Row Ag calculator tools, hosted on GitHub Pages at `tools.frontrowag.com`.
 - `ph-down-calc.html`: phosphoric acid for source-water alkalinity
 - `cal-hypo/`: calcium hypochlorite (DryTec) stock and direct dosing
 - `usage-calc.html`: usage estimate for the team (team code, noindex)
-- `cost-calc.html`, `cal-hypo-calc.html`: retired stubs that redirect
+- `cost-calc.html`: retired stub; `cal-hypo-calc.html`: redirects to `cal-hypo/`
 
 ## Hosting
 
