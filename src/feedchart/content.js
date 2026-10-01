@@ -76,7 +76,7 @@ export function buildView(chart, t, options) {
       ec: formatTargetEc(p.targetEc),
       targetEc: Number(p.targetEc),
       served: !(twoDoser && index === 0),
-      ph: ph ? { text: ph.text, atLine: ph.atLine } : null,
+      ph: ph ? { text: ph.text } : null,
     };
   });
 
@@ -121,13 +121,11 @@ export function buildView(chart, t, options) {
     else chartNotes.push({ kind: "info", text: t("twoDoser.rates") });
   }
   if (chart.phoszymeWarning.text) chartNotes.push({ kind: "warn", text: phoszymeWarning(chart, t, options.lang) });
-  const atLinePhases = phases.filter(p => p.ph && p.ph.atLine).map(p => p.short);
 
   const rates = supplementRates(metric);
   const phNote = {
     body: t("ph.body"),
     warm: t("ph.warm", { c: DATA.dripperPh.warmLineC, f: DATA.dripperPh.warmLineF }),
-    atLine: atLinePhases.length ? t("ph.atLineCols", { phases: atLinePhases.join(", ") }) : "",
   };
 
   // ── Stock tanks ──
@@ -339,7 +337,6 @@ export function buildSummary(view, t, url) {
     `${t("sec.schedule")} (${view.unitLabel})`,
     ...table.map(r => r.join(" | ")),
     ...view.chartNotes.map(n => n.text),
-    ...(view.phNote.atLine ? [view.phNote.atLine] : []),
     ...(view.tanks.length ? ["", `${t("sec.tanks")} (${view.tanksVolText})`, ...view.tanks.map(tank =>
       `${t("tank.n", { n: tank.n })} · ${tank.name}: ${tank.weight}${tank.conc ? ` (${tank.conc})` : ""}. ${tank.validates}.`), view.validationLine] : []),
     "",
@@ -361,7 +358,6 @@ export function buildSummary(view, t, url) {
     `</table>`,
     `<p style="margin:6px 0;color:#626a67">${esc(`${t("chart.valuesAre", { caption: view.unitCaption })}`)}</p>`,
     ...view.chartNotes.map(n => `<p style="margin:4px 0">${esc(n.text)}</p>`),
-    ...(view.phNote.atLine ? [`<p style="margin:4px 0">${esc(view.phNote.atLine)}</p>`] : []),
     ...(view.tanks.length ? [`<p style="margin:12px 0 4px;font-weight:600">${esc(`${t("sec.tanks")} (${view.tanksVolText})`)}</p>`,
       ...view.tanks.map(tank => `<p style="margin:2px 0">${esc(`${t("tank.n", { n: tank.n })} · ${tank.name}: ${tank.weight}${tank.conc ? ` (${tank.conc})` : ""}. ${tank.validates}.`)}</p>`),
       `<p style="margin:2px 0;color:#626a67">${esc(view.validationLine)}</p>`] : []),

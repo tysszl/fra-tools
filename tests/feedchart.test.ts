@@ -163,11 +163,10 @@ describe("printed chart", () => {
     expect(us).toContain("Mix the sample into 5 gal of RO water.");
   });
 
-  test("dripper pH prints per column, with the at-the-line note", () => {
+  test("dripper pH prints per column, with no at-the-line note", () => {
     const { print, view } = render({ line: "cplus", recipeSchedule: "swell-flower" }, "en");
     expect(view.phases.map(p => p.ph && p.ph.text)).toEqual(["5.5–6.0", "5.5", "5.5–5.6", "5.5–5.6", "5.5–5.9"]);
-    expect(print).toContain("Wk 1–2: at the calcium-phosphate line at this EC; keep lines cool.");
-    expect(render({ line: "3part" }, "en").print).not.toContain("calcium-phosphate line");
+    expect(print).not.toContain("calcium-phosphate line");
   });
 
   test("rulings in the printed additive table and notes", () => {

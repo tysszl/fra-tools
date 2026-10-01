@@ -294,7 +294,7 @@ export function mount(root, page) {
         return `<td class="pc ${row.cls}"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`;
       }).join("");
       const sub = p.served
-        ? `<div class="rc">${esc(p.recipe)}</div>${p.ph ? `<div class="phr${p.ph.atLine ? " at-line" : ""}">${esc(t("chart.ph", { range: p.ph.text }))}</div>` : ""}`
+        ? `<div class="rc">${esc(p.recipe)}</div>${p.ph ? `<div class="phr">${esc(t("chart.ph", { range: p.ph.text }))}</div>` : ""}`
         : `<div class="rc">${esc(t("chart.notServed"))}</div>`;
       return `<tr class="${p.served ? "" : "off"}"><td><div class="ph">${esc(p.short)}</div>${sub}${bar ? barHtml2(bar, 92) : ""}</td><td><div class="ec num">${p.served ? esc(p.ec) : "–"}</div></td>${cells}</tr>`;
     }).join("");
@@ -314,13 +314,13 @@ export function mount(root, page) {
     const parts = v.rows.map(row => `<tr class="${row.cls}"><th class="pc"><span class="dot"></span> ${esc(row.label)}</th>${row.cells.map(cell => (!cell || cell.dash
       ? `<td><span class="dash">–</span></td>`
       : `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`)).join("")}</tr>`).join("");
-    const ph = `<tr class="phrow"><th>${esc(t("chart.dripperPh"))}</th>${v.phases.map(p => `<td class="num${p.ph && p.ph.atLine ? " at-line" : ""}">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
+    const ph = `<tr class="phrow"><th>${esc(t("chart.dripperPh"))}</th>${v.phases.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
     return `<div class="card chart chart--wide"><table><thead>${head}</thead><tbody>${recipe}${ec}${parts}${ph}</tbody></table></div>`;
   }
 
   /** @param {View} v */
   function phNote(v) {
-    return `<div class="card note"><span class="note__ic">pH</span><div><b>${esc(t("ph.title"))}.</b> ${esc(v.phNote.body)} ${esc(v.phNote.warm)}${v.phNote.atLine ? `<div class="note__at">${esc(v.phNote.atLine)}</div>` : ""}</div></div>`;
+    return `<div class="card note"><span class="note__ic">pH</span><div><b>${esc(t("ph.title"))}.</b> ${esc(v.phNote.body)} ${esc(v.phNote.warm)}</div></div>`;
   }
 
   /** @param {View} v */

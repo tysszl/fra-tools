@@ -57,7 +57,7 @@ function pageOne(view, t, assets, total) {
     view.phNote.warm,
     ...view.chartNotes.filter(n => n.kind === "info").map(n => n.text),
   ];
-  const warns = [...view.chartNotes.filter(n => n.kind === "warn").map(n => n.text), ...(view.phNote.atLine ? [view.phNote.atLine] : [])];
+  const warns = [...view.chartNotes.filter(n => n.kind === "warn").map(n => n.text)];
 
   const hl = `<table class="s-mini"><thead><tr><th>${esc(t("ec.higher"))}</th><th>${esc(t("ec.lower"))}</th></tr></thead><tbody>${view.higherLower.map(([h, l]) => `<tr><td>${esc(h)}</td><td>${esc(l)}</td></tr>`).join("")}</tbody></table>`;
   const direct = view.settings.application === "direct";
@@ -67,6 +67,9 @@ function pageOne(view, t, assets, total) {
   const line = !direct && view.settings.doserCount === 2
     ? `<div class="s-block"><div class="s-h">${esc(t("print.artTitle.line"))}</div>${doserArt({ cplus: view.settings.line === "cplus" })}</div>`
     : "";
+  const key = line
+    ? `<div class="s-block"><div class="s-h">${esc(t("print.tankKey"))}</div><ul class="s-key">${view.tanks.map(tank => `<li class="${tank.cls}"><i></i><b>${esc(t("tank.n", { n: tank.n }))}</b> ${esc(tank.name)}</li>`).join("")}<li class="s-key--opt"><i></i>${esc(t("print.phUpDoser"))}</li></ul></div>`
+    : "";
 
   return `<section class="sheet">`
     + head(view, t, assets, t("print.feedChart"), true)
@@ -74,7 +77,7 @@ function pageOne(view, t, assets, total) {
     + notes.map(n => `<p class="s-note">${esc(n)}</p>`).join("")
     + warns.map(n => `<p class="s-warn">${esc(n)}</p>`).join("")
     + `<p class="s-note"><i>${esc(t("chart.disclaimer"))}</i></p>`
-    + `<div class="s-two"><div><div class="s-h">${esc(t("ec.higherLower"))}</div>${hl}</div>`
+    + `<div class="s-two"><div><div class="s-h">${esc(t("ec.higherLower"))}</div>${hl}${key}</div>`
     + `<div><div class="s-h">${esc(t("ec.considerations"))}</div><p class="s-p">${esc(t("ec.considerationsBody"))}</p>${contribution}${line}</div></div>`
     + `<div class="s-notes"><div class="s-h">${esc(t("print.notes"))}</div><div class="s-lines"></div></div>`
     + foot(1, total, t)
