@@ -1,12 +1,11 @@
-# CLAUDE.md
+# AGENTS.md
 
 Public GitHub Pages repo for Front Row Ag calculator tools at `tools.frontrowag.com`.
 
 ## Production
 
-- This repo is public: do not add internal FRA docs, customer details, private notes, secrets, or unpublished strategy.
-- GitHub Pages serves `main` from the repo root with `CNAME` set to `tools.frontrowag.com`.
-- Pushing to `main` updates production, usually within about a minute.
+- This repo is public: do not add internal FRA docs, customer or staff names, private notes, prices, secrets, or unpublished strategy.
+- GitHub Pages serves `main` from the repo root with `CNAME` set to `tools.frontrowag.com`. Pushing to `main` updates production in about a minute.
 
 ## Local Context
 
@@ -16,8 +15,9 @@ Public GitHub Pages repo for Front Row Ag calculator tools at `tools.frontrowag.
 
 ## Tooling
 
-- Tools are single-file HTML with inline CSS/JS and no build step.
-- Shared nutrition values and math live only in `src/nutrition-core.js`. Do not hand-edit the generated core blocks in calculator HTML.
-- `src/engine/` is the rebuilt pages' calculation engine (ES modules, every number with its source in `sources.js`). Until cut-over, change a number in the current pages and the engine together; `tests/engine-parity.test.ts` fails on any difference.
-- After changing nutrition math, run `bun scripts/sync-nutrition-core.ts --write`, then `bun scripts/sync-nutrition-core.ts --check` and `bun test`.
-- Verify changed tools in a browser before pushing. Settings sit inside the collapsed "Customize your feed chart" panel; open it before checking them. For printed charts, export the PDF and inspect every page.
+- No build step. Each page is a small HTML shell that loads ES modules from `shared/` (styles, theme, i18n, print, share links) and `src/` (engine and page code).
+- `src/engine/` holds every number and calculation; each number names its source in `sources.js`. Screen, copied summary and PDF render from the same computed rows.
+- `src/feedchart/mixing-art.js` is generated from the internal diagram source (`output/diagram-svg/export-fra-tools.mjs` in the FRA repo); do not edit it here.
+- `tests/fixtures/legacy/` are frozen copies of the pre-rebuild pages. `tests/engine-parity.test.ts` compares the engine against them and names every intended difference. `src/nutrition-core.js` and `scripts/sync-nutrition-core.ts` only maintain those fixtures.
+- Old share links must keep opening the same chart: `src/feedchart/url.js` decodes them, and the usage page maps the old `ve`/`fe`/`fw`/`ai` fields.
+- Run `bun test`, then `PLAYWRIGHT=<playwright install> CPLUS_KEY=<C+ code> bun scripts/check-pages.ts <out-dir>` and look at every screenshot and PDF page it writes before pushing.

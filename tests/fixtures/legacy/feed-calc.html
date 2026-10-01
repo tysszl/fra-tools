@@ -1994,7 +1994,7 @@ function getRecipe(phase) {
 // AIDEV-NOTE: Recipe schedules change recipe ratios; target EC follows the EC preset.
 // The commercial chart's mid-flower steps down: weeks 3-5 (Stack column, Swell recipe) run
 // at the Stack preset EC, weeks 6-8/9 (Swell column, Swell recipe) at the lower Swell preset
-// EC — 2.4 High / 2.0 Standard — matching the 322/DTR charts (Matthew, Jun 16 2026; reverts
+// EC — 2.4 High / 2.0 Standard — matching the 322/DTR charts (Jun 16 2026; reverts
 // the Jun 10 flat-mid-flower override). Custom EC values always win.
 function syncTargetECToPreset() {
   if (state.ecPreset !== "high" && state.ecPreset !== "standard") return;
@@ -3649,7 +3649,7 @@ const I18N = {
     "Product": "Producto",
     "lb charged": "lb cargadas",
     "lb / gal": "lb / gal",
-    "Internal only. lb/gal, injection rates and validation ECs recalculate from these entries. Capped at 2.5 lb/gal per tank pending Matthew's solubility limits. Validate stock EC before use.": "Solo uso interno. lb/gal, tasas de inyección y EC de validación se recalculan a partir de estas entradas. Límite de 2.5 lb/gal por tanque hasta tener los límites de solubilidad de Matthew. Valide la EC del concentrado antes de usarlo."
+    "Internal only. lb/gal, injection rates and validation ECs recalculate from these entries. Capped at 2.5 lb/gal per tank pending solubility limits. Validate stock EC before use.": "Solo uso interno. lb/gal, tasas de inyección y EC de validación se recalculan a partir de estas entradas. Límite de 2.5 lb/gal por tanque hasta tener los límites de solubilidad. Valide la EC del concentrado antes de usarlo."
   }
 };
 
