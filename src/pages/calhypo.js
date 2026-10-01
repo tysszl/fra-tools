@@ -36,6 +36,16 @@ function sheet() {
   const us = document.querySelector('[data-unit-system="us"]')?.getAttribute("aria-pressed") === "true";
   const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   const chips = ["DryTec · 65% available chlorine", us ? "US units" : "Metric", stock ? "Stock solution" : "Powder added directly"];
+  // Fertilizer stock concentrate: carry the on-screen restrictions onto the sheet and flag a dose over the 2 ppm limit.
+  const fert = /** @type {HTMLSelectElement | null} */ (document.getElementById("treatment-point"))?.value === "fertilizer-concentrate";
+  if (fert) chips.push("Fertilizer stock concentrate");
+  const target = parseFloat(value(stock ? "stock-target" : "direct-target"));
+  const restricted = fert
+    ? `<div class="s-block"><div class="s-h">Fertilizer stock concentrate</div>`
+      + (target > 2 ? `<p class="s-warn">This dose is ${esc(String(target))} ppm. Keep the applied dose at or below 2 ppm of the final fertilizer-stock volume.</p>` : "")
+      + [...document.querySelectorAll("#restricted-state p")].map(el => `<p class="s-p">${esc((el.textContent || "").trim())}</p>`).join("")
+      + `</div>`
+    : "";
   let body;
   if (stock) {
     body = `<div class="s-two s-two--even" style="margin-top:12px">
@@ -66,7 +76,7 @@ function sheet() {
   const safety = [...document.querySelectorAll(".safety li")].map(li => `<li>${esc(li.textContent)}</li>`).join("");
   return `<section class="sheet">`
     + sheetHeadHtml({ root: "../", kicker: "Team reference · DryTec", title: "Calcium Hypochlorite", date, chips })
-    + body + quick
+    + body + restricted + quick
     + `<div class="s-two s-two--even" style="margin-top:14px"><div><div class="s-h">Verify at the dripper</div><p class="s-p">The calculation is the applied dose. Measure free chlorine at the farthest dripper and maintain the current FRA target of 0.5–2 ppm.</p></div>`
     + `<div><div class="s-h">Handling and mixing</div><ul class="s-list">${safety}</ul></div></div>`
     + `<div class="s-notes"><div class="s-h">Notes</div><div class="s-lines"></div></div>`

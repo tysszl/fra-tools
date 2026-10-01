@@ -128,7 +128,7 @@ export function usageEstimate(input) {
 export function usageUnitsNeeded(amount, unitSize) {
   if (!(unitSize > 0)) return 0;
   const f = 10 ** DATA.usage.bagRoundUpDecimals;
-  return Math.ceil(amount / unitSize * f - 1e-9) / f;
+  return Math.max(0, Math.ceil(amount / unitSize * f - 1e-9)) / f;
 }
 
 /**

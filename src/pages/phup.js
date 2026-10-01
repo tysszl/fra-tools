@@ -236,7 +236,9 @@ export function mount(root) {
   function techHtml(cols) {
     const curves = /** @type {Record<string, readonly number[]>} */ (RULE.curves[state.line]);
     return `<div class="prose">
-      <p>Doses come from a chemistry model (PHREEQC) of the Front Row Ag recipes, checked against in-house trials: Stack at 3.0 EC needs about 0.20 g/gal and Swell at 3.0 about 0.25 g/gal to reach pH 5.9 on RO water.</p>
+      ${state.line === "cplus"
+        ? `<p>Doses come from a chemistry model (PHREEQC) of the Front Row Ag recipes. The Component Plus curves are modeled, with no bench check yet; Component Plus carries more phosphate, so it needs more pH Up than 3-Part at the same recipe and EC.</p>`
+        : `<p>Doses come from a chemistry model (PHREEQC) of the Front Row Ag recipes, checked against in-house trials: Stack at 3.0 EC needs about 0.20 g/gal and Swell at 3.0 about 0.25 g/gal to reach pH 5.9 on RO water.</p>`}
       <p><b>Dose to pH 5.9</b> = k × EC<sup>n</sup> g/gal, for EC ${RULE.fitEc[0].toFixed(1)}–${RULE.fitEc[1].toFixed(1)}. The dots mark your chart's columns.</p>
       ${plotSvg(cols)}
       <table><thead><tr><th>Recipe</th><th>k</th><th>n</th><th>At 3.0 EC</th></tr></thead><tbody>${Object.entries(curves).map(([r, [k, n]]) =>

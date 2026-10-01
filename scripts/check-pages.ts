@@ -2,11 +2,13 @@
 // dark, Edit sheets open, and exported PDFs, rasterized page by page with pdftoppm for
 // review.
 //
-//   PLAYWRIGHT=<path to a playwright install> CPLUS_KEY=<C+ code> TEAM_KEY=<team code> \
-//     bun scripts/check-pages.ts <out-dir>
+//   PLAYWRIGHT=<path to a playwright install> CPLUS_KEY=<C+ code> bun scripts/check-pages.ts <out-dir>
 //
-// Fails on page errors, console errors, horizontal scroll at phone width, or a PDF
-// with the wrong page count (Feed Chart two, the other tools one).
+// The usage page is served with a test-only team code, so the check never needs the real one.
+//
+// Fails on page errors, console errors, horizontal scroll at phone width, a code screen
+// where a tool was expected, or a PDF that is blank or has the wrong page count
+// (Feed Chart two, the other tools one).
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -16,14 +18,20 @@ mkdirSync(out, { recursive: true });
 const { chromium } = await import(process.env.PLAYWRIGHT ?? "playwright");
 const root = resolve(import.meta.dir, "..");
 const key = process.env.CPLUS_KEY ?? "";
-const teamKey = process.env.TEAM_KEY ?? "";
+const teamKey = "check-pages";
+const djb2 = (s: string) => { let h = 5381; for (const c of s) h = (((h << 5) + h) + c.charCodeAt(0)) >>> 0; return h.toString(16); };
 
 const server = Bun.serve({
   port: 0,
   async fetch(req) {
     const path = decodeURIComponent(new URL(req.url).pathname);
     const file = Bun.file(join(root, path.endsWith("/") ? `${path}index.html` : path));
-    return (await file.exists()) ? new Response(file) : new Response("not found", { status: 404 });
+    if (!(await file.exists())) return new Response("not found", { status: 404 });
+    if (path === "/src/pages/usage.js") {
+      const js = (await file.text()).replace(/const GATE_HASH = "[0-9a-f]+";/, `const GATE_HASH = "${djb2(teamKey)}";`);
+      return new Response(js, { headers: { "content-type": "text/javascript" } });
+    }
+    return new Response(file);
   },
 });
 const base = `http://localhost:${server.port}`;
@@ -67,6 +75,7 @@ const SCREENS: Array<[string, string]> = [
 for (const [name, url] of SCREENS) {
   for (const width of [390, 1280]) for (const scheme of ["light", "dark"] as const) {
     const { page, context } = await open(withKey(url), width, scheme);
+    if (await page.locator("[data-gate]").count()) problems.push(`${name} ${width} ${scheme}: stopped at the access-code screen`);
     const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (scroll > 0) problems.push(`${name} ${width} ${scheme}: horizontal scroll ${scroll}px`);
     await page.screenshot({ path: join(out, `${name}-${width}-${scheme}.png`), fullPage: true });
@@ -88,7 +97,7 @@ for (const [name, url] of [["cplus-gate", "cplus-calc.html"], ["usage-gate", "us
 }
 
 // PDFs
-const PDFS: Array<[string, string, number?]> = [
+const PDFS: Array<[string, string, number?, ((page: any) => Promise<void>)?]> = [
   ["3part-stock-high", "feed-calc.html?fac=Green%20Valley%20Farms"],
   ["3part-2doser", "feed-calc.html?d=2&phz=yes"],
   ["3part-dtr-metric", "feed-calc.html?a=direct&u=g%2FL&phz=yes"],
@@ -101,14 +110,26 @@ const PDFS: Array<[string, string, number?]> = [
   ["phdown", "ph-down-calc.html?alk=140&target=20&vol=500", 1],
   ["usage", "usage-calc.html?tri=1&tvg=1000&tfg=5000&phz=1", 1],
   ["calhypo", "cal-hypo/", 1],
+  ["usage-legacy", "usage-calc.html?b=fra&ve=2&vw=2&vg=1000&fe=2&fw=4&fg=10000&ai=1111&tvg=100&tfg=500", 1],
+  ["calhypo-fert", "cal-hypo/", 1, async page => {
+    await page.locator("details:has(#treatment-point) > summary").click();
+    await page.selectOption("#treatment-point", "fertilizer-concentrate");
+    const target = (await page.locator("#direct-target").isVisible()) ? "#direct-target" : "#stock-target";
+    await page.fill(target, "5");
+    await page.locator(target).dispatchEvent("input");
+    await page.waitForTimeout(100);
+  }],
 ];
-for (const [name, url, expected = 2] of PDFS) {
+for (const [name, url, expected = 2, setup] of PDFS) {
   const { page, context } = await open(withKey(url), 1280, "light");
+  if (setup) await setup(page);
   await page.emulateMedia({ media: "print" });
   const pdf = join(out, `${name}.pdf`);
   await page.pdf({ path: pdf, preferCSSPageSize: true, printBackground: true });
   const info = spawnSync("pdfinfo", [pdf]).stdout?.toString() ?? "";
   const pages = Number(info.match(/Pages:\s+(\d+)/)?.[1] ?? 0);
+  const words = (spawnSync("pdftotext", [pdf, "-"]).stdout?.toString() ?? "").split(/\s+/).filter(Boolean).length;
+  if (words < 80) problems.push(`${name}: PDF has only ${words} words of text`);
   if (pages !== expected) problems.push(`${name}: PDF has ${pages} pages, expected ${expected}`);
   spawnSync("pdftoppm", ["-png", "-r", "110", pdf, join(out, name)]);
   await context.close();

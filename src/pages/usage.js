@@ -18,6 +18,38 @@ import { ICONS, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, toast } fr
 // Team Tools page.
 const GATE_HASH = "d1c47d4d";
 const GATE_STORAGE_KEY = "fra-team-key";
+/**
+ * Links from the previous estimator (`ve` present) carry one veg EC (`ve`), one flower EC (`fe`), total flower
+ * weeks (`fw`) and an additive bit string (`ai`: PhosZyme, pH Up, Si, Triologic). Map them onto the per-column
+ * state: every flower column gets `fe`, and `fw` is split over the columns in the default proportions with the
+ * total kept exact (whole weeks when `fw` is whole, else tenths).
+ * @param {URLSearchParams} params
+ * @param {{ ec: Record<string, number>, preset: string, flowerWeeks: Record<string, number>, phoszyme: boolean, phUp: boolean, si: boolean, triologic: boolean }} state
+ */
+export function applyLegacyParams(params, state) {
+  if (!params.has("ve")) return;
+  const ve = num(params.get("ve"), -1, 10), fe = num(params.get("fe"), -1, 10);
+  const ec = { ...state.ec };
+  if (ve > 0) ec.Veg = ve;
+  if (fe > 0) FLOWER.forEach(p => { ec[p] = fe; });
+  if (Object.keys(ec).some(p => ec[p] !== state.ec[p])) { state.ec = ec; state.preset = "custom"; }
+  const fw = num(params.get("fw"), -1, 52);
+  if (fw >= 0 && !params.has("w0")) {
+    const step = Number.isInteger(fw) ? 1 : 0.1, units = Math.round(fw / step);
+    const total = FLOWER.reduce((sum, p) => sum + D.flowerWeeks[p], 0);
+    const raw = FLOWER.map(p => units * D.flowerWeeks[p] / total);
+    const whole = raw.map(Math.floor);
+    let left = units - whole.reduce((a, b) => a + b, 0);
+    raw.map((v, i) => [v - whole[i], i]).sort((a, b) => b[0] - a[0]).forEach(([, i]) => { if (left > 0) { whole[i]++; left--; } });
+    FLOWER.forEach((p, i) => { state.flowerWeeks[p] = Math.round(whole[i] * step * 10) / 10; });
+  }
+  const ai = params.get("ai") ?? "";
+  state.phoszyme = ai[0] === "1";
+  state.phUp = ai[1] === "1";
+  state.si = ai[2] === "1";
+  state.triologic = ai[3] === "1";
+}
+
 /** @param {string | null | undefined} s */
 function gateNorm(s) { return (s || "").trim().toLowerCase(); }
 /** @param {string} s */
@@ -132,6 +164,7 @@ export function mount(root) {
       if (e > 0 && e !== state.ec[p]) { state.ec[p] = e; state.preset = "custom"; }
     });
     FLOWER.forEach((p, i) => { state.flowerWeeks[p] = num(params.get(`w${i}`), state.flowerWeeks[p], 52); });
+    applyLegacyParams(params, state);
 
     function input() {
       return {
