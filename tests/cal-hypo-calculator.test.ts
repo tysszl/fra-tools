@@ -120,6 +120,13 @@ describe("calcium hypochlorite calculation contract", () => {
     expect(api.formatMass(result.productMassGrams).text).toBe("1.16 g");
   });
 
+  test("milligram amounts show whole mg", () => {
+    expect(api.formatMass(0.2911855).text).toBe("291 mg");
+    expect(api.formatMass(0.5823710).text).toBe("582 mg");
+    expect(api.formatMass(0.9996).text).toBe("1 g");
+    expect(api.formatMass(0.0004).text).toBe("<1 mg");
+  });
+
   test("retains the low-level prepared-stock calculation", () => {
     const strength = expectValid(api.calculateStockStrengthFromDrytec({ productMass: 11, productMassUnit: "g", stockVolume: 1, stockVolumeUnit: "us-gal" }));
     const result = expectValid(api.calculateDoseFromStock({ stockAvailableChlorine: strength.stockAvailableChlorineMgL, stockStrengthUnit: "mg-l", treatedVolume: 50, treatedVolumeUnit: "us-gal", targetPpm: 2 }));

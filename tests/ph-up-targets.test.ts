@@ -1,136 +1,101 @@
 import { describe, expect, test } from "bun:test";
-import { readFileSync } from "node:fs";
+import * as E from "../src/engine/index.js";
 
-// Extract the target-engine constants and helpers from ph-up-calc.html and run them
-// outside the DOM. The engine's provenance: PHREEQC speciation of the FRA recipes,
-// validated against the 131-point pH Up trials (FRA repo,
-// docs/alkalinity-ph-and-calcium-phosphate.md, 2026-08-19).
-const html = readFileSync(new URL("../ph-up-calc.html", import.meta.url), "utf8");
+// pH Up: the 2026-09-29 PHREEQC refit (dose to 5.9 = k·EC^n), one multiplier per
+// target, the per-column dripper ceiling (N12), and the source-alkalinity credit.
 
-function extractEngine(warm: boolean, alkPpm: number) {
-  const start = html.indexOf("const CEILINGS =");
-  const end = html.indexOf("const targetManual");
-  expect(start).toBeGreaterThan(0);
-  expect(end).toBeGreaterThan(start);
-  const src = html
-    .slice(start, end)
-    .replace(/document\.getElementById\('warm-lines'\)\.checked/g, JSON.stringify(warm))
-    .replace(
-      /parseFloat\(document\.getElementById\('source-alk'\)\.value\)/g,
-      String(alkPpm),
-    );
-  return new Function(
-    `${src}\nreturn { ceilingFor, defaultTarget, doseMultiplier, getAlkCredit, CEILINGS, TARGET_MULT, DOSE_CEILING_GPG };`,
-  )() as any;
-}
+describe("dose to pH 5.9 on RO water", () => {
+  test("reproduces the trial anchors", () => {
+    // Trials: Stack 3.0 EC ~0.20 g/gal and Swell 3.0 ~0.25 to ~5.9 (ALK § Level 3).
+    expect(E.phUpDoseTo59("3part", "Stack", 3.0)).toBeCloseTo(0.200, 3);
+    expect(E.phUpDoseTo59("3part", "Swell", 3.0)).toBeCloseTo(0.250, 3);
+  });
 
-const phasesMatch = html.match(/const phases = \[[\s\S]*?\];/);
-const phases = new Function(`${phasesMatch![0]}\nreturn phases;`)() as Array<{
-  id: string;
-  calc: (ec: number) => number;
-}>;
-const phase = (id: string) => phases.find((p) => p.id === id)!;
-
-describe("pH ceiling model", () => {
-  const e = extractEngine(false, 0);
-
-  test("matches the speciation model's brushite ceilings within 0.05 pH", () => {
-    // Reference points from chemistry-model/feed_speciation.py (RO, 22C)
-    const ref: Array<[string, number, number]> = [
-      ["veg", 3.0, 6.14],
-      ["veg", 2.6, 6.26],
-      ["stretch", 3.0, 5.78],
-      ["stack", 2.7, 5.81],
-      ["stack", 2.2, 5.97],
-      ["swell", 2.4, 5.84],
-      ["swell", 2.0, 5.99],
-      ["ripen", 1.8, 6.16],
+  test("matches the refit table at preset ECs", () => {
+    const table: Array<[string, string, number, number]> = [
+      ["3part", "Veg", 2.6, 0.063], ["3part", "Veg", 3.0, 0.076],
+      ["3part", "Stretch", 2.4, 0.124], ["3part", "Stretch", 3.0, 0.166],
+      ["3part", "Stack", 2.2, 0.134], ["3part", "Stack", 2.7, 0.175],
+      ["3part", "Swell", 2.0, 0.149], ["3part", "Swell", 2.4, 0.188], ["3part", "Swell", 2.7, 0.218],
+      ["3part", "Ripen", 1.4, 0.104], ["3part", "Ripen", 1.8, 0.143],
+      ["cplus", "Veg", 3.0, 0.101], ["cplus", "Stack", 2.7, 0.235], ["cplus", "Swell", 2.4, 0.276], ["cplus", "Ripen", 1.8, 0.220],
     ];
-    for (const [id, ec, ceiling] of ref) {
-      expect(Math.abs(e.ceilingFor(id, ec) - ceiling)).toBeLessThan(0.05);
+    for (const [line, recipe, ec, dose] of table) {
+      expect(Math.abs(E.phUpDoseTo59(line as any, recipe, ec) - dose)).toBeLessThanOrEqual(0.0006);
     }
   });
 
-  test("default targets reproduce the published standards", () => {
-    // Veg & Ripen: 5.9. Standard-strength flower: 5.8. High-strength flower: 5.6-5.7.
-    expect(e.defaultTarget("veg", 3.0)).toBe(5.9);
-    expect(e.defaultTarget("veg", 2.6)).toBe(5.9);
-    expect(e.defaultTarget("ripen", 1.8)).toBe(5.9);
-    expect(e.defaultTarget("ripen", 1.4)).toBe(5.9);
-    expect(e.defaultTarget("stack", 2.2)).toBe(5.8);
-    expect(e.defaultTarget("swell", 2.0)).toBe(5.8);
-    expect(e.defaultTarget("stack", 2.7)).toBe(5.7);
-    expect(e.defaultTarget("swell", 2.4)).toBe(5.7);
-    expect(e.defaultTarget("stretch", 3.0)).toBe(5.6);
-    expect(e.defaultTarget("stretch", 2.4)).toBe(5.8);
+  test("C+ needs more pH Up than 3-Part at the same recipe and EC", () => {
+    expect(E.phUpDoseTo59("cplus", "Swell", 2.4)).toBeGreaterThan(E.phUpDoseTo59("3part", "Swell", 2.4) * 1.3);
+  });
+});
+
+describe("target multiplier", () => {
+  test("uses the refit medians", () => {
+    expect([5.5, 5.6, 5.7, 5.8, 5.9, 6.0].map(E.phUpTargetMultiplier)).toEqual([0.42, 0.53, 0.66, 0.81, 1.0, 1.22]);
   });
 
-  test("default target never exceeds 5.9 or the ceiling minus 0.1", () => {
-    for (const p of phases) {
-      for (const ec of [1.4, 1.8, 2.2, 2.6, 3.0, 3.4]) {
-        const t = e.defaultTarget(p.id, ec);
-        expect(t).toBeLessThanOrEqual(5.9);
-        expect(t).toBeLessThan(e.ceilingFor(p.id, ec));
+  test("interpolates between points and clamps outside 5.5–6.0", () => {
+    expect(E.phUpTargetMultiplier(5.85)).toBeCloseTo((0.81 + 1.0) / 2, 9);
+    expect(E.phUpTargetMultiplier(5.0)).toBe(0.42);
+    expect(E.phUpTargetMultiplier(6.4)).toBe(1.22);
+  });
+});
+
+describe("default target per column", () => {
+  test("is the printed ceiling minus 0.1, within 5.5–5.9", () => {
+    const at = (line: string, recipe: string, ec: number) => E.phUpTarget(line as any, recipe, ec).target;
+    expect(at("3part", "Veg", 3.0)).toBe(5.9);
+    expect(at("3part", "Stack", 3.0)).toBe(5.6); // ceiling 5.7
+    expect(at("3part", "Swell", 2.7)).toBe(5.7); // ceiling 5.8
+    expect(at("3part", "Swell", 2.0)).toBe(5.9); // ceiling 6.0
+    expect(at("3part", "Ripen", 1.4)).toBe(5.9);
+    expect(at("cplus", "Stack", 3.0)).toBe(5.5); // ceiling 5.5, floor holds
+  });
+
+  test("never exceeds 5.9 or the ceiling", () => {
+    for (const line of ["3part", "cplus"] as const) for (const recipe of E.DATA.lines[line].recipeNames) {
+      for (const ec of [1.0, 1.4, 1.8, 2.2, 2.6, 3.0, 3.4]) {
+        const r = E.phUpTarget(line, recipe, ec);
+        expect(r.target).toBeLessThanOrEqual(5.9);
+        expect(r.target).toBeGreaterThanOrEqual(5.5);
+        expect(r.target).toBeLessThanOrEqual(r.ceiling);
       }
     }
   });
 
-  test("warm lines lower the ceiling by 0.08 and can lower the default target", () => {
-    const w = extractEngine(true, 0);
-    expect(e.ceilingFor("stack", 2.7) - w.ceilingFor("stack", 2.7)).toBeCloseTo(0.08, 6);
-    expect(w.defaultTarget("stack", 2.7)).toBeLessThanOrEqual(e.defaultTarget("stack", 2.7));
+  test("uses the engine's dripper ceiling, and warm lines take 0.08 off the limit", () => {
+    const cool = E.phUpTarget("3part", "Swell", 2.4);
+    expect(cool.ceiling).toBe(E.dripperPhRange("3part", "Swell", 2.4).ceiling);
+    const warm = E.phUpTarget("3part", "Swell", 2.4, { warm: true });
+    expect(warm.limit).toBeCloseTo(cool.limit - 0.08, 9);
+    expect(warm.target).toBeLessThanOrEqual(cool.target);
   });
 });
 
-describe("dose scaling by target pH", () => {
-  const e = extractEngine(false, 0);
-
-  test("anchor points match the speciation-model multipliers", () => {
-    expect(e.doseMultiplier(5.9)).toBe(1.0);
-    expect(e.doseMultiplier(5.5)).toBeCloseTo(0.43, 6);
-    expect(e.doseMultiplier(5.7)).toBeCloseTo(0.67, 6);
-    expect(e.doseMultiplier(5.8)).toBeCloseTo(0.82, 6);
-    expect(e.doseMultiplier(6.0)).toBeCloseTo(1.21, 6);
+describe("dose", () => {
+  test("scales by target and flags targets over the ceiling", () => {
+    const d = E.phUpDose({ line: "3part", recipe: "Stack", ec: 3.0 });
+    expect(d.target).toBe(5.6);
+    expect(d.gPerGal).toBeCloseTo(E.phUpDoseTo59("3part", "Stack", 3.0) * 0.53, 12);
+    expect(d.overCeiling).toBe(false);
+    expect(E.phUpDose({ line: "3part", recipe: "Stack", ec: 3.0, target: 5.9 }).overCeiling).toBe(true);
   });
 
-  test("interpolates between anchors and clamps outside 5.5-6.0", () => {
-    expect(e.doseMultiplier(5.85)).toBeCloseTo((0.82 + 1.0) / 2, 6);
-    expect(e.doseMultiplier(5.0)).toBeCloseTo(0.43, 6);
-    expect(e.doseMultiplier(6.4)).toBeCloseTo(1.21, 6);
+  test("flags doses over 0.25 g/gal and ECs outside the fit", () => {
+    expect(E.phUpDose({ line: "cplus", recipe: "Swell", ec: 3.0, target: 5.9 }).overMax).toBe(true);
+    expect(E.phUpDose({ line: "3part", recipe: "Ripen", ec: 0.8 }).outsideFit).toBe(true);
+    expect(E.phUpDose({ line: "3part", recipe: "Ripen", ec: 1.8 }).outsideFit).toBe(false);
   });
 
-  test("scaled doses stay near the FRA trial values at 5.9 and drop at recipe defaults", () => {
-    // Trial anchors: Stack 3.0 EC ~0.20 g/gal to ~5.9; Swell 3.0 ~0.25.
-    const stack59 = phase("stack").calc(3.0) * e.doseMultiplier(5.9);
-    const swell59 = phase("swell").calc(3.0) * e.doseMultiplier(5.9);
-    expect(stack59).toBeGreaterThan(0.17);
-    expect(stack59).toBeLessThan(0.22);
-    expect(swell59).toBeGreaterThan(0.2);
-    expect(swell59).toBeLessThan(0.27);
-    // At the high-strength default (5.7) the dose is ~0.67x.
-    const stackDefault = phase("stack").calc(2.7) * e.doseMultiplier(e.defaultTarget("stack", 2.7));
-    expect(stackDefault).toBeLessThan(phase("stack").calc(2.7) * 0.7);
+  test("19 ppm alkalinity is worth 0.1 g/gal, floored at zero", () => {
+    expect(E.phUpAlkalinityCredit(19)).toBeCloseTo(0.1, 9);
+    const d = E.phUpDose({ line: "3part", recipe: "Stack", ec: 2.7, alkPpm: 60 });
+    expect(d.gPerGal).toBe(0);
   });
-});
 
-describe("source-water alkalinity credit", () => {
-  test("19 ppm is worth 0.1 g/gal, floored at zero after subtraction", () => {
-    const e = extractEngine(false, 19);
-    expect(e.getAlkCredit()).toBeCloseTo(0.1, 6);
-    const e60 = extractEngine(false, 60);
-    const dose = Math.max(
-      0,
-      phase("stack").calc(2.7) * e60.doseMultiplier(5.7) - e60.getAlkCredit(),
-    );
-    expect(dose).toBe(0);
-  });
-});
-
-describe("page copy no longer hardcodes the 5.9 destination", () => {
-  test("the universal 5.9 sentence is gone and the ceiling framing is present", () => {
-    expect(html).not.toContain("All recommendations target a final pH of");
-    expect(html).toContain("Why Each Recipe Has a pH Ceiling");
-    expect(html).toContain('id="col-target"');
-    expect(html).toContain('id="warm-lines"');
+  test("stock conversions", () => {
+    expect(E.phUpStockMlPerGal(0.2, 20)).toBeCloseTo(0.2 / 20 * 3785, 9);
+    expect(E.phUpStockPercent(0.2, 20)).toBeCloseTo(1.0, 9);
   });
 });

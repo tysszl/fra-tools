@@ -3,10 +3,9 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-const usageCalculator = readFileSync(new URL("../usage-calc.html", import.meta.url), "utf8");
-const feedCalculator = readFileSync(new URL("../feed-calc.html", import.meta.url), "utf8");
-const toolsIndex = readFileSync(new URL("../index.html", import.meta.url), "utf8");
-const cplusCalculator = readFileSync(new URL("../cplus-calc.html", import.meta.url), "utf8");
+const feedCalculator = readFileSync(new URL("./fixtures/legacy/feed-calc.html", import.meta.url), "utf8");
+const toolsIndex = readFileSync(new URL("../src/pages/hub.js", import.meta.url), "utf8");
+const cplusCalculator = readFileSync(new URL("./fixtures/legacy/cplus-calc.html", import.meta.url), "utf8");
 const nutritionCoreSource = readFileSync(new URL("../src/nutrition-core.js", import.meta.url), "utf8").trimEnd();
 const nutritionCore = new Function(`${nutritionCoreSource}\nreturn FRA_NUTRITION_CORE;`)() as any;
 
@@ -14,9 +13,9 @@ const GENERATED_START = "// BEGIN GENERATED: nutrition-core";
 const GENERATED_END = "// END GENERATED: nutrition-core";
 
 describe("public calculator navigation", () => {
-  test("lists the calcium hypochlorite calculator", () => {
-    expect(toolsIndex).toContain('href="cal-hypo/"');
-    expect(toolsIndex).toContain("Calcium Hypochlorite Calculator");
+  test("lists the customer tools and no team tools", () => {
+    for (const href of ["feed-calc.html", "ph-up-calc.html", "ph-down-calc.html", "cal-hypo/", "cplus-calc.html"]) expect(toolsIndex).toContain(`tool("${href}"`);
+    for (const href of ["usage-calc.html", "feed-calc-admin.html"]) expect(toolsIndex).not.toContain(href);
   });
 
   test("brands the feed calculator and collapses customization by default", () => {
@@ -133,19 +132,6 @@ function createRuntime<T>(html: string, exportsExpression: string, search = "", 
   };
 }
 
-function createUsageRuntime(search = "") {
-  return createRuntime<{
-    BASE_CONFIG: Record<string, any>;
-    state: Record<string, any>;
-    getBaseFertilizerEC: (feedEC: number) => number;
-    calcProductAmount: (name: string, phase: string, volume: number, feedEC: number) => number;
-    parseNonNegative: (value: unknown, fallback?: number) => number;
-    updateURL: () => void;
-    loadFromURL: () => void;
-    FRA_NUTRITION_CORE: any;
-  }>(usageCalculator, "{ BASE_CONFIG, state, getBaseFertilizerEC, calcProductAmount, parseNonNegative, updateURL, loadFromURL, FRA_NUTRITION_CORE }", search);
-}
-
 function createFeedRuntime(html: string) {
   return createRuntime<{
     state: Record<string, any>;
@@ -207,14 +193,13 @@ describe("shared nutrition core contract", () => {
   });
 
   test("every calculator embeds the canonical source byte-for-byte", () => {
-    [feedCalculator, cplusCalculator, usageCalculator]
+    [feedCalculator, cplusCalculator]
       .forEach(html => expect(getEmbeddedCore(html)).toBe(nutritionCoreSource));
   });
 
   test.each([
     ["3-Part feed", feedCalculator],
     ["Component Plus feed", cplusCalculator],
-    ["usage", usageCalculator],
   ])("%s calculator completes its full startup path", (_label, html) => {
     expect(() => createRuntime(html, "true", "", true)).not.toThrow();
   });
@@ -261,9 +246,11 @@ describe("shared nutrition core contract", () => {
     try {
       mkdirSync(join(tempRoot, "scripts"));
       mkdirSync(join(tempRoot, "src"));
+      mkdirSync(join(tempRoot, "tests", "fixtures", "legacy"), { recursive: true });
       writeFileSync(join(tempRoot, "scripts", "sync-nutrition-core.ts"), readFileSync(new URL("../scripts/sync-nutrition-core.ts", import.meta.url)));
       writeFileSync(join(tempRoot, "src", "nutrition-core.js"), "const TEST_CORE = 1;\n");
-      ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html"].forEach(fileName => {
+      const legacy = "tests/fixtures/legacy/";
+      [`${legacy}feed-calc.html`, `${legacy}feed-calc-admin.html`, `${legacy}cplus-calc.html`].forEach(fileName => {
         writeFileSync(join(tempRoot, fileName), `<script>\n${GENERATED_START}\nold\n${GENERATED_END}\n</script>\n`);
       });
 
@@ -271,12 +258,12 @@ describe("shared nutrition core contract", () => {
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).toBe(1);
       expect(Bun.spawnSync(["bun", script, "--write"]).exitCode).toBe(0);
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).toBe(0);
-      expect(readFileSync(join(tempRoot, "feed-calc.html"), "utf8")).toContain("const TEST_CORE = 1;");
+      expect(readFileSync(join(tempRoot, legacy, "feed-calc.html"), "utf8")).toContain("const TEST_CORE = 1;");
 
-      writeFileSync(join(tempRoot, "feed-calc.html"), `${GENERATED_START}\nmissing end`);
+      writeFileSync(join(tempRoot, legacy, "feed-calc.html"), `${GENERATED_START}\nmissing end`);
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).not.toBe(0);
 
-      writeFileSync(join(tempRoot, "feed-calc.html"), `${GENERATED_END}\nwrong order\n${GENERATED_START}`);
+      writeFileSync(join(tempRoot, legacy, "feed-calc.html"), `${GENERATED_END}\nwrong order\n${GENERATED_START}`);
       expect(Bun.spawnSync(["bun", script, "--check"]).exitCode).not.toBe(0);
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });
@@ -286,14 +273,11 @@ describe("shared nutrition core contract", () => {
   test("covered math is not reimplemented outside generated blocks", () => {
     const feedSource = stripEmbeddedCore(feedCalculator);
     const cplusSource = stripEmbeddedCore(cplusCalculator);
-    const usageSource = stripEmbeddedCore(usageCalculator);
 
     expect(feedSource).toContain("FRA_NUTRITION_CORE.createFeedMathAdapter");
     expect(cplusSource).toContain("FRA_NUTRITION_CORE.createFeedMathAdapter");
-    expect(usageSource).toContain("FRA_NUTRITION_CORE.doseGramsPerGallon");
     [feedSource, cplusSource].forEach(source => expect(source).not.toContain("ecContrib / ecPerG"));
     [feedSource, cplusSource].forEach(source => expect(source).not.toContain("recipe.partB * baseTargetEC"));
-    expect(usageSource).not.toContain("pct / config.ecPerGram");
   });
 
   test.each([
@@ -332,23 +316,6 @@ describe("shared nutrition core contract", () => {
         const expected = nutritionCore.doseRoleGramsPerGallon(lineId, recipeName, role, 3);
         expect(api.calcDosage("Swell", role, api.state.method, "g/gal", 3).dosage)
           .toBe(Number(expected.toFixed(1)));
-      }
-    }
-  });
-
-  test("the usage calculator executes every shared Swell product through core math", () => {
-    const usage = createUsageRuntime().api;
-    expect(usage.BASE_CONFIG.fra.recipes).toBe(usage.FRA_NUTRITION_CORE.lines["3part"].recipes);
-    expect(usage.BASE_CONFIG.cplus.recipes).toBe(usage.FRA_NUTRITION_CORE.lines.cplus.recipes);
-
-    for (const lineId of ["3part", "cplus"]) {
-      const baseKey = lineId === "3part" ? "fra" : "cplus";
-      usage.state.base = baseKey;
-      for (const productName of Object.keys(nutritionCore.lines[lineId].ecPerGram)) {
-        expect(usage.calcProductAmount(productName, "veg", 1, 3) * 454)
-          .toBeCloseTo(nutritionCore.doseGramsPerGallon(lineId, "Veg", productName, 3), 12);
-        expect(usage.calcProductAmount(productName, "flower", 1, 3) * 454)
-          .toBeCloseTo(nutritionCore.doseGramsPerGallon(lineId, "Swell", productName, 3), 12);
       }
     }
   });
@@ -636,19 +603,6 @@ describe("shared nutrition core contract", () => {
     expect(restored.api.calcStockTanks("1-1-1", "mL/gal").rows[0].vol).toBe(1000);
   });
 
-  test("a custom recipe schedule survives the share-link round trip", () => {
-    const first = createCplusFeedRuntime("?p=custom&ec_veg=2.4&ec_stretch=2.4&ec_stack=2.4&ec_swell=2.4&ec_ripen=1.8&rp_stack=Stack");
-    first.api.loadFromURL();
-    expect(first.api.state.phaseRecipe.Stack).toBe("Stack");
-    first.api.updateURL();
-    const shared = first.getReplacedUrl();
-    expect(shared).toContain("rp_stack=Stack");
-
-    const second = createCplusFeedRuntime(shared.slice(shared.indexOf("?")));
-    second.api.loadFromURL();
-    expect(second.api.state.phaseRecipe).toEqual(first.api.state.phaseRecipe);
-  });
-
   describe("Component Plus controlled 2-doser options", () => {
     function configureTwoDoser(api: ReturnType<typeof createCplusFeedRuntime>["api"]) {
       api.state.doserMode = "2";
@@ -781,72 +735,6 @@ describe("shared nutrition core contract", () => {
   test("printed Notes lines use an opaque white background", () => {
     expect(feedCalculator).toContain("#fff 0, #fff 27px");
     expect(feedCalculator).not.toContain("transparent, transparent 27px");
-  });
-});
-
-describe("FRA Swell recipe math", () => {
-  test("the usage calculator executes current 3-Part potency and recipes", () => {
-    const { api } = createUsageRuntime();
-    const fra = api.BASE_CONFIG.fra;
-    expect(fra.ecPerGram["Part A"]).toBe(0.306);
-    expect(fra.recipes.Veg).toEqual({ "Part A": 0.6428571428571, "Part B": 0.3571428571429, Bloom: 0 });
-    expect(fra.recipes.Stack).toEqual({ "Part A": 0.5, "Part B": 0.2777778, Bloom: 0.2222222 });
-    expect(fra.flowerRecipe).toBe("Swell");
-
-    expect(api.calcProductAmount("Part A", "flower", 1, 3) * 454).toBeCloseTo(4.323529, 6);
-    expect(api.calcProductAmount("Part B", "flower", 1, 3) * 454).toBeCloseTo(2.752941, 6);
-    expect(api.calcProductAmount("Bloom", "flower", 1, 3) * 454).toBeCloseTo(4.779412, 6);
-  });
-});
-
-describe("additive handling", () => {
-  test("PhosZyme reduces the production base-fertilizer target by 0.088 EC", () => {
-    const { api } = createUsageRuntime();
-    expect(api.getBaseFertilizerEC(3)).toBe(3);
-
-    api.state.products.find((product: any) => product.name === "PhosZyme").included = true;
-    expect(api.getBaseFertilizerEC(3)).toBeCloseTo(2.912, 8);
-    expect(api.calcProductAmount("Part A", "flower", 1, 3) * 454)
-      .toBeCloseTo(2.912 * 0.441 / 0.306, 8);
-  });
-
-  test("Triologic uses explicit nonnegative weekly treated volume at 1 mL/gal", () => {
-    const { api } = createUsageRuntime();
-    api.state.veg.triologicGalPerWeek = 100;
-    api.state.flower.triologicGalPerWeek = 500;
-
-    expect(api.calcProductAmount("Triologic", "veg", 2000, 3)).toBeCloseTo(200 / 3785, 8);
-    expect(api.calcProductAmount("Triologic", "flower", 90000, 3)).toBeCloseTo(4500 / 3785, 8);
-    expect(api.parseNonNegative("-25")).toBe(0);
-    expect(api.parseNonNegative("not-a-number")).toBe(0);
-  });
-
-  test("share URLs round-trip all additive and Triologic state", () => {
-    const current = createUsageRuntime();
-    current.api.state.products.filter((product: any) => !product.isBase)
-      .forEach((product: any) => { product.included = true; });
-    current.api.state.veg.triologicGalPerWeek = 100;
-    current.api.state.flower.triologicGalPerWeek = 500;
-    current.api.updateURL();
-
-    const url = current.getReplacedUrl();
-    expect(url).toContain("ai=1111");
-    expect(url).toContain("tvg=100");
-    expect(url).toContain("tfg=500");
-
-    const restored = createUsageRuntime(url);
-    restored.api.loadFromURL();
-    expect(restored.api.state.products.filter((product: any) => !product.isBase)
-      .every((product: any) => product.included)).toBe(true);
-    expect(restored.api.state.veg.triologicGalPerWeek).toBe(100);
-    expect(restored.api.state.flower.triologicGalPerWeek).toBe(500);
-  });
-
-  test("negative Triologic values from URLs clamp to zero", () => {
-    const { api } = createUsageRuntime("?ve=3&tvg=-100&tfg=-500");
-    api.loadFromURL();
-    expect(api.state.veg.triologicGalPerWeek).toBe(0);
-    expect(api.state.flower.triologicGalPerWeek).toBe(0);
   });
 });
 

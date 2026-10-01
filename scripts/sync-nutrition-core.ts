@@ -3,7 +3,8 @@ import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
 const sourcePath = join(root, "src/nutrition-core.js");
-const targets = ["feed-calc.html", "feed-calc-admin.html", "cplus-calc.html", "usage-calc.html"];
+// The legacy feed pages are frozen parity fixtures.
+const targets = ["tests/fixtures/legacy/feed-calc.html", "tests/fixtures/legacy/feed-calc-admin.html", "tests/fixtures/legacy/cplus-calc.html"];
 const startMarker = "// BEGIN GENERATED: nutrition-core";
 const endMarker = "// END GENERATED: nutrition-core";
 const source = readFileSync(sourcePath, "utf8").trimEnd();
