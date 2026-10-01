@@ -73,11 +73,14 @@ function sheet() {
   const table = document.getElementById("direct-reference-table");
   const quick = table ? `<div class="s-block"><div class="s-h">Direct-dose quick table</div><table class="s-mini">${table.innerHTML}</table>
     <p class="s-note">The 0.5–2 ppm rows are FRA's continuous-use residual range at the farthest dripper. Elevated cleaning references are not continuous-use plant targets.</p></div>` : "";
+  // Verify and Avoid come from the page's field-check cards so the sheet says what the screen says.
+  const verify = [...document.querySelectorAll(".field-check:not(.avoid) p")].map(p => `<p class="s-p">${esc((p.textContent || "").trim())}</p>`).join("");
+  const avoid = [...document.querySelectorAll(".field-check.avoid li")].map(li => `<li>${esc((li.textContent || "").trim())}</li>`).join("");
   const safety = [...document.querySelectorAll(".safety li")].map(li => `<li>${esc(li.textContent)}</li>`).join("");
   return `<section class="sheet">`
-    + sheetHeadHtml({ root: "../", kicker: "Team reference · DryTec", title: "Calcium Hypochlorite", date, chips })
+    + sheetHeadHtml({ root: "../", kicker: "Water sanitation · DryTec", title: "Calcium Hypochlorite", date, chips })
     + body + restricted + quick
-    + `<div class="s-two s-two--even" style="margin-top:14px"><div><div class="s-h">Verify at the dripper</div><p class="s-p">The calculation is the applied dose. Measure free chlorine at the farthest dripper and maintain the current FRA target of 0.5–2 ppm.</p></div>`
+    + `<div class="s-two s-two--even" style="margin-top:14px"><div><div class="s-h">Verify at the dripper</div>${verify}${avoid ? `<div class="s-h" style="margin-top:10px">Avoid</div><ul class="s-list">${avoid}</ul>` : ""}</div>`
     + `<div><div class="s-h">Handling and mixing</div><ul class="s-list">${safety}</ul></div></div>`
     + `<div class="s-notes"><div class="s-h">Notes</div><div class="s-lines"></div></div>`
     + sheetFootHtml("tools.frontrowag.com/cal-hypo/")

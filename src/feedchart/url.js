@@ -94,11 +94,16 @@ export function decodeParams(p, page) {
     const schedules = /** @type {Record<string, Record<Phase, string>>} */ (line.schedules);
     const rs = p.get("rs") ?? "";
     const retired = page.line === "3part" && /** @type {readonly string[]} */ (DATA.recipeSchedules.retired).includes(rs);
-    const phaseRecipe = { ...(schedules[rs] ?? schedules[DATA.recipeSchedules.defaultSchedule]) };
+    const recipes = /** @type {readonly string[]} */ (line.recipeNames);
+    const fallback = schedules[DATA.recipeSchedules.defaultSchedule];
+    // Old pages wrote rs=custom and skipped any phase whose recipe matched the phase name.
+    const phaseRecipe = rs === "custom"
+      ? /** @type {Record<Phase, string>} */ (Object.fromEntries(PHASES.map(phase => [phase, recipes.includes(phase) ? phase : fallback[phase]])))
+      : { ...(schedules[rs] ?? fallback) };
     if (!retired) {
       PHASES.forEach(phase => {
         const recipe = p.get(`rp_${phase.toLowerCase()}`);
-        if (recipe && /** @type {readonly string[]} */ (line.recipeNames).includes(recipe)) phaseRecipe[phase] = recipe;
+        if (recipe && recipes.includes(recipe)) phaseRecipe[phase] = recipe;
       });
     }
     input.recipeSchedule = "custom";

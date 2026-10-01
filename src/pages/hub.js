@@ -1,5 +1,5 @@
 // @ts-check
-// Public tool hub: the customer tools, light/dark, English/Spanish.
+// Public tool hub: the customer tools (Feed Chart, pH Up, pH Down, cal hypo; C+ behind its code), light/dark, English/Spanish.
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { initialLang, saveLang, translator } from "../../shared/i18n.js";
 import { ICONS, barHtml, esc, footHtml } from "../../shared/chrome.js";
@@ -15,6 +15,8 @@ const STRINGS = {
     "phup.d": "Target pH and pH Up dose for each column of your feed chart, with a credit for source-water alkalinity.",
     "phdown.n": "pH Down",
     "phdown.d": "Phosphoric acid needed to bring source-water alkalinity down to the target before feeding.",
+    "calhypo.n": "Calcium Hypochlorite",
+    "calhypo.d": "DryTec stock recipes, injection rates, direct dosing, and how to verify free chlorine at the dripper.",
     "cplus.k": "For C+ program customers",
     "cplus.n": "Component Plus Feed Chart",
     "cplus.tag": "Access code",
@@ -34,6 +36,8 @@ const STRINGS = {
     "phup.d": "pH objetivo y dosis de pH Up para cada columna de su tabla, con un crédito por la alcalinidad del agua de origen. (En inglés)",
     "phdown.n": "pH Down",
     "phdown.d": "Ácido fosfórico necesario para bajar la alcalinidad del agua de origen al objetivo antes de alimentar. (En inglés)",
+    "calhypo.n": "Hipoclorito de calcio",
+    "calhypo.d": "Recetas de stock de DryTec, tasas de inyección, dosificación directa y cómo verificar el cloro libre en el gotero. (En inglés)",
     "cplus.k": "Para clientes del programa C+",
     "cplus.n": "Tabla de alimentación Component Plus",
     "cplus.tag": "Código de acceso",
@@ -63,7 +67,7 @@ export function mount(root) {
     root.innerHTML = `<div class="app">`
       + barHtml({ root: "", lang: { lang, label: t("lang.label") }, themeLabel: t("theme.label") })
       + `<h1 class="title">${esc(t("title"))}</h1><p class="lede">${esc(t("lede"))}</p>`
-      + `<nav class="hub">${tool("feed-calc.html", "feed", true)}${tool("ph-up-calc.html", "phup")}${tool("ph-down-calc.html", "phdown")}</nav>`
+      + `<nav class="hub">${tool("feed-calc.html", "feed", true)}${tool("ph-up-calc.html", "phup")}${tool("ph-down-calc.html", "phdown")}${tool("cal-hypo/", "calhypo")}</nav>`
       + `<p class="hub__k">${esc(t("cplus.k"))}</p>`
       + `<nav class="hub" style="margin-top:10px">${tool("cplus-calc.html", "cplus", true)}</nav>`
       + footHtml({ contact: t("foot.contact") })

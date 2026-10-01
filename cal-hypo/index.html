@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#f6f7f6">
   <link rel="canonical" href="https://tools.frontrowag.com/cal-hypo/">
-  <title>Calcium Hypochlorite · Front Row Ag</title>
+  <title>Calcium Hypochlorite Calculator · Front Row Ag</title>
   <link rel="icon" href="../logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,6 +131,10 @@
     .field-check { margin-top: 18px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--mint); background: var(--panel); }
     .field-check h3 { margin: 0 0 6px; font-size: 0.9rem; }
     .field-check p { margin: 0; color: var(--text-soft); font-size: 0.79rem; }
+    .field-check p + p { margin-top: 6px; }
+    .field-check ul { margin: 0; padding-left: 18px; color: var(--text-soft); font-size: 0.79rem; }
+    .field-check li + li { margin-top: 4px; }
+    .field-check.avoid { border-left-color: var(--amber); }
     .verification-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 10px; }
     .verification-message { margin: 10px 0 0; padding: 9px 11px; border-left: 3px solid var(--chlorine); background: var(--chlorine-soft); color: var(--text-soft); font-size: 0.76rem; }
     .verification-message.invalid { border-left-color: var(--danger); color: var(--danger); }
@@ -171,8 +175,8 @@
     </header>
     <div class="masthead">
       <a class="backlink" href="../"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>All tools</a>
-      <p class="eyebrow">Front Row Ag · Team reference</p>
-      <h1 class="title">Calcium hypochlorite calculator</h1>
+      <p class="eyebrow">Front Row Ag · Water sanitation</p>
+      <h1 class="title">Calcium Hypochlorite Calculator</h1>
       <p class="basis">Select the stock recipe, enter the target, and use the calculated rate. Calculations use DryTec's guaranteed minimum 65% available chlorine.</p>
     </div>
 
@@ -319,6 +323,16 @@
         <article class="field-check">
           <h3>Verify at the dripper</h3>
           <p>The calculation is the applied dose. Measure free chlorine at the farthest dripper and maintain the current FRA target of 0.5–2 ppm.</p>
+          <p>ORP is useful for tracking sanitation over time (300–500 mV at the dripper), but it can't stand in for a free chlorine test. Use a free chlorine reading to set and check the dose.</p>
+        </article>
+
+        <article class="field-check avoid">
+          <h3>Avoid</h3>
+          <ul>
+            <li>Targeting 2–3 ppm at the dripper. The continuous-use range is 0.5–2 ppm free chlorine.</li>
+            <li>Setting or adjusting the dose from ORP alone.</li>
+            <li>Mixing calcium hypochlorite with peroxides or other strong oxidizers in a reservoir.</li>
+          </ul>
         </article>
 
         <details class="tool-detail" id="field-options">

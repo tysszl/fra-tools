@@ -139,6 +139,16 @@ describe("share links", () => {
       expect(params.get("lang")).toBe("es");
     }
   });
+
+  test("old rs=custom links read a missing phase as its own recipe", () => {
+    // The old pages skipped rp_<phase> when the recipe matched the phase name.
+    for (const line of ["3part", "cplus"] as const) {
+      const { input } = decodeParams(new URLSearchParams("?rs=custom&rp_swell=Ripen"), { line, mode: "customer" });
+      const s = E.resolveFeedSettings({ ...input, line });
+      expect(s.phaseRecipe.Stack).toBe("Stack");
+      expect(s.phaseRecipe.Swell).toBe("Ripen");
+    }
+  });
 });
 
 describe("printed chart", () => {
