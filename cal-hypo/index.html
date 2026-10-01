@@ -602,8 +602,8 @@ function buildQuickReferenceRows(input) {
 
 function formatMass(grams) {
   if (!Number.isFinite(grams) || grams <= 0) return { text: "—", belowResolution: false };
-  if (grams < 0.001) return { text: "<1 mg", belowResolution: true };
-  if (grams < 1) return { text: `${rounded(grams * 1000, 2)} mg`, belowResolution: false };
+  if (grams < 0.0005) return { text: "<1 mg", belowResolution: true };
+  if (grams < 0.9995) return { text: `${Math.round(grams * 1000)} mg`, belowResolution: false };
   if (grams >= 1000) return { text: `${rounded(grams / 1000, 2)} kg`, belowResolution: false };
   return { text: `${rounded(grams, 2)} g`, belowResolution: false };
 }
