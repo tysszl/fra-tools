@@ -9,7 +9,7 @@ import { translator, initialLang, saveLang } from "../../shared/i18n.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { copyText } from "../../shared/clipboard.js";
 import { printDocument, fileSafe } from "../../shared/print.js";
-import { readStored, writeStored } from "../../shared/storage.js";
+import { gateFind, gateUnlock } from "../../shared/gate.js";
 import { STRINGS } from "./strings.js";
 import { decodeParams, encodeParams } from "./url.js";
 import { buildView, buildSummary, esc } from "./content.js";
@@ -32,25 +32,9 @@ const ICONS = {
 
 const PHASES = /** @type {Phase[]} */ ([...DATA.phases]);
 
-// C+ access gate: friction, not security. The page is public static HTML; the code
-// keeps the program out of casual view. Compare with the djb2 hash of the trimmed,
-// lowercased code; to rotate, hash the new code and replace GATE_HASH.
-const GATE_HASH = "d5ab5114";
-const GATE_KEY = "fra-cplus-key";
-/** @param {string} value */
-function gateNorm(value) { return (value || "").trim().toLowerCase(); }
-/** @param {string} value */
-function gateHash(value) {
-  let h = 5381;
-  for (let i = 0; i < value.length; i++) h = (((h << 5) + h) + value.charCodeAt(i)) >>> 0;
-  return h.toString(16);
-}
-/** @param {string | null} code */
-function gateCheck(code) { return Boolean(code) && gateHash(gateNorm(/** @type {string} */ (code))) === GATE_HASH; }
-
 /**
  * @param {HTMLElement} root
- * @param {{ line: LineId, mode: "customer" | "team", gate?: boolean, assets?: string }} page
+ * @param {{ line: LineId, mode: "customer" | "team", gate?: boolean, assets?: string }} page  Team mode always needs the team code; `gate` (C+) takes the C+ or the team code.
  */
 export function mount(root, page) {
   const params = new URLSearchParams(window.location.search);
@@ -74,41 +58,41 @@ export function mount(root, page) {
   };
   let t = translator(STRINGS, state.lang);
 
-  if (page.gate) {
-    const fromUrl = params.get("key");
-    const saved = readStored(GATE_KEY);
-    const code = gateCheck(fromUrl) ? fromUrl : gateCheck(saved) ? saved : null;
-    if (!code) {
+  /** @type {import("../../shared/gate.js").GateName[]} */
+  const gates = page.mode === "team" ? ["team"] : page.gate ? ["cplus", "team"] : [];
+  if (gates.length) {
+    const found = gateFind(gates, params);
+    if (!found) {
       renderGate();
       return;
     }
-    unlock(/** @type {string} */ (code));
+    unlock(found);
   }
   start();
 
-  /** @param {string} code */
-  function unlock(code) {
-    state.key = gateNorm(code);
-    writeStored(GATE_KEY, state.key);
+  /** @param {{ name: string, code: string }} opened  Only the C+ code rides along in share links. */
+  function unlock(opened) {
+    state.key = opened.name === "cplus" ? opened.code : null;
   }
 
   function renderGate() {
     document.documentElement.lang = state.lang;
     root.innerHTML = `<main class="gate"><div class="card gate__card">
       <img class="bar__logo bar__logo--light" src="${assets.logoLight}" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${assets.logoDark}" alt="Front Row Ag">
-      <h1>${esc(t("gate.title"))}</h1>
-      <p>${esc(t("gate.intro"))}</p>
+      <h1>${esc(t(page.mode === "team" ? "gate.team.title" : "gate.title"))}</h1>
+      <p>${esc(t(page.mode === "team" ? "gate.team.intro" : "gate.intro"))}</p>
       <form data-gate><input class="input" name="code" placeholder="${esc(t("gate.placeholder"))}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${esc(t("gate.placeholder"))}">
       <button class="btn btn--primary" type="submit">${esc(t("gate.unlock"))}</button></form>
-      <p class="gate__err" hidden>${esc(t("gate.error"))}</p>
+      <p class="gate__err" hidden>${esc(t(page.mode === "team" ? "gate.team.error" : "gate.error"))}</p>
       <p class="gate__foot"><a href="https://www.frontrowag.com" target="_blank" rel="noopener">frontrowag.com</a></p>
     </div></main>`;
     const form = /** @type {HTMLFormElement} */ (root.querySelector("[data-gate]"));
     form.addEventListener("submit", event => {
       event.preventDefault();
       const value = /** @type {HTMLInputElement} */ (form.elements.namedItem("code")).value;
-      if (gateCheck(value)) {
-        unlock(value);
+      const opened = gateUnlock(gates, value);
+      if (opened) {
+        unlock(opened);
         start();
       } else {
         /** @type {HTMLElement} */ (root.querySelector(".gate__err")).hidden = false;

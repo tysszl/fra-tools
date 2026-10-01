@@ -303,6 +303,9 @@ const en = {
   "gate.placeholder": "Access code",
   "gate.unlock": "Unlock Calculator",
   "gate.error": "That code didn't match. Check with your Front Row Ag representative.",
+  "gate.team.title": "Front Row Ag · Team Feed Chart",
+  "gate.team.intro": "Team mode is for the Front Row Ag team. Enter the team code from the Notion Team Tools page.",
+  "gate.team.error": "That code didn't match. The team code is on the Notion Team Tools page.",
 };
 
 /** @type {Record<string, string>} */
@@ -592,6 +595,9 @@ const es = {
   "gate.placeholder": "Código de acceso",
   "gate.unlock": "Desbloquear calculadora",
   "gate.error": "Ese código no coincide. Consulte con su representante de Front Row Ag.",
+  "gate.team.title": "Front Row Ag · Tabla del equipo",
+  "gate.team.intro": "El modo de equipo es para el equipo de Front Row Ag. Ingrese el código del equipo de la página Team Tools de Notion.",
+  "gate.team.error": "Ese código no coincide. El código del equipo está en la página Team Tools de Notion.",
 };
 
 export const STRINGS = { en, es };
