@@ -4,7 +4,7 @@
 //
 //   PLAYWRIGHT=<path to a playwright install> CPLUS_KEY=<C+ code> bun scripts/check-pages.ts <out-dir>
 //
-// The usage page is served with a test-only team code, so the check never needs the real one.
+// The team gate is served with a test-only team code, so the check never needs the real one.
 //
 // Fails on page errors, console errors, horizontal scroll at phone width, a code screen
 // where a tool was expected, or a PDF that is blank or has the wrong page count
@@ -27,8 +27,8 @@ const server = Bun.serve({
     const path = decodeURIComponent(new URL(req.url).pathname);
     const file = Bun.file(join(root, path.endsWith("/") ? `${path}index.html` : path));
     if (!(await file.exists())) return new Response("not found", { status: 404 });
-    if (path === "/src/pages/usage.js") {
-      const js = (await file.text()).replace(/const GATE_HASH = "[0-9a-f]+";/, `const GATE_HASH = "${djb2(teamKey)}";`);
+    if (path === "/shared/gate.js") {
+      const js = (await file.text()).replace(/team: \{ hash: "[0-9a-f]+"/, `team: { hash: "${djb2(teamKey)}"`);
       return new Response(js, { headers: { "content-type": "text/javascript" } });
     }
     return new Response(file);
@@ -52,7 +52,9 @@ async function open(url: string, width: number, scheme: "light" | "dark") {
 }
 
 const withKey = (url: string) => {
-  const code = url.startsWith("cplus-calc.html") ? key : url.startsWith("usage-calc.html") ? teamKey : "";
+  // `team=1` opens C+ with the team code instead of the C+ code.
+  const team = url.includes("team=1") || ["usage-calc.html", "feed-calc-admin.html", "team.html"].some(page => url.startsWith(page));
+  const code = team ? teamKey : url.startsWith("cplus-calc.html") ? key : "";
   return code ? `${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(code)}` : url;
 };
 
@@ -64,6 +66,8 @@ const SCREENS: Array<[string, string]> = [
   ["admin", "feed-calc-admin.html?m=custom&pa=100&pb=60&pbl=40"],
   ["feed-es", "feed-calc.html?lang=es&phup=yes&bf=yes&tri=yes"],
   ["hub", "index.html"],
+  ["team", "team.html"],
+  ["cplus-teamcode", "cplus-calc.html?team=1"],
   ["hub-es", "index.html?lang=es"],
   ["phup", "ph-up-calc.html"],
   ["phup-cplus-stock", "ph-up-calc.html?line=cplus&mode=stock&alk=25&warm=1"],
@@ -90,8 +94,9 @@ for (const [name, url] of SCREENS) {
     await context.close();
   }
 }
-for (const [name, url] of [["cplus-gate", "cplus-calc.html"], ["usage-gate", "usage-calc.html"]]) {
+for (const [name, url] of [["cplus-gate", "cplus-calc.html"], ["usage-gate", "usage-calc.html"], ["admin-gate", "feed-calc-admin.html"], ["team-gate", "team.html"]]) {
   const { page, context } = await open(url, 390, "light");
+  if (!(await page.locator("[data-gate]").count())) problems.push(`${name}: opened without a code`);
   await page.screenshot({ path: join(out, `${name}-390.png`) });
   await context.close();
 }

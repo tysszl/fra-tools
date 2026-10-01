@@ -6,18 +6,13 @@ import { DATA, getLine, usageCost, usageEstimate, usageProducts } from "../engin
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { readStored, writeStored } from "../../shared/storage.js";
+import { gateFind, gateUnlock } from "../../shared/gate.js";
 import { printDocument } from "../../shared/print.js";
 import { ICONS, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, toast } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
 
-// Internal-team gate, not security: the page is static HTML on a public host, so the
-// gate keeps usage and pricing out of casual customer view. To change the code, hash the
-// new one with gateHash(), replace GATE_HASH, and update the keyed link on the Notion
-// Team Tools page.
-const GATE_HASH = "d1c47d4d";
-const GATE_STORAGE_KEY = "fra-team-key";
 /**
  * Links from the previous estimator (`ve` present) carry one veg EC (`ve`), one flower EC (`fe`), total flower
  * weeks (`fw`) and an additive bit string (`ai`: PhosZyme, pH Up, Si, Triologic). Map them onto the per-column
@@ -49,17 +44,6 @@ export function applyLegacyParams(params, state) {
   state.si = ai[2] === "1";
   state.triologic = ai[3] === "1";
 }
-
-/** @param {string | null | undefined} s */
-function gateNorm(s) { return (s || "").trim().toLowerCase(); }
-/** @param {string} s */
-function gateHash(s) {
-  let h = 5381;
-  for (let i = 0; i < s.length; i++) h = (((h << 5) + h) + s.charCodeAt(i)) >>> 0;
-  return h.toString(16);
-}
-/** @param {string | null | undefined} code */
-function gateCheck(code) { return Boolean(code) && gateHash(gateNorm(code)) === GATE_HASH; }
 
 const PHASES = /** @type {Phase[]} */ ([...DATA.phases]);
 const FLOWER = /** @type {Phase[]} */ (["Stretch", "Stack", "Swell", "Ripen"]);
@@ -99,10 +83,8 @@ async function loadPriceTiers() {
 export function mount(root) {
   const params = new URLSearchParams(window.location.search);
   initTheme(params);
-  const urlKey = params.get("key");
-  const saved = readStored(GATE_STORAGE_KEY);
-  const code = gateCheck(urlKey) ? urlKey : gateCheck(saved) ? saved : null;
-  if (code) { writeStored(GATE_STORAGE_KEY, gateNorm(code)); start(gateNorm(code)); } else gate();
+  const found = gateFind(["team"], params);
+  if (found) start(found.code); else gate();
 
   function gate() {
     document.title = "Usage Estimator · Front Row Ag";
@@ -119,10 +101,9 @@ export function mount(root) {
     form.addEventListener("submit", event => {
       event.preventDefault();
       const value = /** @type {HTMLInputElement} */ (form.elements.namedItem("code")).value;
-      if (gateCheck(value)) {
-        writeStored(GATE_STORAGE_KEY, gateNorm(value));
-        start(gateNorm(value));
-      } else /** @type {HTMLElement} */ (root.querySelector(".gate__err")).hidden = false;
+      const opened = gateUnlock(["team"], value);
+      if (opened) start(opened.code);
+      else /** @type {HTMLElement} */ (root.querySelector(".gate__err")).hidden = false;
     });
   }
 

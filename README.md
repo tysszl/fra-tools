@@ -6,12 +6,13 @@ Front Row Ag calculator tools, hosted on GitHub Pages at `tools.frontrowag.com`.
 
 - `index.html`: tool hub (English and Spanish)
 - `feed-calc.html`: Feed Chart, 3-Part (stock concentrate and direct to reservoir; 2 or 3 dosers)
-- `cplus-calc.html`: Feed Chart, Component Plus (access code)
-- `feed-calc-admin.html`: Feed Chart, team mode (custom stock strength)
+- `cplus-calc.html`: Feed Chart, Component Plus (C+ access code, or the team code)
+- `team.html`: team portal (team code; noindex)
+- `feed-calc-admin.html`: Feed Chart, team mode (custom stock strength; team code)
 - `ph-up-calc.html`: pH Up dosing per feed-chart column
 - `ph-down-calc.html`: phosphoric acid for source-water alkalinity
 - `cal-hypo/`: calcium hypochlorite (DryTec) stock and direct dosing
-- `usage-calc.html`: usage estimate for the team (team code, noindex)
+- `usage-calc.html`: usage estimate (team code, noindex)
 - `cost-calc.html`: retired stub; `cal-hypo-calc.html`: redirects to `cal-hypo/`
 
 ## Hosting
