@@ -15,6 +15,7 @@ Public GitHub Pages repo for Front Row Ag calculator tools at `tools.frontrowag.
 
 ## Tooling
 
+- Use Bun, not Node: `bun <file>`, `bun test`, `bun install`, `bun run`, `bunx`. Bun loads `.env` itself.
 - No build step. Each page is a small HTML shell that loads ES modules from `shared/` (styles, theme, i18n, print, share links) and `src/` (engine and page code).
 - `src/engine/` holds every number and calculation; each number names its source in `sources.js`. Screen, copied summary and PDF render from the same computed rows.
 - `src/feedchart/mixing-art.js` is generated from the internal diagram source (`output/diagram-svg/export-fra-tools.mjs` in the FRA repo); do not edit it here.
