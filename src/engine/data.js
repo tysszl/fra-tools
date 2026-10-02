@@ -162,7 +162,7 @@ export const DATA = deepFreeze({
       },
       // 2-doser tank size (and team-mode custom tank size). 3-doser methods use fixed volumes.
       stockTankVolume: { defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 },
-      // Team mode only (today's feed-calc-admin.html).
+      // Team mode only (feed-calc-admin.html).
       customStock: {
         maxLbPerGal: { partA: 3, partB: 2, bloom: 2 },
         minLbPerGal: 0.1,
@@ -214,6 +214,15 @@ export const DATA = deepFreeze({
       },
       // Applies to every C+ stock tank, 3-doser and 2-doser.
       stockTankVolume: { defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 },
+      // Team mode only, 3 dosers. MKP stops at 1.333 lb/gal, near its room-temperature solubility.
+      customStock: {
+        maxLbPerGal: { partA: 2, partB: 2, bloom: 1.333 },
+        minLbPerGal: 0.1,
+        defaultLbs: { partA: 50, partB: 50, bloom: 50 },
+        lbDecimals: 1,
+        rateDecimals: 3,
+        labelDecimals: 2,
+      },
       // Keyed by recipe.
       phCeilingFit: {
         Veg: { lo: 1.8, c: [7.0009713130620606, -2.5680272736835663, 0.7809889063496724] },

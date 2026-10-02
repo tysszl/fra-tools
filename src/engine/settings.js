@@ -14,8 +14,8 @@ import { DATA, getLine } from "./data.js";
  * @property {LineId} line
  * @property {"stock" | "direct"} application
  * @property {2 | 3} doserCount                 2 is stock-only.
- * @property {string} method                    3-doser stock method ("3-2-2", "4-3-3", "1-1-1", team-mode "custom"; C+ "1-1-1").
- * @property {RoleValues} customLbs             Team-mode custom charge per tank (lb), 3-Part only.
+ * @property {string} method                    3-doser stock method ("3-2-2", "4-3-3", "1-1-1"; C+ "1-1-1"; team-mode "custom" on both lines).
+ * @property {RoleValues} customLbs             Team-mode custom charge per tank (lb), keyed by role on the chart's line.
  * @property {number} stockTankVolumeGal        3-Part 2-doser and custom; every C+ tank.
  * @property {number} cplusCaStockLbPerGal      C+ 2-doser CaNO3 stock (0.75 or 1.00).
  * @property {"swell" | "near-ripen"} cplusFinalPhase  C+ 2-doser final phase.
@@ -64,13 +64,14 @@ export function normalizeCplusFinalPhase(value) {
 }
 
 /**
- * Team-mode custom charge: clamped to 0.1 lb/gal .. the per-part cap, rounded to 0.1 lb.
+ * Team-mode custom charge: clamped to 0.1 lb/gal .. the line's per-part cap, rounded to 0.1 lb.
+ * @param {LineId} lineId
  * @param {Role} role
  * @param {unknown} value
  * @param {number} tankGal  Normalized tank volume.
  */
-export function normalizeCustomLbs(role, value, tankGal) {
-  const custom = DATA.lines["3part"].customStock;
+export function normalizeCustomLbs(lineId, role, value, tankGal) {
+  const custom = getLine(lineId).customStock;
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return custom.defaultLbs[role];
   const clamped = Math.min(Math.max(parsed, custom.minLbPerGal * tankGal), custom.maxLbPerGal[role] * tankGal);
@@ -108,7 +109,7 @@ export function resolveFeedSettings(input = {}) {
   const line = getLine(lineId);
   const application = input.application === "direct" ? "direct" : "stock";
   const doserCount = application === "stock" && input.doserCount === 2 ? 2 : 3;
-  const validMethods = /** @type {string[]} */ ([...line.methods, ...(lineId === "3part" ? ["custom"] : [])]);
+  const validMethods = /** @type {string[]} */ ([...line.methods, "custom"]);
   const method = input.method && validMethods.includes(input.method) ? input.method : line.defaultMethod;
   const ecPreset = input.ecPreset ?? /** @type {"high"} */ (DATA.defaultEcPreset);
   const presetTargets = ecPreset === "custom" ? DATA.ecPresets.high : DATA.ecPresets[ecPreset];
@@ -123,12 +124,11 @@ export function resolveFeedSettings(input = {}) {
   const validUnits = /** @type {readonly string[]} */ (application === "stock" ? DATA.feedUnits.stock : DATA.feedUnits.direct);
   const unit = /** @type {FeedUnit} */ (input.unit && validUnits.includes(input.unit) ? input.unit : validUnits[0]);
   const stockTankVolumeGal = normalizeStockTankVolume(lineId, input.stockTankVolumeGal ?? line.stockTankVolume.defaultGal);
-  const defaults = DATA.lines["3part"].customStock.defaultLbs;
-  const rawLbs = input.customLbs ?? defaults;
+  const rawLbs = input.customLbs ?? line.customStock.defaultLbs;
   const customLbs = {
-    partA: normalizeCustomLbs("partA", rawLbs.partA, stockTankVolumeGal),
-    partB: normalizeCustomLbs("partB", rawLbs.partB, stockTankVolumeGal),
-    bloom: normalizeCustomLbs("bloom", rawLbs.bloom, stockTankVolumeGal),
+    partA: normalizeCustomLbs(lineId, "partA", rawLbs.partA, stockTankVolumeGal),
+    partB: normalizeCustomLbs(lineId, "partB", rawLbs.partB, stockTankVolumeGal),
+    bloom: normalizeCustomLbs(lineId, "bloom", rawLbs.bloom, stockTankVolumeGal),
   };
   return {
     line: lineId,
@@ -198,7 +198,7 @@ export function recipeLabel(settings, phase) {
  * @returns {RoleValues}
  */
 export function stockRates(settings, method = effectiveMethod(settings)) {
-  if (settings.line === "3part" && method === "custom") {
+  if (method === "custom") {
     return customStockRates(settings.customLbs, settings.stockTankVolumeGal);
   }
   const line = getLine(settings.line);
@@ -243,12 +243,12 @@ export function tankVolumes(settings, method = effectiveMethod(settings)) {
 }
 
 /**
- * Label for the stock build: "3-2-2", "2-Doser", or "Custom 1.5/1/1 lb/gal" (3-Part).
+ * Label for the stock build: "3-2-2", "2-Doser", or "Custom 1.5/1/1 lb/gal" (team mode).
  * @param {FeedSettings} settings
  */
 export function stockConfigLabel(settings) {
   if (settings.doserCount === 2) return "2-Doser";
-  if (settings.line === "3part" && settings.method === "custom") {
+  if (settings.method === "custom") {
     const r = customStockRates(settings.customLbs, settings.stockTankVolumeGal);
     return `Custom ${formatLbPerGal(r.partA)}/${formatLbPerGal(r.partB)}/${formatLbPerGal(r.bloom)} lb/gal`;
   }

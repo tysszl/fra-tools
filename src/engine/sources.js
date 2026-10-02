@@ -60,6 +60,8 @@ export const SOURCES = Object.freeze({
   "lines.cplus.twoDoser": "FR § 2-doser stock concentrate (C+) (CaNO3 0.75 / 1.00; Near Ripen 31.5%)",
   "lines.cplus.stockTankVolume": "undocumented (page input limits)",
   "lines.cplus.stockTankVolume.minGal": "FR § 2-doser stock concentrate (C+): 10 gal minimum (Tyler 2026-09-29)",
+  "lines.cplus.customStock.maxLbPerGal": "Tyler 2026-10-02 (team-mode C+ custom ceiling: CaNO3 2.0, C+ 2.0, MKP 1.333 lb/gal, MKP near room-temperature solubility); not yet in TS/FR",
+  "lines.cplus.customStock": "undocumented (team-mode defaults 1 lb/gal in 50 gal, matching FR § Component Plus Line › Stock concentrate; rounding as 3-Part)",
   "lines.cplus.phCeilingFit": "chemistry-model PHREEQC fit 2026-09-29, 22 °C RO brushite; rule approved Tyler 2026-09-29",
 
   "supplements.si": "TS § Product Usage › Front Row Si (foliar 0.5-2 mL/gal); metric values hand-rounded, undocumented",

@@ -7,7 +7,7 @@ import { ICONS, barHtml, esc, footHtml } from "../../shared/chrome.js";
 
 const TOOLS = [
   ["feed-calc-admin.html", "Feed Chart · Team mode", "3-Part charts with custom stock strength and tank size, for building a customer's chart."],
-  ["cplus-calc.html", "Component Plus Feed Chart", "The C+ program chart. Customers open it with the C+ access code from their rep."],
+  ["cplus-calc.html", "Component Plus Feed Chart", "The C+ program chart. The team code adds custom stock strength and tank size; customers open it with the C+ access code from their rep."],
   ["usage-calc.html", "Usage Estimate", "Product per cycle for a customer's feed chart, column by column, with pH Up and additives."],
 ];
 

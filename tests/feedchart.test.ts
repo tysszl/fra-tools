@@ -28,6 +28,7 @@ function configs() {
     }
   }
   out.push({ line: "3part", method: "custom", unit: "mL/L" }, { line: "3part", method: "4-3-3" });
+  out.push({ line: "cplus", method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 }, usePhoszyme: true });
   out.push({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen", cplusCaStockLbPerGal: 1 });
   out.push({ line: "cplus", recipeSchedule: "swell-flower" }, { line: "3part", ecPreset: "custom", targetEc: { Swell: 0.05 } });
   out.push({ line: "3part", application: "direct", usePhoszyme: true, ecPreset: "custom", targetEc: { Ripen: 0.05 } });
@@ -60,6 +61,17 @@ describe("strings", () => {
     for (const input of configs()) for (const lang of ["en", "es"] as const) {
       expect(() => render(input, lang, input.method === "custom" ? "team" : "customer")).not.toThrow();
     }
+  });
+
+  test("C+ custom stock prints its weights and lb/gal", () => {
+    const { print, view } = render({ line: "cplus", method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 } }, "en", "team");
+    expect(view.title).toBe("Component Plus Feed Chart · Team");
+    expect(view.chips).toContain("Custom 2 / 1 / 1.33 lb/gal · 3 dosers");
+    expect(view.chips).toContain("75 gal tanks");
+    expect(view.tanks.map(tank => [tank.weight, tank.conc, tank.validates])).toEqual([
+      ["150 lb", "2 lb/gal", "Validates at 3.80 EC"], ["75 lb", "1 lb/gal", "Validates at 1.70 EC"], ["100 lb", "1.333 lb/gal", "Validates at 1.56 EC"],
+    ]);
+    expect(print).toContain("Custom 2/1/1.33 lb/gal");
   });
 });
 
@@ -126,6 +138,8 @@ describe("share links", () => {
       [{ line: "3part", mode: "customer" }, { recipeSchedule: "custom", phaseRecipe: { Veg: "Veg", Stretch: "Stretch", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" } }],
       [{ line: "3part", mode: "customer" }, { application: "direct", unit: "g/L" }],
       [{ line: "3part", mode: "team" }, { method: "custom", stockTankVolumeGal: 40, customLbs: { partA: 90, partB: 50.5, bloom: 40 } }],
+      [{ line: "cplus", mode: "team" }, { method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 }, ecPreset: "custom", targetEc: { Veg: 3, Stretch: 3, Stack: 2.7, Swell: 2.4, Ripen: 1.8 } }],
+      [{ line: "cplus", mode: "team" }, { method: "custom", customLbs: { partA: 62.5, partB: 40, bloom: 30.1 }, unit: "mL/L", usePhoszyme: true }],
       [{ line: "cplus", mode: "customer" }, { doserCount: 2, cplusCaStockLbPerGal: 1, cplusFinalPhase: "near-ripen", stockTankVolumeGal: 12.5 }],
       [{ line: "cplus", mode: "customer" }, { stockTankVolumeGal: 75, recipeSchedule: "swell-flower", unit: "mL/L" }],
     ];
@@ -138,6 +152,18 @@ describe("share links", () => {
       expect(decoded.extras).toEqual(extras);
       expect(params.get("lang")).toBe("es");
     }
+  });
+
+  test("C+ custom stock is team mode only", () => {
+    const search = "?m=custom&pa=150&pb=75&pbl=100&tv=75";
+    const team = E.resolveFeedSettings(decodeParams(new URLSearchParams(search), { line: "cplus", mode: "team" }).input);
+    expect(team.method).toBe("custom");
+    expect(team.customLbs).toEqual({ partA: 150, partB: 75, bloom: 100 });
+    const customer = E.resolveFeedSettings(decodeParams(new URLSearchParams(search), { line: "cplus", mode: "customer" }).input);
+    expect(customer.method).toBe("1-1-1");
+    expect(E.stockRates(customer)).toEqual({ partA: 1, partB: 1, bloom: 1 });
+    const params = encodeParams(team, { facility: "", show: { phup: false, bf: false, tri: false }, lang: "en", key: null, mode: "team" });
+    expect(Object.fromEntries(params)).toEqual({ m: "custom", pa: "150", pb: "75", pbl: "100", tv: "75" });
   });
 
   test("old rs=custom links read a missing phase as its own recipe", () => {

@@ -5,7 +5,7 @@
 //
 //   a=direct   d=2   m=<method>   tv=<gal>   ca=<lb/gal>   fp=near-ripen   phz=yes
 //   u=<unit>   p=standard|custom   ec_<phase>=<EC>   rs=<schedule>   rp_<phase>=<recipe>
-//   pa/pb/pbl=<lb> (team mode)   phup=yes   bf=yes   tri=yes   fac=<name>   lang=es
+//   pa/pb/pbl=<lb> (team mode, both lines)   phup=yes   bf=yes   tri=yes   fac=<name>   lang=es
 //   key=<code> (C+ gate)   t=light|dark (read by shared/theme.js)
 // `si` is retired and ignored.
 import { DATA, getLine, formatStockTankVolume } from "../engine/index.js";
@@ -32,7 +32,8 @@ const ALL_UNITS = [...DATA.feedUnits.stock, ...DATA.feedUnits.direct];
 /** @param {PageMode} page */
 function validMethods(page) {
   const line = getLine(page.line);
-  return page.line === "3part" ? [...line.methods, ...(page.mode === "team" ? ["custom"] : [])] : [];
+  if (page.mode === "team") return [...line.methods, "custom"];
+  return page.line === "3part" ? [...line.methods] : [];
 }
 
 /**
@@ -62,8 +63,8 @@ export function decodeParams(p, page) {
     if (p.has("ca")) input.cplusCaStockLbPerGal = Number(p.get("ca"));
     if (p.has("fp")) input.cplusFinalPhase = /** @type {any} */ (p.get("fp"));
   }
-  if (page.line === "3part" && page.mode === "team") {
-    const defaults = DATA.lines["3part"].customStock.defaultLbs;
+  if (page.mode === "team") {
+    const defaults = line.customStock.defaultLbs;
     input.customLbs = {
       partA: p.has("pa") ? Number(p.get("pa")) : defaults.partA,
       partB: p.has("pb") ? Number(p.get("pb")) : defaults.partB,
@@ -143,7 +144,7 @@ export function encodeParams(s, extras) {
         if (s.cplusCaStockLbPerGal !== DATA.lines.cplus.twoDoser.defaultCaStock) p.set("ca", String(s.cplusCaStockLbPerGal));
         if (s.cplusFinalPhase !== DATA.lines.cplus.twoDoser.defaultFinalPhase) p.set("fp", s.cplusFinalPhase);
       }
-    } else if (s.line === "3part" && s.method !== line.defaultMethod) {
+    } else if (s.method !== line.defaultMethod) {
       p.set("m", s.method);
       if (s.method === "custom") {
         p.set("pa", String(s.customLbs.partA));

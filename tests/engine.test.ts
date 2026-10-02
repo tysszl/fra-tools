@@ -74,6 +74,10 @@ describe("approval snapshot", () => {
       maxLbPerGal: { partA: 3, partB: 2, bloom: 2 }, minLbPerGal: 0.1, defaultLbs: { partA: 75, partB: 50, bloom: 50 },
       lbDecimals: 1, rateDecimals: 3, labelDecimals: 2,
     });
+    expect(DATA.lines.cplus.customStock).toEqual({
+      maxLbPerGal: { partA: 2, partB: 2, bloom: 1.333 }, minLbPerGal: 0.1, defaultLbs: { partA: 50, partB: 50, bloom: 50 },
+      lbDecimals: 1, rateDecimals: 3, labelDecimals: 2,
+    });
     expect(DATA.lines.cplus.stockMethods).toEqual({
       "1-1-1": { rates: { partA: 1, partB: 1, bloom: 1 } },
       "2-doser": { rates: { partA: 0.75, partB: 0.75, bloom: 1 } },
@@ -299,13 +303,62 @@ describe("settings", () => {
   });
 
   test("team-mode custom stock clamps to 0.1 lb/gal .. 3/2/2 lb/gal and labels itself", () => {
-    expect(E.normalizeCustomLbs("partA", 200, 37.5)).toBe(112.5);
-    expect(E.normalizeCustomLbs("partB", 1, 37.5)).toBe(3.8);
-    expect(E.normalizeCustomLbs("bloom", "x", 50)).toBe(50);
+    expect(E.normalizeCustomLbs("3part", "partA", 200, 37.5)).toBe(112.5);
+    expect(E.normalizeCustomLbs("3part", "partB", 1, 37.5)).toBe(3.8);
+    expect(E.normalizeCustomLbs("3part", "bloom", "x", 50)).toBe(50);
     const s = E.resolveFeedSettings({ method: "custom", stockTankVolumeGal: 50, customLbs: { partA: 100, partB: 60, bloom: 40 } });
     expect(E.stockRates(s)).toEqual({ partA: 2, partB: 1.2, bloom: 0.8 });
     expect(E.stockConfigLabel(s)).toBe("Custom 2/1.2/0.8 lb/gal");
     expect(E.tankVolumes(s)).toEqual({ tankA: 50, tankB: 50 });
+  });
+
+  test("C+ team-mode custom stock clamps to 0.1 lb/gal .. 2/2/1.333 lb/gal and labels itself", () => {
+    expect(E.normalizeCustomLbs("cplus", "partA", 200, 75)).toBe(150);
+    expect(E.normalizeCustomLbs("cplus", "partB", 200, 75)).toBe(150);
+    expect(E.normalizeCustomLbs("cplus", "bloom", 200, 75)).toBe(100);
+    expect(E.normalizeCustomLbs("cplus", "bloom", 1, 50)).toBe(5);
+    expect(E.normalizeCustomLbs("cplus", "partB", "x", 50)).toBe(50);
+    const s = E.resolveFeedSettings({ line: "cplus", method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 } });
+    expect(s.method).toBe("custom");
+    expect(E.stockRates(s)).toEqual({ partA: 2, partB: 1, bloom: 1.333 });
+    expect(E.stockConfigLabel(s)).toBe("Custom 2/1/1.33 lb/gal");
+    expect(E.tankVolumes(s)).toEqual({ tankA: 75, tankB: 75 });
+    const stock = E.computeFeedChart(s).stock!;
+    expect(stock.rows.map(r => [r.key, r.wt, r.conc, r.valEC])).toEqual([
+      ["partA", 150, 2, 3.8], ["partB", 75, 1, 1.7], ["phz", 7.5, 0.1, 0.13], ["bloom", 100, 1.333, 1.56],
+    ]);
+    // Two dosers ignore the custom charge.
+    expect(E.stockRates({ ...s, doserCount: 2 })).toEqual({ partA: 0.75, partB: 0.75, bloom: 1 });
+  });
+
+  test("C+ custom at 1/1/1 lb/gal in 50 gal is the standard 1-1-1 chart", () => {
+    for (const unit of DATA.feedUnits.stock) for (const usePhoszyme of [false, true]) for (const ecPreset of ["high", "standard"] as const) {
+      const base = { line: "cplus" as const, unit, usePhoszyme, ecPreset };
+      const standard = E.computeFeedChart(base);
+      const custom = E.computeFeedChart({ ...base, method: "custom", stockTankVolumeGal: 50, customLbs: { partA: 50, partB: 50, bloom: 50 } });
+      expect(custom.rows).toEqual(standard.rows);
+      expect(custom.stock).toEqual(standard.stock);
+      expect(custom.ph).toEqual(standard.ph);
+      expect(custom.tankVolumes).toEqual(standard.tankVolumes);
+    }
+  });
+
+  test("C+ custom 2.0/1.0/1.333 lb/gal in 75 gal matches the 2026-08-26 hand calculation", () => {
+    const s = E.resolveFeedSettings({ line: "cplus", method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 }, ecPreset: "custom", targetEc: { Veg: 3.0, Stretch: 3.0, Stack: 2.7, Swell: 2.4, Ripen: 1.8 } });
+    const rates = E.stockRates(s);
+    const mlPerGal = (role: "partA" | "partB" | "bloom") => DATA.phases.map(phase =>
+      E.doseGramsPerGallon("cplus", E.recipeForPhase(s, phase), role, s.targetEc[phase]) / rates[role] * DATA.feedUnits.factors["mL/gal"]);
+    const hand = {
+      partA: [23.7, 19.6, 13.1, 11.6, 7.5],
+      partB: [35.4, 28.3, 26.2, 23.3, 15.9],
+      bloom: [0, 17.7, 26.2, 23.3, 22.2],
+    };
+    for (const role of ["partA", "partB", "bloom"] as const) {
+      mlPerGal(role).forEach((value, i) => expect(Math.abs(value - hand[role][i])).toBeLessThanOrEqual(0.1));
+    }
+    // The chart prints the same doses at the unit's display rounding.
+    const rows = Object.fromEntries(E.computeFeedChart(s).rows.map(row => [row.key, row.cells.map(c => c && c.dosage)]));
+    for (const role of ["partA", "partB", "bloom"] as const) expect(rows[role]).toEqual(mlPerGal(role).map(v => Math.round(v)));
   });
 
   test("recipe schedule derivation", () => {

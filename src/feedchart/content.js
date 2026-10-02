@@ -50,10 +50,10 @@ export function buildView(chart, t, options) {
         chips.push(t("chip.caStock", { rate: s.cplusCaStockLbPerGal.toFixed(2) }));
         if (s.cplusFinalPhase === "near-ripen") chips.push(t("chip.nearRipen"));
       }
-    } else if (s.line === "3part" && s.method === "custom") {
+    } else if (s.method === "custom") {
       const r = customStockRates(s.customLbs, s.stockTankVolumeGal);
       chips.push(`${t("chip.custom", { a: formatLbPerGal(r.partA), b: formatLbPerGal(r.partB), bl: formatLbPerGal(r.bloom) })} · ${t("chip.dosers3")}`);
-      chips.push(t("chip.tankGal", { vol: formatStockTankVolume("3part", s.stockTankVolumeGal) }));
+      chips.push(t("chip.tankGal", { vol: formatStockTankVolume(s.line, s.stockTankVolumeGal) }));
     } else {
       chips.push(`${s.method} · ${t("chip.dosers3")}`);
       if (s.line === "cplus") chips.push(t("chip.tankGal", { vol: formatStockTankVolume("cplus", s.stockTankVolumeGal) }));
@@ -267,7 +267,7 @@ export function buildView(chart, t, options) {
     settings: s,
     lineLabel,
     applicationLabel,
-    title: options.mode === "team" ? t("title.team") : t(`title.${s.line}`),
+    title: options.mode === "team" ? t(`title.team.${s.line}`) : t(`title.${s.line}`),
     lede: t(stockMode ? "lede.stock" : "lede.direct"),
     chips,
     unit: s.unit,

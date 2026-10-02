@@ -1,7 +1,7 @@
 // @ts-check
 // The Feed Chart app. Entry pages call mount() with their line and mode:
 //   feed-calc.html        3-Part, customer
-//   cplus-calc.html       Component Plus, customer, behind the access-code gate
+//   cplus-calc.html       Component Plus, behind the access-code gate; the team code opens team mode
 //   feed-calc-admin.html  3-Part, team (custom stock strength)
 import { DATA, getLine, computeFeedChart, resolveFeedSettings, formatStockTankVolume, supplementRates, isMetricUnit } from "../engine/index.js";
 import { initTheme, toggleTheme, currentTheme } from "../../shared/theme.js";
@@ -34,7 +34,7 @@ const PHASES = /** @type {Phase[]} */ ([...DATA.phases]);
 
 /**
  * @param {HTMLElement} root
- * @param {{ line: LineId, mode: "customer" | "team", gate?: boolean, assets?: string }} page  Team mode always needs the team code; `gate` (C+) takes the C+ or the team code.
+ * @param {{ line: LineId, mode: "customer" | "team", gate?: boolean, assets?: string }} page  Team mode always needs the team code; `gate` (C+) takes the C+ or the team code, and the team code opens it in team mode.
  */
 export function mount(root, page) {
   const params = new URLSearchParams(window.location.search);
@@ -46,7 +46,9 @@ export function mount(root, page) {
     qr: `${base}qr-moreinfo.png`,
   };
 
-  const decoded = decodeParams(params, { line: page.line, mode: page.mode });
+  /** @type {"customer" | "team"} */
+  let mode = page.mode;
+  const decoded = decodeParams(params, { line: page.line, mode });
   const state = {
     settings: resolveFeedSettings(decoded.input),
     facility: decoded.extras.facility,
@@ -73,6 +75,10 @@ export function mount(root, page) {
   /** @param {{ name: string, code: string }} opened  Only the C+ code rides along in share links. */
   function unlock(opened) {
     state.key = opened.name === "cplus" ? opened.code : null;
+    if (opened.name === "team" && mode !== "team") {
+      mode = "team";
+      state.settings = resolveFeedSettings(decodeParams(params, { line: page.line, mode }).input);
+    }
   }
 
   function renderGate() {
@@ -127,7 +133,7 @@ export function mount(root, page) {
 
   function syncUrl() {
     replaceUrl(encodeParams(state.settings, {
-      facility: state.facility, show: state.show, lang: state.lang, key: state.key, mode: page.mode,
+      facility: state.facility, show: state.show, lang: state.lang, key: state.key, mode,
     }));
   }
 
@@ -218,7 +224,7 @@ export function mount(root, page) {
 
   function view() {
     const chart = computeFeedChart(state.settings);
-    return buildView(chart, t, { facility: state.facility, show: state.show, lang: state.lang, mode: page.mode });
+    return buildView(chart, t, { facility: state.facility, show: state.show, lang: state.lang, mode });
   }
 
   function render() {
@@ -246,7 +252,7 @@ export function mount(root, page) {
     const v = view();
     const app = /** @type {HTMLElement} */ (root.querySelector("[data-app]"));
     app.innerHTML = barHtml()
-      + (page.mode === "team" ? `<p class="banner">${esc(t("team.banner"))}</p>` : "")
+      + (mode === "team" ? `<p class="banner">${esc(t("team.banner"))}</p>` : "")
       + `<h1 class="title">${esc(v.title)}</h1><p class="lede">${esc(v.lede)}</p>`
       + `<section class="card setup"><div class="setup__chips">${v.chips.map(chip => `<span class="chip">${esc(chip)}</span>`).join("")}</div>`
       + `<button class="edit-btn" data-act="edit" aria-haspopup="dialog">${ICONS.edit}${esc(t("action.edit"))}</button></section>`
@@ -402,7 +408,7 @@ export function mount(root, page) {
     const line = getLine(s.line);
     const stockMode = s.application === "stock";
     const twoDoser = s.doserCount === 2;
-    const team = page.mode === "team";
+    const team = mode === "team";
 
     /** @type {string[]} */
     const fields = [];
@@ -425,7 +431,9 @@ export function mount(root, page) {
         + help(methods.map(m => t(`help.method.${m}`)))));
     }
     if (stockMode && !twoDoser && s.line === "cplus") {
-      fields.push(field(t("field.method"), `<p class="field__help">${esc(t("help.method.cplus"))}</p>`));
+      fields.push(field(t("field.method"), team
+        ? seg("method", [["1-1-1", "1-1-1"], ["custom", t("opt.custom")]], s.method) + help([t("help.method.cplus"), t("help.method.custom")])
+        : `<p class="field__help">${esc(t("help.method.cplus"))}</p>`));
     }
 
     const showTank = stockMode && (s.line === "cplus" || twoDoser || s.method === "custom");
@@ -435,11 +443,11 @@ export function mount(root, page) {
         `<div class="input-row"><input class="input num" data-input="tank" type="number" inputmode="decimal" min="${line.stockTankVolume.minGal}" step="0.5" value="${esc(formatStockTankVolume(s.line, s.stockTankVolumeGal))}" aria-label="${esc(t("field.tankSize"))}"><span>${esc(t("field.tankUnit"))}</span></div>`
         + `<p class="field__help">${esc(tankHelp)} ${esc(t("help.tank.min", { min: line.stockTankVolume.minGal }))}</p>`));
     }
-    if (stockMode && !twoDoser && s.line === "3part" && s.method === "custom") {
-      const caps = DATA.lines["3part"].customStock.maxLbPerGal;
+    if (stockMode && !twoDoser && team && s.method === "custom") {
+      const caps = line.customStock.maxLbPerGal;
       fields.push(field(t("field.customLbs"),
         `<div class="grid3">${/** @type {const} */ (["partA", "partB", "bloom"]).map(role => `<div><label for="lbs-${role}">${esc(line.fullNames[role])}</label><input class="input num" id="lbs-${role}" data-input="lbs:${role}" type="number" inputmode="decimal" step="0.1" value="${esc(s.customLbs[role])}"></div>`).join("")}</div>`
-        + `<p class="field__help">${esc(t("field.lbCharged"))}. ${esc(t("help.customLbs", { a: caps.partA, b: caps.partB, bl: caps.bloom }))}</p>`));
+        + `<p class="field__help">${esc(t("field.lbCharged"))}. ${esc(t("help.customLbs", { a: caps.partA, b: caps.partB, bl: caps.bloom, names: [line.stockNames.partA, line.stockNames.partB, line.stockNames.bloom].join(" / ") }))}</p>`));
     }
     if (stockMode && twoDoser && s.line === "cplus") {
       fields.push(field(t("field.caStock"),
