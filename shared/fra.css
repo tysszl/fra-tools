@@ -440,7 +440,8 @@ td.pc, th.pc { color: var(--pc); }
   .ref td, .ref th { padding-left: 4px; padding-right: 4px; }
   .ref td:first-child, .ref th:first-child { padding-left: 12px; }
   .ref td:last-child, .ref th:last-child { padding-right: 12px; }
-  .ref.usage .input { width: 64px !important; }
+  .ref.usage td:not(:first-child):not(:last-child), .ref.usage th:not(:first-child):not(:last-child) { padding-left: 4px; padding-right: 4px; }
+  .ref.usage .input { width: 68px !important; padding: 0 5px; font-size: 12.5px; }
 }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 4px; font-size: 12.5px; color: var(--ink-2); }
 .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: 3px; }

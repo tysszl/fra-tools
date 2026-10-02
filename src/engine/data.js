@@ -360,6 +360,27 @@ export const DATA = deepFreeze({
       flowerGalPerWeek: 10000,
       cyclesPerYear: 5,
     },
+    // Quick mode: the whole estimate from flowering canopy alone. Flower runs the
+    // default 2/3/3/1 columns (9 weeks); veg runs `vegWeeks`. Feed strength, schedule
+    // and pH Up are fixed; mother plants are not counted.
+    quick: {
+      canopyFt2: 10000,
+      harvestsPerYear: 5,
+      ftSqPerFlowerPlant: 2,
+      flowerLitersPerPlantPerDay: 2,
+      vegPlantsPerFlowerPlant: 1.1,
+      vegLitersPerPlantPerDay: 0.25,
+      vegWeeks: 2,
+      daysPerWeek: 7,
+      ecPreset: "high",
+      schedule: "commercial",
+      alkPpm: 10,
+      // Triologic once a week: one day's feed treated each week.
+      triologicTreatedDaysPerWeek: 1,
+      // Si foliar once a week through day 21 of flower, over the flowering canopy.
+      siSprayGalPer100Ft2: 1,
+      siSpraysPerCycle: 3,
+    },
   },
 });
 

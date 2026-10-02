@@ -1,10 +1,13 @@
 // @ts-check
-// Usage estimator (team): product for one cycle on the customer's feed chart, column
-// by column, and its cost at prices loaded from an untracked same-origin prices.json
-// or typed in. The repo holds no prices. Exports a customer proposal PDF (annual order,
-// assumptions, prices only when turned on) or an internal analysis PDF (usage-print.js).
-import { DATA, getLine, usageCost, usageEstimate, usageProducts, usagePurchase } from "../engine/index.js";
-import { renderUsagePrint, unitsFor } from "./usage-print.js";
+// Usage estimator (team). Quick mode (the default) estimates a year of product from
+// flowering canopy alone on fixed assumptions (DATA.usage.quick); Advanced is the full
+// calculator, column by column on the customer's feed chart, and opens with the quick
+// inputs carried over. Prices preload from the sealed price list (usage-prices.js) when
+// the page holds the team code, or are typed in. Exports a customer proposal PDF (annual
+// order, assumptions, prices only when turned on) or an internal analysis PDF (usage-print.js).
+import { DATA, getLine, quickUsageInput, quickVolumes, usageCost, usageEstimate, usageProducts, usagePurchase } from "../engine/index.js";
+import { assumptions, renderUsagePrint, unitsFor } from "./usage-print.js";
+import { loadPriceList, tierPrices } from "./usage-prices.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { readStored, writeStored } from "../../shared/storage.js";
@@ -74,22 +77,179 @@ function displayDate(iso) {
 const VOLUME_INPUTS = new Set(["vegGalPerWeek", "flowerGalPerWeek", "triVeg", "triFlower", "siGal"]);
 const TEXT_MAX = { facility: 80, preparedBy: 60, notes: 600 };
 
+const Q = DATA.usage.quick;
+/** Default price tier per line. */
+const DEFAULT_TIER = { "3part": "commercial", cplus: "cplus-mixed" };
+/** Parameters only the full calculator writes; a link with any of them opens Advanced. */
+const ADVANCED_PARAMS = ["vw", "vg", "fg", "w0", "e0", "e1", "e2", "e3", "e4", "p", "rs", "ve", "fe", "fw", "alk", "phup", "tvg", "tfg", "sig", "sir"];
+/** @param {number} n Round to 0.1 for inputs and links. */
+const tenth = n => Math.round(n * 10) / 10;
+
 /**
- * prices.json: { "tiers": [{ "id", "label", "prices": { name: price } }] },
- * { "prices": { name: price } }, or a flat { name: price } map.
- * @returns {Promise<Array<{ id: string, label: string, prices: Record<string, number> }>>}
+ * Page state from the URL. Links without `m` open Quick unless they carry a full-calculator
+ * parameter, so links made before Quick mode keep opening the same chart.
+ * @param {URLSearchParams} params
+ * @param {string} key
  */
-async function loadPriceTiers() {
-  try {
-    const res = await fetch("prices.json", { cache: "no-store" });
-    if (!res.ok) return [];
-    const data = await res.json();
-    if (Array.isArray(data.tiers)) return data.tiers.filter((/** @type {any} */ t) => t && t.id && t.prices);
-    const prices = data.prices && typeof data.prices === "object" ? data.prices : data;
-    return [{ id: "list", label: "Price list", prices }];
-  } catch {
-    return [];
+export function initialState(params, key) {
+  /** @type {LineId} */
+  const line0 = params.get("b") === "cplus" ? "cplus" : "3part";
+  const preset0 = params.get("p") === "standard" ? "standard" : "high";
+  const m = params.get("m");
+  const mode = m === "q" ? "quick" : m === "a" ? "advanced" : ADVANCED_PARAMS.some(k => params.has(k)) ? "advanced" : "quick";
+  const state = {
+    key,
+    /** @type {"quick" | "advanced"} */
+    mode: /** @type {"quick" | "advanced"} */ (mode),
+    canopy: num(params.get("ft"), Q.canopyFt2, 1e7),
+    line: line0,
+    preset: /** @type {"high" | "standard" | "custom"} */ (preset0),
+    schedule: params.get("rs") === "swell-flower" ? "swell-flower" : "commercial",
+    /** @type {Record<Phase, number>} */
+    ec: { ...DATA.ecPresets[preset0] },
+    vegWeeks: num(params.get("vw"), D.vegWeeks, 52),
+    vegGalPerWeek: num(params.get("vg"), D.vegGalPerWeek),
+    /** @type {Record<string, number>} */
+    flowerWeeks: { ...D.flowerWeeks },
+    flowerGalPerWeek: num(params.get("fg"), D.flowerGalPerWeek),
+    phoszyme: params.get("phz") === "1",
+    phUp: params.get("phup") !== "0",
+    alk: num(params.get("alk"), 0, 500),
+    triologic: params.get("tri") === "1",
+    triVeg: num(params.get("tvg"), 0),
+    triFlower: num(params.get("tfg"), 0),
+    si: params.get("si") === "1",
+    siGal: num(params.get("sig"), 0),
+    siRate: num(params.get("sir"), DATA.usage.siFoliarMlPerGal, 10),
+    cycles: num(params.get("cy"), mode === "quick" ? Q.harvestsPerYear : D.cyclesPerYear, 52),
+    tier: params.get("tier") ?? "",
+    addTier: params.get("at") ?? "",
+    facility: (params.get("fac") ?? "").slice(0, TEXT_MAX.facility),
+    preparedBy: (params.get("rep") ?? readStored("fra-usage-rep") ?? "").slice(0, TEXT_MAX.preparedBy),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(params.get("dt") ?? "") ? /** @type {string} */ (params.get("dt")) : isoDate(new Date()),
+    metric: params.get("u") === "metric",
+    showPrices: params.get("cost") === "1",
+    notes: "",
+    /** @type {"customer" | "internal"} */
+    printMode: params.get("pm") === "customer" ? "customer" : "internal",
+    /** @type {import("./usage-prices.js").PriceList} */
+    list: { tiers: [], additiveTiers: [] },
+    pricesLoaded: false,
+    /** @type {Record<string, number | null>} */
+    prices: {},
+  };
+  PHASES.forEach((p, i) => {
+    const e = num(params.get(`e${i}`), -1, 10);
+    if (e > 0 && e !== state.ec[p]) { state.ec[p] = e; state.preset = "custom"; }
+  });
+  FLOWER.forEach((p, i) => { state.flowerWeeks[p] = num(params.get(`w${i}`), state.flowerWeeks[p], 52); });
+  applyLegacyParams(params, state);
+  return state;
+}
+
+/** @typedef {ReturnType<typeof initialState>} UsageState */
+
+/**
+ * The share-link parameters for the current state. Quick links carry only the quick
+ * inputs; prices never go in a link.
+ * @param {UsageState} state
+ */
+export function stateParams(state) {
+  const p = new URLSearchParams();
+  p.set("key", state.key);
+  if (state.line === "cplus") p.set("b", "cplus");
+  if (state.mode === "quick") {
+    p.set("m", "q");
+    p.set("ft", String(tenth(state.canopy)));
+    if (state.phoszyme) p.set("phz", "1");
+    if (state.triologic) p.set("tri", "1");
+    if (state.si) p.set("si", "1");
+  } else {
+    p.set("m", "a");
+    if (state.preset === "standard") p.set("p", "standard");
+    if (state.schedule !== "commercial") p.set("rs", state.schedule);
+    const preset = state.preset === "custom" ? null : DATA.ecPresets[state.preset];
+    PHASES.forEach((ph, i) => { if (!preset || preset[ph] !== state.ec[ph]) p.set(`e${i}`, String(state.ec[ph])); });
+    p.set("vw", String(state.vegWeeks));
+    p.set("vg", String(tenth(state.vegGalPerWeek)));
+    FLOWER.forEach((ph, i) => p.set(`w${i}`, String(state.flowerWeeks[ph])));
+    p.set("fg", String(tenth(state.flowerGalPerWeek)));
+    if (state.phoszyme) p.set("phz", "1");
+    if (!state.phUp) p.set("phup", "0");
+    if (state.alk) p.set("alk", String(state.alk));
+    if (state.triologic) { p.set("tri", "1"); p.set("tvg", String(tenth(state.triVeg))); p.set("tfg", String(tenth(state.triFlower))); }
+    if (state.si) { p.set("si", "1"); p.set("sig", String(tenth(state.siGal))); p.set("sir", String(state.siRate)); }
   }
+  p.set("cy", String(state.cycles));
+  if (state.tier) p.set("tier", state.tier);
+  if (state.addTier) p.set("at", state.addTier);
+  if (state.metric) p.set("u", "metric");
+  if (state.showPrices) p.set("cost", "1");
+  if (state.facility) p.set("fac", state.facility);
+  if (state.preparedBy) p.set("rep", state.preparedBy);
+  if (state.date !== isoDate(new Date())) p.set("dt", state.date);
+  return p;
+}
+
+/**
+ * The engine input for the current mode.
+ * @param {UsageState} state
+ */
+export function usageInput(state) {
+  if (state.mode === "quick") {
+    return quickUsageInput({ lineId: state.line, canopyFt2: state.canopy, phoszyme: state.phoszyme, triologic: state.triologic, si: state.si });
+  }
+  return {
+    lineId: state.line, schedule: state.schedule, ec: state.ec,
+    vegWeeks: state.vegWeeks, vegGalPerWeek: state.vegGalPerWeek,
+    flowerWeeks: state.flowerWeeks, flowerGalPerWeek: state.flowerGalPerWeek,
+    phoszyme: state.phoszyme, phUp: state.phUp, alkPpm: state.alk,
+    triologic: state.triologic, triologicVegGalPerWeek: state.triVeg, triologicFlowerGalPerWeek: state.triFlower,
+    si: state.si, siFoliarGal: state.siGal, siMlPerGal: state.siRate,
+  };
+}
+
+/**
+ * Switches to Advanced with every quick assumption written into the full calculator's
+ * inputs, so it opens on the same estimate.
+ * @param {UsageState} state
+ */
+export function quickToAdvanced(state) {
+  if (state.mode === "quick") {
+    const q = quickUsageInput({ lineId: state.line, canopyFt2: state.canopy, phoszyme: state.phoszyme, triologic: state.triologic, si: state.si });
+    state.preset = /** @type {"high" | "standard"} */ (Q.ecPreset);
+    state.ec = /** @type {Record<Phase, number>} */ ({ ...q.ec });
+    state.schedule = q.schedule;
+    state.vegWeeks = q.vegWeeks;
+    state.vegGalPerWeek = q.vegGalPerWeek;
+    state.flowerWeeks = { ...q.flowerWeeks };
+    state.flowerGalPerWeek = q.flowerGalPerWeek;
+    state.phUp = q.phUp;
+    state.alk = q.alkPpm;
+    state.triVeg = q.triologicVegGalPerWeek;
+    state.triFlower = q.triologicFlowerGalPerWeek;
+    state.siGal = q.siFoliarGal;
+    state.siRate = q.siMlPerGal;
+  }
+  state.mode = "advanced";
+  return state;
+}
+
+/**
+ * Applies the selected price tier (and additive tier) to the state's prices. With no
+ * price list loaded, typed prices stay as they are.
+ * @param {UsageState} state
+ * @param {boolean} [followAdditives]  Reset the additive tier to the base tier's default.
+ */
+export function applyTier(state, followAdditives = false) {
+  const lineTiers = state.list.tiers.filter(t => t.line === state.line);
+  if (!lineTiers.length) return;
+  const tier = lineTiers.find(t => t.id === state.tier) ?? lineTiers.find(t => t.id === DEFAULT_TIER[state.line]) ?? lineTiers[0];
+  state.tier = tier.id;
+  if (followAdditives || !state.list.additiveTiers.some(t => t.id === state.addTier)) state.addTier = tier.additives;
+  const prices = tierPrices(state.list, state.tier, state.addTier, usageProducts(state.line).map(p => p.name));
+  // Products the list leaves unpriced (pH Up) keep any typed price.
+  if (prices) Object.entries(prices).forEach(([name, price]) => { if (price !== null) state.prices[name] = price; });
 }
 
 /** @param {HTMLElement} root */
@@ -122,98 +282,10 @@ export function mount(root) {
 
   /** @param {string} key */
   function start(key) {
-    /** @type {LineId} */
-    const line0 = params.get("b") === "cplus" ? "cplus" : "3part";
-    const preset0 = params.get("p") === "standard" ? "standard" : "high";
-    const state = {
-      key,
-      line: line0,
-      preset: /** @type {"high" | "standard" | "custom"} */ (preset0),
-      schedule: params.get("rs") === "swell-flower" ? "swell-flower" : "commercial",
-      /** @type {Record<Phase, number>} */
-      ec: { ...DATA.ecPresets[preset0] },
-      vegWeeks: num(params.get("vw"), D.vegWeeks, 52),
-      vegGalPerWeek: num(params.get("vg"), D.vegGalPerWeek),
-      /** @type {Record<string, number>} */
-      flowerWeeks: { ...D.flowerWeeks },
-      flowerGalPerWeek: num(params.get("fg"), D.flowerGalPerWeek),
-      phoszyme: params.get("phz") === "1",
-      phUp: params.get("phup") !== "0",
-      alk: num(params.get("alk"), 0, 500),
-      triologic: params.get("tri") === "1",
-      triVeg: num(params.get("tvg"), 0),
-      triFlower: num(params.get("tfg"), 0),
-      si: params.get("si") === "1",
-      siGal: num(params.get("sig"), 0),
-      siRate: num(params.get("sir"), DATA.usage.siFoliarMlPerGal, 10),
-      cycles: num(params.get("cy"), D.cyclesPerYear, 52),
-      tier: params.get("tier") ?? "",
-      facility: (params.get("fac") ?? "").slice(0, TEXT_MAX.facility),
-      preparedBy: (params.get("rep") ?? readStored("fra-usage-rep") ?? "").slice(0, TEXT_MAX.preparedBy),
-      date: /^\d{4}-\d{2}-\d{2}$/.test(params.get("dt") ?? "") ? /** @type {string} */ (params.get("dt")) : isoDate(new Date()),
-      metric: params.get("u") === "metric",
-      showPrices: params.get("cost") === "1",
-      notes: "",
-      /** @type {"customer" | "internal"} */
-      printMode: params.get("pm") === "customer" ? "customer" : "internal",
-      /** @type {Array<{ id: string, label: string, prices: Record<string, number> }>} */
-      tiers: [],
-      /** @type {Record<string, number | null>} */
-      prices: {},
-    };
-    PHASES.forEach((p, i) => {
-      const e = num(params.get(`e${i}`), -1, 10);
-      if (e > 0 && e !== state.ec[p]) { state.ec[p] = e; state.preset = "custom"; }
-    });
-    FLOWER.forEach((p, i) => { state.flowerWeeks[p] = num(params.get(`w${i}`), state.flowerWeeks[p], 52); });
-    applyLegacyParams(params, state);
+    const state = initialState(params, key);
+    const quick = () => state.mode === "quick";
 
-    function input() {
-      return {
-        lineId: state.line, schedule: state.schedule, ec: state.ec,
-        vegWeeks: state.vegWeeks, vegGalPerWeek: state.vegGalPerWeek,
-        flowerWeeks: state.flowerWeeks, flowerGalPerWeek: state.flowerGalPerWeek,
-        phoszyme: state.phoszyme, phUp: state.phUp, alkPpm: state.alk,
-        triologic: state.triologic, triologicVegGalPerWeek: state.triVeg, triologicFlowerGalPerWeek: state.triFlower,
-        si: state.si, siFoliarGal: state.siGal, siMlPerGal: state.siRate,
-      };
-    }
-
-    function applyTier() {
-      const tier = state.tiers.find(t => t.id === state.tier);
-      if (!tier) return;
-      usageProducts(state.line).forEach(p => {
-        const v = Number(tier.prices[p.name]);
-        state.prices[p.name] = Number.isFinite(v) && v > 0 ? v : null;
-      });
-    }
-
-    function syncUrl() {
-      const p = new URLSearchParams();
-      p.set("key", state.key);
-      if (state.line === "cplus") p.set("b", "cplus");
-      if (state.preset === "standard") p.set("p", "standard");
-      if (state.schedule !== "commercial") p.set("rs", state.schedule);
-      const preset = state.preset === "custom" ? null : DATA.ecPresets[state.preset];
-      PHASES.forEach((ph, i) => { if (!preset || preset[ph] !== state.ec[ph]) p.set(`e${i}`, String(state.ec[ph])); });
-      p.set("vw", String(state.vegWeeks));
-      p.set("vg", String(state.vegGalPerWeek));
-      FLOWER.forEach((ph, i) => p.set(`w${i}`, String(state.flowerWeeks[ph])));
-      p.set("fg", String(state.flowerGalPerWeek));
-      if (state.phoszyme) p.set("phz", "1");
-      if (!state.phUp) p.set("phup", "0");
-      if (state.alk) p.set("alk", String(state.alk));
-      if (state.triologic) { p.set("tri", "1"); p.set("tvg", String(state.triVeg)); p.set("tfg", String(state.triFlower)); }
-      if (state.si) { p.set("si", "1"); p.set("sig", String(state.siGal)); p.set("sir", String(state.siRate)); }
-      p.set("cy", String(state.cycles));
-      if (state.tier) p.set("tier", state.tier);
-      if (state.metric) p.set("u", "metric");
-      if (state.showPrices) p.set("cost", "1");
-      if (state.facility) p.set("fac", state.facility);
-      if (state.preparedBy) p.set("rep", state.preparedBy);
-      if (state.date !== isoDate(new Date())) p.set("dt", state.date);
-      replaceUrl(p);
-    }
+    function syncUrl() { replaceUrl(stateParams(state)); }
 
     /** @param {string} name @param {Array<[string, string]>} options @param {string} current */
     function seg(name, options, current) {
@@ -221,7 +293,7 @@ export function mount(root) {
     }
     /** @param {string} name @param {number} value @param {string} label @param {string} [attrs] */
     function numInput(name, value, label, attrs = "") {
-      const shown = VOLUME_INPUTS.has(name) && state.metric ? Math.round(value * DATA.units.litersPerGallon * 10) / 10 : value;
+      const shown = tenth(VOLUME_INPUTS.has(name) && state.metric ? value * DATA.units.litersPerGallon : value);
       return `<input class="input num" type="number" inputmode="decimal" min="0" data-input="${name}" value="${shown}" aria-label="${esc(label)}" ${attrs}>`;
     }
     /** @param {string} label @param {string} body @param {string} [help] */
@@ -232,9 +304,34 @@ export function mount(root) {
     function tog(name, on, label) {
       return `<button type="button" class="tog" data-set="${name}" aria-pressed="${on}">${esc(label)}</button>`;
     }
+    /** @param {string} name @param {string} label @param {Array<{ id: string, label: string }>} options @param {string} current */
+    function select(name, label, options, current) {
+      return `<select class="input" data-select="${name}" aria-label="${esc(label)}">${options.map(o => `<option value="${esc(o.id)}"${o.id === current ? " selected" : ""}>${esc(o.label)}</option>`).join("")}</select>`;
+    }
+
+    function tierHtml() {
+      const lineTiers = state.list.tiers.filter(t => t.line === state.line);
+      if (!lineTiers.length) return "";
+      const adds = state.list.additiveTiers;
+      return field("Price tier", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>${esc(getLine(state.line).label)}</label>${select("tier", "Price tier", lineTiers, state.tier)}</div>`
+        + (adds.length ? `<div><label>Add-ons</label>${select("addTier", "Add-on price tier", adds, state.addTier)}</div>` : "") + `</div>`,
+        "Prices per bag or jug from the FRA price list. pH Up has no list price.");
+    }
+
+    function quickInputsHtml() {
+      return `<section class="card form" style="padding-bottom:6px">`
+        + field("Product line", seg("line", [["3part", "3-Part"], ["cplus", "Component Plus"]], state.line))
+        + field("Flowering canopy", `<div class="input-row">${numInput("canopy", state.canopy, "Flowering canopy, square feet", 'step="1000"')}<span>ft²</span></div>`)
+        + field("Harvests per year", `<div class="input-row">${numInput("cycles", state.cycles, "Harvests per year", 'step="1" max="52"')}</div>`)
+        + field("Add-ons", `<div class="toggles">${tog("phoszyme", state.phoszyme, "PhosZyme")}${tog("triologic", state.triologic, "Triologic")}${tog("si", state.si, "Si (foliar)")}</div>`)
+        + tierHtml()
+        + field("Units", seg("units", [["us", "US (gal, lb)"], ["metric", "Metric (L, kg)"]], state.metric ? "metric" : "us"))
+        + `</section>`
+        + proposalHtml();
+    }
 
     function inputsHtml() {
-      const grid5 = `<div class="grid5">${PHASES.map((p, i) => `<div><label>${esc(SHORT[i])}</label>${numInput("ec", state.ec[p], `EC ${p}`, `step="0.1" data-phase="${p}"`).replace(`value="${state.ec[p]}"`, `value="${state.ec[p].toFixed(1)}"`)}</div>`).join("")}</div>`;
+      const grid5 = `<div class="grid5">${PHASES.map((p, i) => `<div><label>${esc(SHORT[i])}</label>${numInput("ec", state.ec[p], `EC ${p}`, `step="0.1" data-phase="${p}"`).replace(/value="[^"]*"/, `value="${state.ec[p].toFixed(1)}"`)}</div>`).join("")}</div>`;
       const weeks = `<div class="grid5">${PHASES.map((p, i) => `<div><label>${esc(SHORT[i])}</label>${p === "Veg" ? numInput("vegWeeks", state.vegWeeks, "Veg weeks", 'step="1"') : numInput("fw", state.flowerWeeks[p], `${p} weeks`, `step="1" data-phase="${p}"`)}</div>`).join("")}</div>`;
       return `<section class="card form" style="padding-bottom:6px">`
         + field("Product line", seg("line", [["3part", "3-Part"], ["cplus", "Component Plus"]], state.line))
@@ -248,6 +345,7 @@ export function mount(root) {
         + (state.triologic ? field(state.metric ? "Triologic: liters treated per week" : "Triologic: gallons treated per week", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Veg</label>${numInput("triVeg", state.triVeg, "Triologic veg gal per week", 'step="100"')}</div><div><label>Flower</label>${numInput("triFlower", state.triFlower, "Triologic flower gal per week", 'step="100"')}</div></div>`, `At ${DATA.usage.triologicMlPerTreatedGal} mL per treated gallon.`) : "")
         + (state.si ? field("Si foliar spray", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Spray ${state.metric ? "L" : "gal"} per cycle</label>${numInput("siGal", state.siGal, "Si spray gallons per cycle", 'step="10"')}</div><div><label>mL per gal</label>${numInput("siRate", state.siRate, "Si mL per gal", 'step="0.5" max="10"')}</div></div>`, "Si is foliar only, not in the feed. Label range 0.5–2 mL/gal.") : "")
         + field("Cycles per year", `<div class="input-row">${numInput("cycles", state.cycles, "Cycles per year", 'step="1" max="52"')}</div>`)
+        + tierHtml()
         + field("Units", seg("units", [["us", "US (gal, lb)"], ["metric", "Metric (L, kg)"]], state.metric ? "metric" : "us"))
         + `</section>`
         + proposalHtml();
@@ -267,23 +365,71 @@ export function mount(root) {
     }
 
     function results() {
-      const est = usageEstimate(input());
+      const est = usageEstimate(usageInput(state));
       const cost = usageCost(est, state.prices, state.cycles);
       const purchase = usagePurchase(est, state.cycles);
       return { est, cost, purchase };
     }
 
+    function priceNoteHtml() {
+      if (state.list.tiers.length) return "";
+      return `<p class="sec__foot" style="margin:0 0 10px">${state.pricesLoaded ? "No price list for this code. Enter prices per bag or jug; they stay on this device." : "Loading the price list…"}</p>`;
+    }
+
+    /** @param {string} name */
+    function priceInput(name) {
+      return `<input class="input num" style="width:86px;height:34px;text-align:right" type="number" inputmode="decimal" min="0" step="0.01" data-price="${esc(name)}" value="${state.prices[name] ?? ""}" placeholder="$" aria-label="${esc(name)} price">`;
+    }
+
+    /** @param {number} n @param {boolean} liquid */
+    function packages(n, liquid) { return `${n} ${liquid ? "jug" : "bag"}${n === 1 ? "" : "s"}`; }
+
+    /** @param {string[]} unpriced */
+    function unpricedNote(unpriced) {
+      return unpriced.length ? `No price for ${unpriced.join(", ")}; not included in the cost.` : "";
+    }
+
+    function quickResultsHtml() {
+      const { est, cost, purchase } = results();
+      const u = unitsFor(state.metric);
+      const v = quickVolumes(state.canopy);
+      const rows = purchase.products.map(p => {
+        const c = cost.lines.find(l => l.name === p.name);
+        return `<tr><td><b>${esc(p.name)}</b><div class="s">${esc(u.packShort(p))}</div></td>
+          <td class="num" style="white-space:nowrap"><b>${packages(p.perYearWholeUnits, p.liquid)}</b><div class="s">${esc(u.amount(p, "perYear"))}</div></td>
+          <td>${priceInput(p.name)}</td>
+          <td class="num" style="white-space:nowrap" data-cost-year="${esc(p.name)}">${c && c.cost ? money(c.cost * state.cycles) : "–"}</td></tr>`;
+      }).join("");
+      const feed = [
+        ["Flowering plants", fmt(v.flowerPlants, 0)],
+        ["Veg plants", fmt(v.vegPlants, 0)],
+        ["Flower feed per week", u.volume(v.flowerGalPerWeek)],
+        ["Veg feed per week", u.volume(v.vegGalPerWeek)],
+        ["Feed per harvest", u.volume(est.totalGal)],
+      ];
+      const note = unpricedNote(cost.unpriced);
+      return `<div class="sec"><h2>Order per year</h2><span class="sec__u">${fmt(state.cycles, 0)} harvests</span></div>`
+        + priceNoteHtml()
+        + `<div class="card" style="overflow-x:auto"><table class="ref usage"><thead><tr><th>Product</th><th>Order</th><th>Price</th><th>Cost</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        + `<section class="card result" data-totals>${totalsHtml(cost, est)}</section>`
+        + `<div class="card note note--warn" data-unpriced${note ? "" : " hidden"}><span class="note__ic">!</span><div>${esc(note)}</div></div>`
+        + `<div class="sec"><h2>Feed</h2><span class="sec__u">${fmt(state.canopy, 0)} ft² flowering canopy</span></div>`
+        + `<div class="card"><table class="ref"><tbody>${feed.map(([k, val]) => `<tr><td>${esc(k)}</td><td class="num">${esc(val)}</td></tr>`).join("")}</tbody></table></div>`
+        + `<div class="sec"><h2>Assumptions</h2></div>`
+        + `<div class="card note"><ul style="margin:0;padding-left:1.1em;display:grid;gap:6px">${assumptions(printView()).map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>`
+        + `<p class="sec__foot">For a customer's own chart, gallons or water, switch to Advanced; it opens with these inputs filled in.</p>`;
+    }
+
     function resultsHtml() {
+      if (quick()) return quickResultsHtml();
       const { est, cost, purchase } = results();
       const u = unitsFor(state.metric);
       const pu = est.products.find(p => p.name === "pH Up");
-      const tierSeg = state.tiers.length > 1 ? `<div style="margin:0 0 10px">${seg("tier", state.tiers.map(t => [t.id, t.label]), state.tier)}</div>` : "";
-      const priceNote = state.tiers.length ? "" : `<p class="sec__foot" style="margin:0 0 10px">No price list loaded. Enter prices per bag or jug; they stay on this device.</p>`;
       const rows = purchase.products.map(p => {
         const c = cost.lines.find(l => l.name === p.name);
         return `<tr><td><b>${esc(p.name)}</b><div class="s">${esc(u.packShort(p))}</div></td>
           <td class="num">${esc(u.amount(p, "perCycle"))}</td><td class="num">${fmt(p.perCycleUnits, 1)}</td>
-          <td><input class="input num" style="width:86px;height:34px;text-align:right" type="number" inputmode="decimal" min="0" step="0.01" data-price="${esc(p.name)}" value="${state.prices[p.name] ?? ""}" placeholder="$" aria-label="${esc(p.name)} price"></td>
+          <td>${priceInput(p.name)}</td>
           <td class="num" data-cost="${esc(p.name)}">${c && c.cost ? money(c.cost) : "–"}</td></tr>`;
       }).join("");
       const colRows = est.columns.map((c, i) => `<tr><td><b>${esc(SHORT[i])}</b><div class="s">${esc(c.recipe)} · ${c.ec.toFixed(1)} EC</div></td><td class="num">${fmt(c.weeks, 0)}</td><td class="num">${esc(u.volume(c.gallons))}</td>`
@@ -291,13 +437,14 @@ export function mount(root) {
       const notes = [
         state.phUp && state.line === "cplus" ? "C+ pH Up curves are modeled only; there is no bench check yet. Treat the C+ pH Up line as an estimate." : "",
         state.phUp && est.columns.some(c => c.phUp.overMax) ? "A column needs more than 0.25 g/gal pH Up at its target. It is counted, but review that column's EC and water." : "",
-        cost.unpriced.length ? `No price for ${cost.unpriced.join(", ")}; not included in the cost.` : "",
       ].filter(Boolean);
+      const note = unpricedNote(cost.unpriced);
       const order = purchase.products.map(p => `<tr><td><b>${esc(p.name)}</b></td><td class="num">${esc(u.amount(p, "perYear"))}</td><td class="num">${p.perYearWholeUnits} ${p.liquid ? "jugs" : "bags"}</td></tr>`).join("");
       return `<div class="sec"><h2>Products for one cycle</h2><span class="sec__u">${esc(u.volume(est.totalGal))} of feed</span></div>`
-        + tierSeg + priceNote
+        + priceNoteHtml()
         + `<div class="card" style="overflow-x:auto"><table class="ref usage"><thead><tr><th>Product</th><th>Amount</th><th>Bags</th><th>Price</th><th>Cost</th></tr></thead><tbody>${rows}</tbody></table></div>`
         + `<section class="card result" data-totals>${totalsHtml(cost, est)}</section>`
+        + `<div class="card note note--warn" data-unpriced${note ? "" : " hidden"}><span class="note__ic">!</span><div>${esc(note)}</div></div>`
         + `<div class="sec"><h2>Order per year</h2><span class="sec__u">${fmt(state.cycles, 0)} cycles</span></div>`
         + `<div class="card"><table class="ref"><thead><tr><th>Product</th><th>Per year</th><th>Order</th></tr></thead><tbody>${order}</tbody></table></div>`
         + notes.map(n => `<div class="card note note--warn"><span class="note__ic">!</span><div>${esc(n)}</div></div>`).join("")
@@ -308,19 +455,28 @@ export function mount(root) {
 
     /** @param {ReturnType<typeof usageCost>} cost @param {ReturnType<typeof usageEstimate>} est */
     function totalsHtml(cost, est) {
-      return `<div class="result__k">Cost per cycle</div><div class="result__v">${cost.total ? money(cost.total) : "–"}</div>
-        <div class="result__row"><span>Per ${state.metric ? "liter" : "gallon"} of feed</span><span class="num">${cost.total ? `$${fmt(state.metric ? cost.perGal / DATA.units.litersPerGallon : cost.perGal, 4)}` : "–"}</span></div>
-        <div class="result__row"><span>Per year (${fmt(state.cycles, 0)} cycles)</span><span class="num">${cost.total ? money(cost.perYear) : "–"}</span></div>
-        <div class="result__row"><span>Feed per year</span><span class="num">${esc(unitsFor(state.metric).volume(est.totalGal * state.cycles))}</span></div>`;
+      const cycleWord = quick() ? "harvest" : "cycle";
+      const perVol = `<div class="result__row"><span>Per ${state.metric ? "liter" : "gallon"} of feed</span><span class="num">${cost.total ? `$${fmt(state.metric ? cost.perGal / DATA.units.litersPerGallon : cost.perGal, 4)}` : "–"}</span></div>`;
+      const feedYear = `<div class="result__row"><span>Feed per year</span><span class="num">${esc(unitsFor(state.metric).volume(est.totalGal * state.cycles))}</span></div>`;
+      if (quick()) {
+        return `<div class="result__k">Product cost per year</div><div class="result__v">${cost.total ? money(cost.perYear) : "–"}</div>
+          <div class="result__row"><span>Per ${cycleWord}</span><span class="num">${cost.total ? money(cost.total) : "–"}</span></div>${perVol}${feedYear}`;
+      }
+      return `<div class="result__k">Cost per cycle</div><div class="result__v">${cost.total ? money(cost.total) : "–"}</div>${perVol}
+        <div class="result__row"><span>Per year (${fmt(state.cycles, 0)} cycles)</span><span class="num">${cost.total ? money(cost.perYear) : "–"}</span></div>${feedYear}`;
     }
 
     function render() {
       document.title = "Usage Estimator · Front Row Ag";
       const app = /** @type {HTMLElement} */ (root.querySelector("[data-app]"));
+      const lede = quick()
+        ? "A year of product from flowering canopy, on FRA's standard feed volumes and the high-strength commercial chart."
+        : "Product and cost for one cycle on the customer's feed chart, column by column.";
       app.innerHTML = barHtml({ root: "", tool: "Usage Estimator", home: "./" })
         + `<p class="banner">Team tool. Not for customers: it is not linked from the public tools page.</p>`
-        + `<h1 class="title">Usage Estimator</h1><p class="lede">Product and cost for one cycle on the customer's feed chart, column by column.</p>`
-        + `<div class="split"><div>${inputsHtml()}</div><div data-results>${resultsHtml()}</div></div>`
+        + `<h1 class="title">Usage Estimator</h1><p class="lede">${lede}</p>`
+        + `<div style="margin:14px 0 4px">${seg("mode", [["quick", "Quick"], ["advanced", "Advanced"]], state.mode)}</div>`
+        + `<div class="split"><div>${quick() ? quickInputsHtml() : inputsHtml()}</div><div data-results>${resultsHtml()}</div></div>`
         + `<div class="actions">
             <button class="btn btn--primary" data-act="pdf" data-mode="customer">${ICONS.pdf}Customer PDF</button>
             <button class="btn" data-act="pdf" data-mode="internal">Internal PDF</button>
@@ -338,22 +494,31 @@ export function mount(root) {
       syncUrl();
     }
 
-    function renderPrint() {
+    /** @returns {import("./usage-print.js").UsagePrintView} */
+    function printView() {
       const { est, cost, purchase } = results();
       const line = getLine(state.line);
-      /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = renderUsagePrint({
+      const inp = usageInput(state);
+      const preset = quick() ? Q.ecPreset : state.preset;
+      return {
         mode: state.printMode, root: "", est, cost, purchase, metric: state.metric, showPrices: state.showPrices, prices: state.prices,
         lineLabel: line.label, lineId: state.line,
-        strengthLabel: state.preset === "custom" ? "Custom EC" : state.preset === "high" ? "High strength" : "Standard strength",
-        strengthPhrase: state.preset === "custom" ? "custom EC targets" : state.preset === "high" ? "high strength" : "standard strength",
-        scheduleLabel: state.schedule === "commercial" ? "Commercial (Stack → Swell)" : "Swell Through Flower",
+        strengthLabel: preset === "custom" ? "Custom EC" : preset === "high" ? "High strength" : "Standard strength",
+        strengthPhrase: preset === "custom" ? "custom EC targets" : preset === "high" ? "high strength" : "standard strength",
+        scheduleLabel: inp.schedule === "swell-flower" ? "Swell Through Flower" : "Commercial (Stack → Swell)",
         facility: state.facility.trim(), preparedBy: state.preparedBy.trim(), date: displayDate(state.date), notes: state.notes,
+        quick: quick() ? { canopyFt2: state.canopy, ...quickVolumes(state.canopy) } : null,
         inputs: {
-          vegWeeks: state.vegWeeks, vegGalPerWeek: state.vegGalPerWeek, flowerGalPerWeek: state.flowerGalPerWeek,
-          phoszyme: state.phoszyme, phUp: state.phUp, alk: state.alk, triologic: state.triologic, triVeg: state.triVeg, triFlower: state.triFlower,
-          si: state.si, siGal: state.siGal, siRate: state.siRate,
+          vegWeeks: inp.vegWeeks, vegGalPerWeek: inp.vegGalPerWeek, flowerGalPerWeek: inp.flowerGalPerWeek,
+          phoszyme: Boolean(inp.phoszyme), phUp: Boolean(inp.phUp), alk: inp.alkPpm ?? 0,
+          triologic: Boolean(inp.triologic), triVeg: inp.triologicVegGalPerWeek ?? 0, triFlower: inp.triologicFlowerGalPerWeek ?? 0,
+          si: Boolean(inp.si), siGal: inp.siFoliarGal ?? 0, siRate: inp.siMlPerGal ?? DATA.usage.siFoliarMlPerGal,
         },
-      });
+      };
+    }
+
+    function renderPrint() {
+      /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = renderUsagePrint(printView());
     }
 
     root.innerHTML = `<div class="app" data-app></div><div class="print-root" data-print></div>`;
@@ -364,10 +529,10 @@ export function mount(root) {
       const set = el.getAttribute("data-set");
       const val = el.getAttribute("data-val") ?? "";
       if (set) {
-        if (set === "line") { state.line = val === "cplus" ? "cplus" : "3part"; applyTier(); }
+        if (set === "mode") { if (val === "advanced") quickToAdvanced(state); else state.mode = "quick"; }
+        else if (set === "line") { state.line = val === "cplus" ? "cplus" : "3part"; applyTier(state); }
         else if (set === "preset") { state.preset = /** @type {any} */ (val); if (val !== "custom") state.ec = { ...DATA.ecPresets[/** @type {"high" | "standard"} */ (val)] }; }
         else if (set === "schedule") state.schedule = val;
-        else if (set === "tier") { state.tier = val; applyTier(); }
         else if (set === "units") state.metric = val === "metric";
         else /** @type {any} */ (state)[set] = !(/** @type {any} */ (state)[set]);
         return render();
@@ -386,8 +551,18 @@ export function mount(root) {
       }
     });
 
+    root.addEventListener("change", event => {
+      const el = /** @type {HTMLSelectElement} */ (event.target);
+      const which = el.getAttribute("data-select");
+      if (!which) return;
+      if (which === "tier") { state.tier = el.value; applyTier(state, true); }
+      else if (which === "addTier") { state.addTier = el.value; applyTier(state); }
+      render();
+    });
+
     root.addEventListener("input", event => {
       const el = /** @type {HTMLInputElement} */ (event.target);
+      if (el.hasAttribute("data-select")) return;
       const textKey = /** @type {"facility" | "preparedBy" | "date" | "notes" | null} */ (el.getAttribute("data-text"));
       if (textKey) {
         if (textKey === "date") { if (/^\d{4}-\d{2}-\d{2}$/.test(el.value)) state.date = el.value; }
@@ -404,9 +579,16 @@ export function mount(root) {
         writeStored("fra-usage-prices", JSON.stringify(state.prices));
         // Update costs without redrawing the price inputs.
         const { est, cost } = results();
-        cost.lines.forEach(l => { const td = root.querySelector(`[data-cost="${CSS.escape(l.name)}"]`); if (td) td.textContent = l.cost ? money(l.cost) : "–"; });
+        cost.lines.forEach(l => {
+          const td = root.querySelector(`[data-cost="${CSS.escape(l.name)}"]`);
+          if (td) td.textContent = l.cost ? money(l.cost) : "–";
+          const year = root.querySelector(`[data-cost-year="${CSS.escape(l.name)}"]`);
+          if (year) year.textContent = l.cost ? money(l.cost * state.cycles) : "–";
+        });
         const totals = root.querySelector("[data-totals]");
         if (totals) totals.innerHTML = totalsHtml(cost, est);
+        const unpriced = /** @type {HTMLElement | null} */ (root.querySelector("[data-unpriced]"));
+        if (unpriced) { const n = unpricedNote(cost.unpriced); unpriced.hidden = !n; /** @type {HTMLElement} */ (unpriced.lastElementChild).textContent = n; }
         renderPrint();
         return;
       }
@@ -431,11 +613,10 @@ export function mount(root) {
       if (stored && typeof stored === "object") state.prices = stored;
     } catch { /* ignore */ }
     render();
-    loadPriceTiers().then(tiers => {
-      if (!tiers.length) return;
-      state.tiers = tiers;
-      if (!tiers.some(t => t.id === state.tier)) state.tier = tiers[0].id;
-      applyTier();
+    loadPriceList(state.key).then(list => {
+      state.list = list;
+      state.pricesLoaded = true;
+      applyTier(state);
       render();
     });
   }

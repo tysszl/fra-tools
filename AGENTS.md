@@ -4,7 +4,7 @@ Public GitHub Pages repo for Front Row Ag calculator tools at `tools.frontrowag.
 
 ## Production
 
-- This repo is public: do not add internal FRA docs, customer or staff names, private notes, prices, secrets, or unpublished strategy.
+- This repo is public: do not add internal FRA docs, customer or staff names, private notes, prices, secrets, or unpublished strategy. The one exception is `usage-prices.enc.json`: the usage price list sealed with the team code. Change prices by editing the plaintext outside the repo (`~/.local/state/fra/prices.json`) and running `FRA_TEAM_CODE=… bun scripts/encrypt-prices.ts <plaintext>`; re-run it whenever the team code rotates.
 - GitHub Pages serves `main` from the repo root with `CNAME` set to `tools.frontrowag.com`. Pushing to `main` updates production in about a minute.
 
 ## Local Context

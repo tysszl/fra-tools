@@ -119,6 +119,13 @@ export const SOURCES = Object.freeze({
   "usage.productDefaults": "undocumented (package sizes)",
   "usage.additiveDefaults": "undocumented (package sizes)",
   "usage.defaults": "refit memo 2026-09-29 § 3 worked example (veg 2 wk × 1,000 gal; flower 2/3/3/1 wk × 10,000 gal); cycles per year undocumented",
+  "usage.quick": "TS § Feed Volume for Usage Estimates (flower one plant per 2 ft² at 2 L/plant/day; veg 10% more plants at 0.25 L/plant/day for 2 weeks; mothers excluded)",
+  "usage.quick.canopyFt2": "undocumented (page example value; TS § Feed Volume example)",
+  "usage.quick.harvestsPerYear": "Tyler 2026-10-02 (quick-mode default 5 harvests per year)",
+  "usage.quick.alkPpm": "Tyler 2026-10-02 (quick mode prices pH Up for 10 ppm source alkalinity)",
+  "usage.quick.triologicTreatedDaysPerWeek": "TS § Product Usage › Triologic (1x per week); one day's feed treated is undocumented",
+  "usage.quick.siSprayGalPer100Ft2": "undocumented (quick-mode spray volume)",
+  "usage.quick.siSpraysPerCycle": "TS § Product Usage › Front Row Si (1x weekly up to day 21 of flower)",
 });
 
 /**

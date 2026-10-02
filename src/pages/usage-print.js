@@ -29,6 +29,7 @@ import { CONTACT, esc, sheetFootHtml } from "../../shared/chrome.js";
  * @property {string} preparedBy
  * @property {string} date               Display date.
  * @property {string} notes
+ * @property {{ canopyFt2: number, flowerPlants: number, vegPlants: number } | null} [quick]  Quick mode: canopy and plant counts.
  * @property {{ vegWeeks: number, vegGalPerWeek: number, flowerGalPerWeek: number, phoszyme: boolean, phUp: boolean, alk: number,
  *   triologic: boolean, triVeg: number, triFlower: number, si: boolean, siGal: number, siRate: number }} inputs
  */
@@ -120,14 +121,20 @@ export function assumptions(v) {
   const phzRate = v.metric ? `${fmt(DATA.phoszyme.directGramsPerGallon / DATA.units.litersPerGallon, 2)} g/L` : `${DATA.phoszyme.directGramsPerGallon} g/gal`;
   const triRate = v.metric ? `${fmt(DATA.usage.triologicMlPerTreatedGal / DATA.units.litersPerGallon, 2)} mL/L` : `${DATA.usage.triologicMlPerTreatedGal} mL/gal`;
   const siRate = v.metric ? `${fmt(i.siRate / DATA.units.litersPerGallon, 2)} mL/L` : `${fmt(i.siRate, 1).replace(/\.0$/, "")} mL/gal`;
+  const q = DATA.usage.quick;
+  const quick = v.quick ? [
+    `Flowering canopy of ${fmt(v.quick.canopyFt2, 0)} ft²: one plant per ${q.ftSqPerFlowerPlant} ft² (${fmt(v.quick.flowerPlants, 0)} plants), each fed ${q.flowerLitersPerPlantPerDay} L per day in flower.`,
+    `Veg: ${fmt((q.vegPlantsPerFlowerPlant - 1) * 100, 0)}% more plants than flower (${fmt(v.quick.vegPlants, 0)}, for culls and spares), each fed ${q.vegLitersPerPlantPerDay} L per day. Mother plants are not included.`,
+  ] : [];
   return [
+    ...quick,
     `${v.lineLabel} at ${v.strengthPhrase}, ${v.scheduleLabel} schedule. Each stage uses its recipe at the target EC in the schedule above.`,
     `Each cycle: ${wk(i.vegWeeks)} weeks of veg at ${u.volume(i.vegGalPerWeek)} of feed per week, then ${wk(Math.round(flowerWeeks(v) * 10) / 10)} weeks of flower at ${u.volume(i.flowerGalPerWeek)} per week; ${fmt(v.purchase.cyclesPerYear, 0)} cycles per year.`,
     `Feed volume is the finished feed delivered to plants. Nothing is added for runoff, flushing or spills.`,
     i.phoszyme ? `PhosZyme at ${phzRate} in every ${perVol} of feed, with the base nutrients reduced so the final EC stays on target.` : "",
     i.phUp ? `pH Up (potassium carbonate) to each stage's target pH, for source water with ${i.alk ? `${fmt(i.alk, 0)} ppm alkalinity as CaCO3` : "no alkalinity (RO)"}. Real use depends on your water and dripper pH; higher alkalinity needs less.` : "",
-    i.triologic ? `Triologic at ${triRate}, once a week, on ${u.volume(i.triVeg)} per week in veg and ${u.volume(i.triFlower)} per week in flower.` : "",
-    i.si ? `Front Row Si as a foliar spray only (never in the feed): ${u.volume(i.siGal)} of spray per cycle at ${siRate}.` : "",
+    i.triologic ? `Triologic at ${triRate}, once a week, on ${u.volume(i.triVeg)} per week in veg and ${u.volume(i.triFlower)} per week in flower${v.quick ? " (one day's feed each week)" : ""}.` : "",
+    i.si ? `Front Row Si as a foliar spray only (never in the feed): ${u.volume(i.siGal)} of spray per cycle at ${siRate}${v.quick ? `, from ${v.metric ? `${fmt(q.siSprayGalPer100Ft2 * DATA.units.litersPerGallon, 1)} L` : `${q.siSprayGalPer100Ft2} gal`} of spray per 100 ft² of canopy once a week for the first ${q.siSpraysPerCycle} weeks of flower` : ""}.` : "",
     `Order quantities round up to whole bags and jugs for the year.`,
   ].filter(Boolean);
 }
@@ -192,6 +199,7 @@ function internal(v) {
   const total = `<tr class="total"><td>Total</td><td></td><td></td><td></td><td></td><td></td><td class="r num">${v.cost.total ? money(v.cost.total) : "–"}</td><td class="r num">${v.cost.total ? money(v.cost.perYear) : "–"}</td></tr>`;
   const perVol = v.metric ? `$${fmt(v.cost.perGal / DATA.units.litersPerGallon, 4)} per L` : `$${fmt(v.cost.perGal, 4)} per gal`;
   const inputs = [
+    ...(v.quick ? [["Flowering canopy (quick)", `${fmt(v.quick.canopyFt2, 0)} ft² · ${fmt(v.quick.flowerPlants, 0)} flower / ${fmt(v.quick.vegPlants, 0)} veg plants`]] : []),
     ["Source alkalinity", i.phUp ? (i.alk ? `${fmt(i.alk, 0)} ppm as CaCO3` : "0 (RO)") : "pH Up off"],
     ["Triologic treated per week", i.triologic ? `${u.volume(i.triVeg)} veg · ${u.volume(i.triFlower)} flower` : "off"],
     ["Si foliar spray per cycle", i.si ? `${u.volume(i.siGal)} at ${fmt(i.siRate, 1)} mL/gal` : "off"],
