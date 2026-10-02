@@ -9,14 +9,19 @@
 //
 // Fails on page errors, console errors, horizontal scroll at phone width, a code screen
 // where a tool was expected, or a PDF that is blank or has the wrong page count
-// (Feed Chart two, the other tools one).
+// (Feed Chart two, the other tools one), also when printed with .25in margins.
+//
+// iPhone pass (WebKit, iPhone 15, light and dark): every exported sheet must fit Letter
+// minus .5in margins (iOS Safari adds its own print margins), clip no content, and draw
+// its notes lines in light gray. WebKit cannot write PDFs, so this measures the print
+// layout; it writes a PNG of each dark-mode sheet.
 import { mkdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const out = resolve(process.argv[2] ?? "check-pages-out");
 mkdirSync(out, { recursive: true });
-const { chromium } = await import(process.env.PLAYWRIGHT ?? "playwright");
+const { chromium, webkit, devices } = await import(process.env.PLAYWRIGHT ?? "playwright");
 const root = resolve(import.meta.dir, "..");
 const key = process.env.CPLUS_KEY ?? "";
 const teamKey = "check-pages";
@@ -145,10 +150,54 @@ for (const [name, url, expected = 2, setup] of PDFS) {
   if (words < 80) problems.push(`${name}: PDF has only ${words} words of text`);
   if (pages !== expected) problems.push(`${name}: PDF has ${pages} pages, expected ${expected}`);
   spawnSync("pdftoppm", ["-png", "-r", "110", pdf, join(out, name)]);
+  // A printer or phone that adds its own margins must not push a sheet onto a second page.
+  await page.addStyleTag({ content: "@page { size: letter; margin: .25in !important; }" });
+  const narrow = join(out, `${name}-margin25.pdf`);
+  await page.pdf({ path: narrow, preferCSSPageSize: true, printBackground: true });
+  const narrowPages = Number((spawnSync("pdfinfo", [narrow]).stdout?.toString() ?? "").match(/Pages:\s+(\d+)/)?.[1] ?? 0);
+  if (narrowPages !== expected) problems.push(`${name}: PDF with .25in margins has ${narrowPages} pages, expected ${expected}`);
   await context.close();
 }
 
 await browser.close();
+
+// iPhone print layout
+const phone = await webkit.launch();
+for (const [name, url, , setup] of PDFS) for (const scheme of ["light", "dark"] as const) {
+  const context = await phone.newContext({ ...devices["iPhone 15"], colorScheme: scheme });
+  const page = await context.newPage();
+  page.on("pageerror", (e: Error) => problems.push(`iphone ${name} ${scheme}: ${e.message}`));
+  await page.goto(`${base}/${withKey(url)}`, { waitUntil: "networkidle" });
+  if (setup) await setup(page);
+  await page.emulateMedia({ media: "print", colorScheme: scheme });
+  await page.setViewportSize({ width: 720, height: 960 }); // Letter's width less .5in margins
+  await page.waitForTimeout(150);
+  const sheets = await page.evaluate(() => [...document.querySelectorAll(".print-root .sheet")].map(sheet => {
+    const box = sheet.getBoundingClientRect();
+    let clipped = 0;
+    sheet.querySelectorAll("*").forEach(el => {
+      if (el.closest(".s-lines")) return; // spare ruled rows are clipped by design
+      const r = el.getBoundingClientRect();
+      if (r.height) clipped = Math.max(clipped, r.bottom - box.bottom, r.right - box.right);
+    });
+    const rule = sheet.querySelector(".s-lines i");
+    return { w: box.width / 96, h: box.height / 96, clipped, rule: rule ? getComputedStyle(rule).borderBottomColor : "" };
+  }));
+  if (!sheets.length) problems.push(`iphone ${name} ${scheme}: no print sheets`);
+  sheets.forEach((s, i) => {
+    const at = `iphone ${name} ${scheme} sheet ${i + 1}`;
+    if (s.w > 7.5 || s.h > 10) problems.push(`${at}: ${s.w.toFixed(2)} x ${s.h.toFixed(2)} in does not fit Letter less .5in margins`);
+    if (s.clipped > 0.5) problems.push(`${at}: content runs ${Math.round(s.clipped)}px past the sheet`);
+    if (s.rule && s.rule !== "rgb(227, 230, 228)") problems.push(`${at}: notes lines print as ${s.rule}`);
+  });
+  if (scheme === "dark") {
+    await page.setViewportSize({ width: 1000, height: 1400 });
+    const count = await page.locator(".print-root .sheet").count();
+    for (let i = 0; i < count; i++) await page.locator(".print-root .sheet").nth(i).screenshot({ path: join(out, `iphone-${name}-dark-${i + 1}.png`) });
+  }
+  await context.close();
+}
+await phone.close();
 server.stop();
 console.log(`Wrote ${out}`);
 if (problems.length) {

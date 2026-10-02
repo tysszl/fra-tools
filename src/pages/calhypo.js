@@ -4,7 +4,7 @@
 // script (CAL_HYPO_API), unchanged.
 import { currentTheme, initTheme, toggleTheme } from "../../shared/theme.js";
 import { printDocument } from "../../shared/print.js";
-import { ICONS, esc, sheetFootHtml, sheetHeadHtml } from "../../shared/chrome.js";
+import { ICONS, esc, sheetFootHtml, sheetHeadHtml, sheetLinesHtml } from "../../shared/chrome.js";
 
 initTheme();
 const themeButton = /** @type {HTMLElement} */ (document.getElementById("theme-toggle"));
@@ -71,8 +71,12 @@ function sheet() {
     ])}<p class="s-p" style="margin-top:6px">${esc(text("direct-action"))}</p></div>`;
   }
   const table = document.getElementById("direct-reference-table");
-  const quick = table ? `<div class="s-block"><div class="s-h">Direct-dose quick table</div><table class="s-mini">${table.innerHTML}</table>
-    <p class="s-note">The 0.5–2 ppm rows are FRA's continuous-use residual range at the farthest dripper. Elevated cleaning references are not continuous-use plant targets.</p></div>` : "";
+  // For fertilizer stock only the rows within its 2 ppm limit apply; that also keeps the sheet on one page.
+  const rows = table ? (fert
+    ? [table.querySelector("thead"), table.querySelector("tbody.recommended")].map(el => el?.outerHTML ?? "").join("")
+    : table.innerHTML) : "";
+  const quick = table ? `<div class="s-block"><div class="s-h">Direct-dose quick table</div><table class="s-mini">${rows}</table>
+    <p class="s-note">The 0.5–2 ppm rows are FRA's continuous-use residual range at the farthest dripper.${fert ? "" : " Elevated cleaning references are not continuous-use plant targets."}</p></div>` : "";
   // Verify and Avoid come from the page's field-check cards so the sheet says what the screen says.
   const verify = [...document.querySelectorAll(".field-check:not(.avoid) p")].map(p => `<p class="s-p">${esc((p.textContent || "").trim())}</p>`).join("");
   const avoid = [...document.querySelectorAll(".field-check.avoid li")].map(li => `<li>${esc((li.textContent || "").trim())}</li>`).join("");
@@ -82,7 +86,7 @@ function sheet() {
     + body + restricted + quick
     + `<div class="s-two s-two--even" style="margin-top:14px"><div><div class="s-h">Verify at the dripper</div>${verify}${avoid ? `<div class="s-h" style="margin-top:10px">Avoid</div><ul class="s-list">${avoid}</ul>` : ""}</div>`
     + `<div><div class="s-h">Handling and mixing</div><ul class="s-list">${safety}</ul></div></div>`
-    + `<div class="s-notes"><div class="s-h">Notes</div><div class="s-lines"></div></div>`
+    + `<div class="s-notes"><div class="s-h">Notes</div>${sheetLinesHtml()}</div>`
     + sheetFootHtml("tools.frontrowag.com/cal-hypo/")
     + `</section>`;
 }

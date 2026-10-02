@@ -6,7 +6,7 @@ import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { copyText } from "../../shared/clipboard.js";
 import { printDocument } from "../../shared/print.js";
-import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, toast } from "../../shared/chrome.js";
+import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -404,7 +404,7 @@ export function mount(root) {
           <div><div class="s-h">Why each column has a ceiling</div>${COPY.ceiling.map(p => `<p class="s-p">${esc(p)}</p>`).join("")}
             <div class="s-h" style="margin-top:12px">Source water</div><p class="s-p">${esc(COPY.water[0])}</p><p class="s-p">${esc(COPY.water[1])}</p></div>
         </div>`
-      + `<div class="s-notes"><div class="s-h">Notes</div><div class="s-lines"></div></div>`
+      + `<div class="s-notes"><div class="s-h">Notes</div>${sheetLinesHtml()}</div>`
       + sheetFootHtml("tools.frontrowag.com/ph-up-calc.html")
       + `</section>`;
   }

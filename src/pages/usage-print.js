@@ -4,7 +4,7 @@
 // only when the rep turns them on) and "internal" (team analysis: cost, pH Up by column,
 // every input). Every number arrives already computed by the engine; this module formats.
 import { DATA } from "../engine/index.js";
-import { CONTACT, esc, sheetFootHtml } from "../../shared/chrome.js";
+import { CONTACT, esc, sheetFootHtml, sheetLinesHtml } from "../../shared/chrome.js";
 
 /** @typedef {ReturnType<typeof import("../engine/usage.js").usageEstimate>} Estimate */
 /** @typedef {ReturnType<typeof import("../engine/usage.js").usageCost>} Cost */
@@ -147,7 +147,7 @@ export function assumptions(v) {
 function notesBlock(v) {
   return `<div class="s-notes"><div class="s-h">Notes</div>`
     + (v.notes.trim() ? `<p class="s-typed">${esc(v.notes.trim())}</p>` : "")
-    + `<div class="s-lines"></div></div>`;
+    + `${sheetLinesHtml()}</div>`;
 }
 
 /** @param {UsagePrintView} v */

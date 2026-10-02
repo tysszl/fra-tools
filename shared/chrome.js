@@ -85,6 +85,14 @@ export function sheetFootHtml(right = "") {
 }
 
 /**
+ * Ruled lines for a sheet's notes area. Drawn as bordered rows, not a gradient: iOS print
+ * renders a gradient's transparent stops as black. Extra rows are clipped by the area.
+ */
+export function sheetLinesHtml() {
+  return `<div class="s-lines">${"<i></i>".repeat(40)}</div>`;
+}
+
+/**
  * Letter-sheet header.
  * @param {object} args
  * @param {string} args.root
