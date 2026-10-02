@@ -21,4 +21,5 @@ Public GitHub Pages repo for Front Row Ag calculator tools at `tools.frontrowag.
 - `tests/fixtures/legacy/` are frozen copies of the pre-rebuild pages. `tests/engine-parity.test.ts` compares the engine against them and names every intended difference. `src/nutrition-core.js` and `scripts/sync-nutrition-core.ts` only maintain those fixtures.
 - Access codes (C+ and team) live in `shared/gate.js` as hashes; the team code opens `team.html`, Feed Chart team mode, C+ and usage. C+ share links carry only the C+ code, never the team code.
 - Old share links must keep opening the same chart: `src/feedchart/url.js` decodes them, and the usage page maps the old `ve`/`fe`/`fw`/`ai` fields.
+- `scripts/export-excel.ts` writes the team's Excel copy of the Feed Chart from the engine (`bun install` once for its `exceljs` dev dependency, then `bun scripts/export-excel.ts --out <dir>`). Regenerate it whenever an engine number changes; never edit the workbook by hand.
 - Run `bun test`, then `PLAYWRIGHT=<playwright install> CPLUS_KEY=<C+ code> bun scripts/check-pages.ts <out-dir>` and look at every screenshot and PDF page it writes before pushing.

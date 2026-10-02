@@ -1,0 +1,11 @@
+{
+  "name": "fra-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "export-excel": "bun scripts/export-excel.ts"
+  },
+  "devDependencies": {
+    "exceljs": "4.4.0"
+  }
+}
