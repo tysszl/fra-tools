@@ -114,6 +114,8 @@ const PDFS: Array<[string, string, number?, ((page: any) => Promise<void>)?]> = 
   ["phup-cplus-stock", "ph-up-calc.html?line=cplus&mode=stock&conc=100&unit=pct&alk=25&warm=1", 1],
   ["phdown", "ph-down-calc.html?alk=140&target=20&vol=500", 1],
   ["usage", "usage-calc.html?tri=1&tvg=1000&tfg=5000&phz=1", 1],
+  ["usage-customer", "usage-calc.html?pm=customer&tri=1&tvg=1000&tfg=5000&phz=1&si=1&sig=200&alk=10&fac=Northern%20California%20Cultivation%20Cooperative%20%26%20Partners%20Greenhouse%20Range%20B&rep=Sample%20Rep", 1],
+  ["usage-customer-cplus-metric", "usage-calc.html?pm=customer&b=cplus&u=metric&p=standard&rs=swell-flower&phz=1&tri=1&tvg=1000&tfg=5000", 1],
   ["calhypo", "cal-hypo/", 1],
   ["usage-legacy", "usage-calc.html?b=fra&ve=2&vw=2&vg=1000&fe=2&fw=4&fg=10000&ai=1111&tvg=100&tfg=500", 1],
   ["calhypo-fert", "cal-hypo/", 1, async page => {
