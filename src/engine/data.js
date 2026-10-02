@@ -380,6 +380,7 @@ export const DATA = deepFreeze({
       // Si foliar once a week through day 21 of flower, over the flowering canopy.
       siSprayGalPer100Ft2: 1,
       siSpraysPerCycle: 3,
+      siMlPerGal: 1,
     },
   },
 });

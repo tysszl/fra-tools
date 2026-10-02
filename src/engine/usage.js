@@ -235,6 +235,6 @@ export function quickUsageInput(quick) {
     triologicFlowerGalPerWeek: v.flowerGalPerWeek * treated,
     si: Boolean(quick.si),
     siFoliarGal: nonNegative(quick.canopyFt2) / 100 * q.siSprayGalPer100Ft2 * q.siSpraysPerCycle,
-    siMlPerGal: DATA.usage.siFoliarMlPerGal,
+    siMlPerGal: DATA.usage.quick.siMlPerGal,
   };
 }

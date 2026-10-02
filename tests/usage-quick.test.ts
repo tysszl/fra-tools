@@ -70,6 +70,7 @@ describe("quick mode page state", () => {
     expect(s.flowerGalPerWeek).toBeCloseTo(quickVolumes(10000).flowerGalPerWeek, 6);
     expect(s.triFlower).toBeGreaterThan(0);
     expect(s.siGal).toBeGreaterThan(0);
+    expect(s.siRate).toBe(1);
     const advEst = usageEstimate(usageInput(s));
     expect(advEst.totalGal).toBeCloseTo(quickEst.totalGal, 6);
     expect(total(advEst)).toEqual(total(quickEst));
