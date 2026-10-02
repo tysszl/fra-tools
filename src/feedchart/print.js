@@ -3,6 +3,7 @@
 // page 2 is the mixing procedure, stock table with validation, and additive rates.
 import { DATA } from "../engine/index.js";
 import { esc } from "./content.js";
+import { sheetLinesHtml } from "../../shared/chrome.js";
 import { doserArt, stepArt } from "./art.js";
 
 /** @typedef {import("./content.js").View} View */
@@ -79,7 +80,7 @@ function pageOne(view, t, assets, total) {
     + `<p class="s-note"><i>${esc(t("chart.disclaimer"))}</i></p>`
     + `<div class="s-two"><div><div class="s-h">${esc(t("ec.higherLower"))}</div>${hl}${key}</div>`
     + `<div><div class="s-h">${esc(t("ec.considerations"))}</div><p class="s-p">${esc(t("ec.considerationsBody"))}</p>${contribution}${line}</div></div>`
-    + `<div class="s-notes"><div class="s-h">${esc(t("print.notes"))}</div><div class="s-lines"></div></div>`
+    + `<div class="s-notes"><div class="s-h">${esc(t("print.notes"))}</div>${sheetLinesHtml()}</div>`
     + foot(1, total, t)
     + `</section>`;
 }
@@ -128,7 +129,7 @@ function pageTwo(view, t, assets, total) {
     + art
     + stock
     + additives
-    + `<div class="s-notes s-notes--fill"><div class="s-h">${esc(t("print.notes"))}</div><div class="s-lines"></div></div>`
+    + `<div class="s-notes s-notes--fill"><div class="s-h">${esc(t("print.notes"))}</div>${sheetLinesHtml()}</div>`
     + foot(2, total, t)
     + `</section>`;
 }

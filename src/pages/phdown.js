@@ -4,7 +4,7 @@ import { DATA, phDownDose, phDownReference } from "../engine/index.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { printDocument } from "../../shared/print.js";
-import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, toast } from "../../shared/chrome.js";
+import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
 
 const L_PER_GAL = DATA.units.litersPerGallon;
 const HOW_IT_WORKS = [
@@ -141,7 +141,7 @@ export function mount(root) {
             `<tr><td class="num">${r.ppm} ppm</td><td class="r num">${r.mlPerGal.toFixed(2)}</td><td class="r num">${r.mlPerL.toFixed(3)}</td></tr>`).join("")}</tbody></table></div>
         </div>`
       + `<div class="s-block"><div class="s-h">How it works</div>${HOW_IT_WORKS.map(p => `<p class="s-p">${esc(p)}</p>`).join("")}</div>`
-      + `<div class="s-notes"><div class="s-h">Notes</div><div class="s-lines"></div></div>`
+      + `<div class="s-notes"><div class="s-h">Notes</div>${sheetLinesHtml()}</div>`
       + sheetFootHtml("tools.frontrowag.com/ph-down-calc.html")
       + `</section>`;
   }

@@ -41,37 +41,40 @@
   color-scheme: light;
 }
 
-:root[data-theme="dark"] {
-  --bg: #0c0e0e;
-  --surface: #141817;
-  --surface-2: #111514;
-  --ink: #eef1f0;
-  --ink-2: #c4cac8;
-  --muted: #98a09d;
-  --faint: #6d7572;
-  --line: #252b29;
-  --line-soft: #1c2120;
-  --chip: #1b201f;
-  --chip-line: #2a302e;
-  --accent: #ff5a5f;
-  --accent-soft: #2a1516;
-  --primary: #eef1f0;
-  --on-primary: #0c0e0e;
-  --seg-bg: #141817;
-  --seg-line: #252b29;
-  --seg-on: #262c2a;
-  --seg-shadow: none;
-  --scrim: rgba(0, 0, 0, .6);
-  --sheet-shadow: 0 -8px 40px rgba(0, 0, 0, .5);
-  --warn: #f3c969;
-  --warn-bg: #2a2412;
-  --c-a: #5cc184;
-  --c-b: #6d9cf0;
-  --c-bl: #ff6b6f;
-  --c-phz: #d9b95e;
-  --c-cplus: #ee8a4a;
-  --c-salt: #aeb5b2;
-  color-scheme: dark;
+/* Dark tokens apply on screen only: print always uses the light set, whatever the phone's theme. */
+@media not print {
+  :root[data-theme="dark"] {
+    --bg: #0c0e0e;
+    --surface: #141817;
+    --surface-2: #111514;
+    --ink: #eef1f0;
+    --ink-2: #c4cac8;
+    --muted: #98a09d;
+    --faint: #6d7572;
+    --line: #252b29;
+    --line-soft: #1c2120;
+    --chip: #1b201f;
+    --chip-line: #2a302e;
+    --accent: #ff5a5f;
+    --accent-soft: #2a1516;
+    --primary: #eef1f0;
+    --on-primary: #0c0e0e;
+    --seg-bg: #141817;
+    --seg-line: #252b29;
+    --seg-on: #262c2a;
+    --seg-shadow: none;
+    --scrim: rgba(0, 0, 0, .6);
+    --sheet-shadow: 0 -8px 40px rgba(0, 0, 0, .5);
+    --warn: #f3c969;
+    --warn-bg: #2a2412;
+    --c-a: #5cc184;
+    --c-b: #6d9cf0;
+    --c-bl: #ff6b6f;
+    --c-phz: #d9b95e;
+    --c-cplus: #ee8a4a;
+    --c-salt: #aeb5b2;
+    color-scheme: dark;
+  }
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -458,9 +461,13 @@ td.pc, th.pc { color: var(--pc); }
 /* ================= print: Letter sheets ================= */
 .print-root { display: none; }
 
+/* A sheet fills Letter's printable area, not the paper: @page sets .5in margins, and iOS
+   Safari prints with its own margins of up to about .5in, so a sheet at most 7.5in by 10in
+   fits one page either way. The height stays a little under 10in so rounding never spills
+   a sliver onto a blank page. */
 .sheet {
-  width: 8.5in; height: 11in; overflow: hidden; background: #fff; color: #141716;
-  padding: .45in .5in .4in; display: flex; flex-direction: column;
+  width: 7.5in; max-width: 100%; height: 9.9in; margin: 0 auto; overflow: hidden; background: #fff; color: #141716;
+  display: flex; flex-direction: column;
   font-family: var(--sans); font-size: 10.5px; line-height: 1.45;
   --c-a: #2e7d4a; --c-b: #2f62b0; --c-bl: #c0262d; --c-phz: #8a6d1f; --c-cplus: #b4561c; --c-salt: #5d6461;
   -webkit-print-color-adjust: exact; print-color-adjust: exact;
@@ -500,7 +507,7 @@ td.pc, th.pc { color: var(--pc); }
 .s-h { font: 700 9.5px var(--sans); letter-spacing: .12em; text-transform: uppercase; color: #b3121b; margin-bottom: 6px; }
 .s-mini { width: 100%; border-collapse: collapse; font-size: 10px; }
 .s-mini th { font-size: 8.5px; letter-spacing: .06em; text-transform: uppercase; color: #6b726f; font-weight: 650; text-align: left; padding: 4px 5px; border-bottom: 1px solid #d9dddb; }
-.s-mini td { padding: 4.5px 5px; border-bottom: 1px solid #eceeed; vertical-align: top; }
+.s-mini td { padding: 4px 5px; border-bottom: 1px solid #eceeed; vertical-align: top; }
 .s-mini td.r, .s-mini th.r { text-align: right; }
 .s-mini .sub td:first-child { padding-left: 14px; }
 .s-mini tr.total td { font-weight: 700; border-top: 1px solid #141716; }
@@ -509,9 +516,10 @@ td.pc, th.pc { color: var(--pc); }
 .s-list { padding-left: 1.2em; font-size: 10px; line-height: 1.5; color: #353b39; }
 .s-list li { margin-bottom: 3px; }
 .s-list li::marker { color: #6b726f; font-weight: 600; }
-.s-notes { margin-top: 16px; flex: 1; display: flex; flex-direction: column; min-height: .8in; }
+.s-notes { margin-top: 12px; flex: 1; display: flex; flex-direction: column; min-height: .5in; }
 .s-notes--fill { min-height: 0; }
-.s-lines { flex: 1; background-image: repeating-linear-gradient(transparent 0 23px, #e3e6e4 23px 24px); }
+.s-lines { flex: 1; min-height: 0; overflow: hidden; }
+.s-lines i { display: block; height: 24px; border-bottom: 1px solid #e3e6e4; }
 .s-art { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; border: 1px solid #e4e7e5; border-radius: 6px; padding: 8px 10px 10px; }
 .s-art__panel svg { width: 100%; height: 1.5in; display: block; }
 .s-art--cplus .fa { --part: #c86324; --part-l: #d98a52; --part-d: #933811; }
@@ -533,13 +541,15 @@ td.pc, th.pc { color: var(--pc); }
 /* usage estimate */
 .s-for { margin-top: 5px; font-size: 12px; color: #353b39; overflow-wrap: anywhere; }
 .s-for b { color: #141716; font-weight: 650; }
+.sheet--usage .s-block { margin-top: 11px; }
+.sheet--usage .s-list li { margin-bottom: 1px; }
 .sheet--usage .s-meta { max-width: 2.2in; overflow-wrap: anywhere; }
 .s-stats { display: flex; gap: 0; border: 1px solid #e4e7e5; border-radius: 6px; margin: 2px 0 4px; }
 .s-stats > div { flex: 1; padding: 8px 12px; border-left: 1px solid #e4e7e5; }
 .s-stats > div:first-child { border-left: 0; }
 .s-stats__k { font-size: 8.5px; letter-spacing: .07em; text-transform: uppercase; font-weight: 650; color: #6b726f; }
 .s-stats__v { font-size: 16px; font-weight: 650; margin-top: 2px; }
-.s-mini--order td { padding-top: 6px; padding-bottom: 6px; }
+.s-mini--order td { padding-top: 4.5px; padding-bottom: 4.5px; }
 .s-sub { font-size: 8.5px; color: #7b827f; }
 .s-typed { font-size: 10.5px; line-height: 1.5; color: #141716; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 4px; }
 .s-cta { margin-top: 10px; padding: 8px 12px; border-left: 3px solid #b3121b; background: #f6f7f6; font-size: 10px; color: #353b39; }
@@ -547,8 +557,9 @@ td.pc, th.pc { color: var(--pc); }
 textarea.input { height: auto; min-height: 96px; padding: 10px 12px; line-height: 1.45; resize: vertical; }
 
 @media print {
-  @page { size: letter; margin: 0; }
-  html, body { background: #fff !important; }
+  @page { size: letter; margin: .5in; }
+  html, body { background: #fff !important; color: #141716; }
+  :root { color-scheme: light; }
   .app, .scrim, .sheet-panel, .toast, .gate { display: none !important; }
   .print-root { display: block; }
   .sheet { break-after: page; page-break-after: always; }
