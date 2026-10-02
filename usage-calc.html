@@ -13,9 +13,9 @@
 <link rel="stylesheet" href="shared/fra.css">
 </head>
 <body>
-<!-- Internal team tool behind a client-side access code: friction, not security. The page
-     is public static HTML, so it holds no prices; they load from an untracked prices.json
-     next to this page, or are typed in. -->
+<!-- Internal team tool behind a client-side access code: friction, not security. Prices
+     load from usage-prices.enc.json, sealed with the team code (src/pages/usage-prices.js),
+     or are typed in. -->
 <div id="app"></div>
 <script type="module">
 import { mount } from "./src/pages/usage.js";

@@ -59,7 +59,7 @@ export {
   phUpTargetMultiplier,
 } from "./phup.js";
 export { phDownDose, phDownReference } from "./phdown.js";
-export { usageColumns, usageCost, usageEstimate, usageProducts, usagePurchase, usageUnitsNeeded } from "./usage.js";
+export { quickUsageInput, quickVolumes, usageColumns, usageCost, usageEstimate, usageProducts, usagePurchase, usageUnitsNeeded } from "./usage.js";
 
 /** @param {number} value */
 export function formatTargetEc(value) {

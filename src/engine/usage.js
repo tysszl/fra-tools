@@ -190,3 +190,51 @@ export function usageCost(estimate, prices, cyclesPerYear = 1) {
     unpriced,
   };
 }
+
+/**
+ * Quick mode feed volumes from flowering canopy (ft²): plant counts and gallons of
+ * feed per week in veg and in flower.
+ * @param {number} canopyFt2
+ */
+export function quickVolumes(canopyFt2) {
+  const q = DATA.usage.quick;
+  const L = DATA.units.litersPerGallon;
+  const flowerPlants = nonNegative(canopyFt2) / q.ftSqPerFlowerPlant;
+  const vegPlants = flowerPlants * q.vegPlantsPerFlowerPlant;
+  return {
+    flowerPlants,
+    vegPlants,
+    flowerGalPerWeek: flowerPlants * q.flowerLitersPerPlantPerDay * q.daysPerWeek / L,
+    vegGalPerWeek: vegPlants * q.vegLitersPerPlantPerDay * q.daysPerWeek / L,
+  };
+}
+
+/**
+ * The full usage input for a quick-mode estimate: canopy and add-ons in, every other
+ * input from DATA.usage.quick.
+ * @param {{ lineId: LineId, canopyFt2: number, phoszyme?: boolean, triologic?: boolean, si?: boolean }} quick
+ * @returns {Required<UsageInput>}
+ */
+export function quickUsageInput(quick) {
+  const q = DATA.usage.quick;
+  const v = quickVolumes(quick.canopyFt2);
+  const treated = q.triologicTreatedDaysPerWeek / q.daysPerWeek;
+  return {
+    lineId: quick.lineId,
+    schedule: q.schedule,
+    ec: { ...DATA.ecPresets[/** @type {"high" | "standard"} */ (q.ecPreset)] },
+    vegWeeks: q.vegWeeks,
+    vegGalPerWeek: v.vegGalPerWeek,
+    flowerWeeks: { ...DATA.usage.defaults.flowerWeeks },
+    flowerGalPerWeek: v.flowerGalPerWeek,
+    phoszyme: Boolean(quick.phoszyme),
+    phUp: true,
+    alkPpm: q.alkPpm,
+    triologic: Boolean(quick.triologic),
+    triologicVegGalPerWeek: v.vegGalPerWeek * treated,
+    triologicFlowerGalPerWeek: v.flowerGalPerWeek * treated,
+    si: Boolean(quick.si),
+    siFoliarGal: nonNegative(quick.canopyFt2) / 100 * q.siSprayGalPer100Ft2 * q.siSpraysPerCycle,
+    siMlPerGal: DATA.usage.quick.siMlPerGal,
+  };
+}

@@ -4,7 +4,8 @@
 //
 //   PLAYWRIGHT=<path to a playwright install> CPLUS_KEY=<C+ code> bun scripts/check-pages.ts <out-dir>
 //
-// The team gate is served with a test-only team code, so the check never needs the real one.
+// The team gate is served with a test-only team code, so the check never needs the real one;
+// the sealed price list then stays closed and the usage page shows typed prices.
 //
 // Fails on page errors, console errors, horizontal scroll at phone width, a code screen
 // where a tool was expected, or a PDF that is blank or has the wrong page count
@@ -43,8 +44,7 @@ async function open(url: string, width: number, scheme: "light" | "dark") {
   const page = await context.newPage();
   page.on("pageerror", (e: Error) => problems.push(`${url} ${width} ${scheme}: ${e.message}`));
   page.on("console", (m: any) => {
-    // The usage page probes for an optional, untracked prices.json.
-    if (m.type() === "error" && !String(m.location()?.url ?? "").endsWith("/prices.json")) problems.push(`${url} ${width} ${scheme}: console ${m.text()}`);
+    if (m.type() === "error") problems.push(`${url} ${width} ${scheme}: console ${m.text()}`);
   });
   await page.goto(`${base}/${url}`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
@@ -74,6 +74,8 @@ const SCREENS: Array<[string, string]> = [
   ["phup-cplus-stock", "ph-up-calc.html?line=cplus&mode=stock&alk=25&warm=1"],
   ["phdown", "ph-down-calc.html"],
   ["usage", "usage-calc.html"],
+  ["usage-quick-addons", "usage-calc.html?m=q&ft=24000&phz=1&tri=1&si=1&b=cplus"],
+  ["usage-advanced", "usage-calc.html?m=a"],
   ["usage-cplus", "usage-calc.html?b=cplus&phz=1&tri=1&tvg=1000&tfg=5000&si=1&sig=200&alk=10"],
   ["calhypo", "cal-hypo/"],
 ];
@@ -116,6 +118,8 @@ const PDFS: Array<[string, string, number?, ((page: any) => Promise<void>)?]> = 
   ["phup-cplus-stock", "ph-up-calc.html?line=cplus&mode=stock&conc=100&unit=pct&alk=25&warm=1", 1],
   ["phdown", "ph-down-calc.html?alk=140&target=20&vol=500", 1],
   ["usage", "usage-calc.html?tri=1&tvg=1000&tfg=5000&phz=1", 1],
+  ["usage-quick-customer", "usage-calc.html?m=q&pm=customer&ft=10000&phz=1&tri=1&si=1&fac=Green%20Valley%20Farms&rep=Sample%20Rep", 1],
+  ["usage-quick-internal", "usage-calc.html?m=q&ft=10000", 1],
   ["usage-customer", "usage-calc.html?pm=customer&tri=1&tvg=1000&tfg=5000&phz=1&si=1&sig=200&alk=10&fac=Northern%20California%20Cultivation%20Cooperative%20%26%20Partners%20Greenhouse%20Range%20B&rep=Sample%20Rep", 1],
   ["usage-customer-cplus-metric", "usage-calc.html?pm=customer&b=cplus&u=metric&p=standard&rs=swell-flower&phz=1&tri=1&tvg=1000&tfg=5000", 1],
   ["calhypo", "cal-hypo/", 1],
