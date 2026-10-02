@@ -85,7 +85,7 @@ body {
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11" 1;
 }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; }
 a { color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -529,6 +529,21 @@ td.pc, th.pc { color: var(--pc); }
 }
 .s-foot b { color: #141716; }
 .s-spacer { flex: 1; min-height: 8px; }
+/* usage estimate */
+.s-for { margin-top: 5px; font-size: 12px; color: #353b39; overflow-wrap: anywhere; }
+.s-for b { color: #141716; font-weight: 650; }
+.sheet--usage .s-meta { max-width: 2.2in; overflow-wrap: anywhere; }
+.s-stats { display: flex; gap: 0; border: 1px solid #e4e7e5; border-radius: 6px; margin: 2px 0 4px; }
+.s-stats > div { flex: 1; padding: 8px 12px; border-left: 1px solid #e4e7e5; }
+.s-stats > div:first-child { border-left: 0; }
+.s-stats__k { font-size: 8.5px; letter-spacing: .07em; text-transform: uppercase; font-weight: 650; color: #6b726f; }
+.s-stats__v { font-size: 16px; font-weight: 650; margin-top: 2px; }
+.s-mini--order td { padding-top: 6px; padding-bottom: 6px; }
+.s-sub { font-size: 8.5px; color: #7b827f; }
+.s-typed { font-size: 10.5px; line-height: 1.5; color: #141716; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 4px; }
+.s-cta { margin-top: 10px; padding: 8px 12px; border-left: 3px solid #b3121b; background: #f6f7f6; font-size: 10px; color: #353b39; }
+.s-cta b { color: #141716; }
+textarea.input { height: auto; min-height: 96px; padding: 10px 12px; line-height: 1.45; resize: vertical; }
 
 @media print {
   @page { size: letter; margin: 0; }

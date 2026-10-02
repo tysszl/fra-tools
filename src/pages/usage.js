@@ -1,14 +1,16 @@
 // @ts-check
 // Usage estimator (team): product for one cycle on the customer's feed chart, column
 // by column, and its cost at prices loaded from an untracked same-origin prices.json
-// or typed in. The repo holds no prices.
-import { DATA, getLine, usageCost, usageEstimate, usageProducts } from "../engine/index.js";
+// or typed in. The repo holds no prices. Exports a customer proposal PDF (annual order,
+// assumptions, prices only when turned on) or an internal analysis PDF (usage-print.js).
+import { DATA, getLine, usageCost, usageEstimate, usageProducts, usagePurchase } from "../engine/index.js";
+import { renderUsagePrint, unitsFor } from "./usage-print.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { readStored, writeStored } from "../../shared/storage.js";
 import { gateFind, gateUnlock } from "../../shared/gate.js";
-import { printDocument } from "../../shared/print.js";
-import { ICONS, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, toast } from "../../shared/chrome.js";
+import { fileSafe, printDocument } from "../../shared/print.js";
+import { ICONS, barHtml, esc, footHtml, toast } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -60,6 +62,17 @@ function num(v, fallback, max = 1e9) {
 function fmt(n, d = 1) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }); }
 /** @param {number} n */
 function money(n) { return `$${fmt(n, 2)}`; }
+/** Local date as YYYY-MM-DD. @param {Date} d */
+function isoDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
+/** @param {string} iso */
+function displayDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const d = m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date();
+  return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+}
+/** Inputs that hold a volume: stored in gallons, shown in L when metric. */
+const VOLUME_INPUTS = new Set(["vegGalPerWeek", "flowerGalPerWeek", "triVeg", "triFlower", "siGal"]);
+const TEXT_MAX = { facility: 80, preparedBy: 60, notes: 600 };
 
 /**
  * prices.json: { "tiers": [{ "id", "label", "prices": { name: price } }] },
@@ -135,6 +148,14 @@ export function mount(root) {
       siRate: num(params.get("sir"), DATA.usage.siFoliarMlPerGal, 10),
       cycles: num(params.get("cy"), D.cyclesPerYear, 52),
       tier: params.get("tier") ?? "",
+      facility: (params.get("fac") ?? "").slice(0, TEXT_MAX.facility),
+      preparedBy: (params.get("rep") ?? readStored("fra-usage-rep") ?? "").slice(0, TEXT_MAX.preparedBy),
+      date: /^\d{4}-\d{2}-\d{2}$/.test(params.get("dt") ?? "") ? /** @type {string} */ (params.get("dt")) : isoDate(new Date()),
+      metric: params.get("u") === "metric",
+      showPrices: params.get("cost") === "1",
+      notes: "",
+      /** @type {"customer" | "internal"} */
+      printMode: params.get("pm") === "customer" ? "customer" : "internal",
       /** @type {Array<{ id: string, label: string, prices: Record<string, number> }>} */
       tiers: [],
       /** @type {Record<string, number | null>} */
@@ -186,6 +207,11 @@ export function mount(root) {
       if (state.si) { p.set("si", "1"); p.set("sig", String(state.siGal)); p.set("sir", String(state.siRate)); }
       p.set("cy", String(state.cycles));
       if (state.tier) p.set("tier", state.tier);
+      if (state.metric) p.set("u", "metric");
+      if (state.showPrices) p.set("cost", "1");
+      if (state.facility) p.set("fac", state.facility);
+      if (state.preparedBy) p.set("rep", state.preparedBy);
+      if (state.date !== isoDate(new Date())) p.set("dt", state.date);
       replaceUrl(p);
     }
 
@@ -195,7 +221,8 @@ export function mount(root) {
     }
     /** @param {string} name @param {number} value @param {string} label @param {string} [attrs] */
     function numInput(name, value, label, attrs = "") {
-      return `<input class="input num" type="number" inputmode="decimal" min="0" data-input="${name}" value="${value}" aria-label="${esc(label)}" ${attrs}>`;
+      const shown = VOLUME_INPUTS.has(name) && state.metric ? Math.round(value * DATA.units.litersPerGallon * 10) / 10 : value;
+      return `<input class="input num" type="number" inputmode="decimal" min="0" data-input="${name}" value="${shown}" aria-label="${esc(label)}" ${attrs}>`;
     }
     /** @param {string} label @param {string} body @param {string} [help] */
     function field(label, body, help = "") {
@@ -214,58 +241,77 @@ export function mount(root) {
         + field("Feed strength (target EC)", seg("preset", [["high", "High"], ["standard", "Standard"], ["custom", "Custom"]], state.preset) + `<div style="margin-top:10px">${grid5}</div>`)
         + field("Recipe schedule", seg("schedule", [["commercial", "Commercial"], ["swell-flower", "Swell Through Flower"]], state.schedule))
         + field("Weeks per column", weeks)
-        + field("Gallons of feed per week", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Veg</label>${numInput("vegGalPerWeek", state.vegGalPerWeek, "Veg gal per week", 'step="100"')}</div><div><label>Flower</label>${numInput("flowerGalPerWeek", state.flowerGalPerWeek, "Flower gal per week", 'step="100"')}</div></div>`)
+        + field(state.metric ? "Liters of feed per week" : "Gallons of feed per week", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Veg</label>${numInput("vegGalPerWeek", state.vegGalPerWeek, "Veg gal per week", 'step="100"')}</div><div><label>Flower</label>${numInput("flowerGalPerWeek", state.flowerGalPerWeek, "Flower gal per week", 'step="100"')}</div></div>`)
         + field("Additives", `<div class="toggles">${tog("phoszyme", state.phoszyme, "PhosZyme")}${tog("phUp", state.phUp, "pH Up")}${tog("triologic", state.triologic, "Triologic")}${tog("si", state.si, "Si (foliar)")}</div>`)
         + (state.phUp ? field("Source water alkalinity", `<div class="input-row">${numInput("alk", state.alk, "Source alkalinity", 'step="1" max="500"')}<span>ppm as CaCO3 (RO = 0)</span></div>`,
           "pH Up is very sensitive to this: on the default 3-Part High chart, 10 ppm cuts it by about 40% and about 27 ppm removes it.") : "")
-        + (state.triologic ? field("Triologic: gallons treated per week", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Veg</label>${numInput("triVeg", state.triVeg, "Triologic veg gal per week", 'step="100"')}</div><div><label>Flower</label>${numInput("triFlower", state.triFlower, "Triologic flower gal per week", 'step="100"')}</div></div>`, `At ${DATA.usage.triologicMlPerTreatedGal} mL per treated gallon.`) : "")
-        + (state.si ? field("Si foliar spray", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Spray gal per cycle</label>${numInput("siGal", state.siGal, "Si spray gallons per cycle", 'step="10"')}</div><div><label>mL per gal</label>${numInput("siRate", state.siRate, "Si mL per gal", 'step="0.5" max="10"')}</div></div>`, "Si is foliar only, not in the feed. Label range 0.5–2 mL/gal.") : "")
+        + (state.triologic ? field(state.metric ? "Triologic: liters treated per week" : "Triologic: gallons treated per week", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Veg</label>${numInput("triVeg", state.triVeg, "Triologic veg gal per week", 'step="100"')}</div><div><label>Flower</label>${numInput("triFlower", state.triFlower, "Triologic flower gal per week", 'step="100"')}</div></div>`, `At ${DATA.usage.triologicMlPerTreatedGal} mL per treated gallon.`) : "")
+        + (state.si ? field("Si foliar spray", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Spray ${state.metric ? "L" : "gal"} per cycle</label>${numInput("siGal", state.siGal, "Si spray gallons per cycle", 'step="10"')}</div><div><label>mL per gal</label>${numInput("siRate", state.siRate, "Si mL per gal", 'step="0.5" max="10"')}</div></div>`, "Si is foliar only, not in the feed. Label range 0.5–2 mL/gal.") : "")
         + field("Cycles per year", `<div class="input-row">${numInput("cycles", state.cycles, "Cycles per year", 'step="1" max="52"')}</div>`)
+        + field("Units", seg("units", [["us", "US (gal, lb)"], ["metric", "Metric (L, kg)"]], state.metric ? "metric" : "us"))
+        + `</section>`
+        + proposalHtml();
+    }
+
+    function proposalHtml() {
+      /** @param {string} name @param {string} label @param {string} value @param {string} [attrs] */
+      const text = (name, label, value, attrs = "") => `<div class="field field--stack"><label class="field__label" for="u-${name}">${esc(label)}</label><input class="input" id="u-${name}" data-text="${name}" value="${esc(value)}" ${attrs}></div>`;
+      return `<div class="sec"><h2>Proposal PDF</h2></div><section class="card form" style="padding-bottom:6px">`
+        + text("facility", "Facility or customer", state.facility, `maxlength="${TEXT_MAX.facility}" autocomplete="organization" placeholder="Shown as Prepared for"`)
+        + text("preparedBy", "Prepared by", state.preparedBy, `maxlength="${TEXT_MAX.preparedBy}" autocomplete="name" placeholder="Your name"`)
+        + text("date", "Date", state.date, 'type="date"')
+        + field("Customer PDF shows prices", tog("showPrices", state.showPrices, state.showPrices ? "Prices on" : "Prices off"),
+          "Off by default. When on, the customer PDF prints the per-package price and cost per year from the prices above.")
+        + `<div class="field field--stack"><label class="field__label" for="u-notes">Notes for the PDF</label><textarea class="input" id="u-notes" data-text="notes" rows="4" maxlength="${TEXT_MAX.notes}" placeholder="Typed notes print above the ruled lines. Not saved in the share link.">${esc(state.notes)}</textarea></div>`
         + `</section>`;
     }
 
     function results() {
       const est = usageEstimate(input());
       const cost = usageCost(est, state.prices, state.cycles);
-      return { est, cost };
+      const purchase = usagePurchase(est, state.cycles);
+      return { est, cost, purchase };
     }
 
     function resultsHtml() {
-      const { est, cost } = results();
+      const { est, cost, purchase } = results();
+      const u = unitsFor(state.metric);
       const pu = est.products.find(p => p.name === "pH Up");
       const tierSeg = state.tiers.length > 1 ? `<div style="margin:0 0 10px">${seg("tier", state.tiers.map(t => [t.id, t.label]), state.tier)}</div>` : "";
       const priceNote = state.tiers.length ? "" : `<p class="sec__foot" style="margin:0 0 10px">No price list loaded. Enter prices per bag or jug; they stay on this device.</p>`;
-      const rows = est.products.filter(p => p.included).map(p => {
+      const rows = purchase.products.map(p => {
         const c = cost.lines.find(l => l.name === p.name);
-        const unit = p.unitType === "gal" ? "gal" : "lb";
-        return `<tr><td><b>${esc(p.name)}</b><div class="s">${p.unitSize} ${p.unitType === "gal" ? "gal jug" : "lb bag"}</div></td>
-          <td class="num">${fmt(p.amount, 1)} ${unit}</td><td class="num">${fmt(p.units, 1)}</td>
+        return `<tr><td><b>${esc(p.name)}</b><div class="s">${esc(u.packShort(p))}</div></td>
+          <td class="num">${esc(u.amount(p, "perCycle"))}</td><td class="num">${fmt(p.perCycleUnits, 1)}</td>
           <td><input class="input num" style="width:86px;height:34px;text-align:right" type="number" inputmode="decimal" min="0" step="0.01" data-price="${esc(p.name)}" value="${state.prices[p.name] ?? ""}" placeholder="$" aria-label="${esc(p.name)} price"></td>
           <td class="num" data-cost="${esc(p.name)}">${c && c.cost ? money(c.cost) : "–"}</td></tr>`;
       }).join("");
-      const colRows = est.columns.map((c, i) => `<tr><td><b>${esc(SHORT[i])}</b><div class="s">${esc(c.recipe)} · ${c.ec.toFixed(1)} EC</div></td><td class="num">${fmt(c.weeks, 0)}</td><td class="num">${fmt(c.gallons, 0)}</td>`
+      const colRows = est.columns.map((c, i) => `<tr><td><b>${esc(SHORT[i])}</b><div class="s">${esc(c.recipe)} · ${c.ec.toFixed(1)} EC</div></td><td class="num">${fmt(c.weeks, 0)}</td><td class="num">${esc(u.volume(c.gallons))}</td>`
         + (state.phUp ? `<td class="num">${c.phUp.target.toFixed(1)}</td><td class="num">${c.phUp.gPerGal.toFixed(3)}${c.phUp.overMax ? ' <span class="at-line">!</span>' : ""}</td>` : "") + `</tr>`).join("");
       const notes = [
         state.phUp && state.line === "cplus" ? "C+ pH Up curves are modeled only; there is no bench check yet. Treat the C+ pH Up line as an estimate." : "",
         state.phUp && est.columns.some(c => c.phUp.overMax) ? "A column needs more than 0.25 g/gal pH Up at its target. It is counted, but review that column's EC and water." : "",
         cost.unpriced.length ? `No price for ${cost.unpriced.join(", ")}; not included in the cost.` : "",
       ].filter(Boolean);
-      return `<div class="sec"><h2>Products for one cycle</h2><span class="sec__u">${fmt(est.totalGal, 0)} gal of feed</span></div>`
+      const order = purchase.products.map(p => `<tr><td><b>${esc(p.name)}</b></td><td class="num">${esc(u.amount(p, "perYear"))}</td><td class="num">${p.perYearWholeUnits} ${p.liquid ? "jugs" : "bags"}</td></tr>`).join("");
+      return `<div class="sec"><h2>Products for one cycle</h2><span class="sec__u">${esc(u.volume(est.totalGal))} of feed</span></div>`
         + tierSeg + priceNote
-        + `<div class="card"><table class="ref usage"><thead><tr><th>Product</th><th>Amount</th><th>Bags</th><th>Price</th><th>Cost</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        + `<div class="card" style="overflow-x:auto"><table class="ref usage"><thead><tr><th>Product</th><th>Amount</th><th>Bags</th><th>Price</th><th>Cost</th></tr></thead><tbody>${rows}</tbody></table></div>`
         + `<section class="card result" data-totals>${totalsHtml(cost, est)}</section>`
+        + `<div class="sec"><h2>Order per year</h2><span class="sec__u">${fmt(state.cycles, 0)} cycles</span></div>`
+        + `<div class="card"><table class="ref"><thead><tr><th>Product</th><th>Per year</th><th>Order</th></tr></thead><tbody>${order}</tbody></table></div>`
         + notes.map(n => `<div class="card note note--warn"><span class="note__ic">!</span><div>${esc(n)}</div></div>`).join("")
         + `<div class="sec"><h2>By column</h2><span class="sec__u">${state.phUp ? `pH Up at each column's default target${state.alk ? `, ${state.alk} ppm credit` : ", RO water"}` : ""}</span></div>`
-        + `<div class="card"><table class="ref"><thead><tr><th>Column</th><th>Weeks</th><th>Gallons</th>${state.phUp ? "<th>Target pH</th><th>pH Up g/gal</th>" : ""}</tr></thead><tbody>${colRows}</tbody></table></div>`
+        + `<div class="card"><table class="ref"><thead><tr><th>Column</th><th>Weeks</th><th>${state.metric ? "Liters" : "Gallons"}</th>${state.phUp ? "<th>Target pH</th><th>pH Up g/gal</th>" : ""}</tr></thead><tbody>${colRows}</tbody></table></div>`
         + (pu && state.phUp ? `<p class="sec__foot">pH Up per column = refit dose to pH 5.9 × target multiplier − alkalinity ÷ ${DATA.phUp.alkPpmPerGPerGal}, floored at zero. Targets match the pH Up calculator's defaults.</p>` : "");
     }
 
     /** @param {ReturnType<typeof usageCost>} cost @param {ReturnType<typeof usageEstimate>} est */
     function totalsHtml(cost, est) {
       return `<div class="result__k">Cost per cycle</div><div class="result__v">${cost.total ? money(cost.total) : "–"}</div>
-        <div class="result__row"><span>Per gallon of feed</span><span class="num">${cost.total ? `$${fmt(cost.perGal, 4)}` : "–"}</span></div>
+        <div class="result__row"><span>Per ${state.metric ? "liter" : "gallon"} of feed</span><span class="num">${cost.total ? `$${fmt(state.metric ? cost.perGal / DATA.units.litersPerGallon : cost.perGal, 4)}` : "–"}</span></div>
         <div class="result__row"><span>Per year (${fmt(state.cycles, 0)} cycles)</span><span class="num">${cost.total ? money(cost.perYear) : "–"}</span></div>
-        <div class="result__row"><span>Feed per year</span><span class="num">${fmt(est.totalGal * state.cycles, 0)} gal</span></div>`;
+        <div class="result__row"><span>Feed per year</span><span class="num">${esc(unitsFor(state.metric).volume(est.totalGal * state.cycles))}</span></div>`;
     }
 
     function render() {
@@ -276,7 +322,8 @@ export function mount(root) {
         + `<h1 class="title">Usage Estimator</h1><p class="lede">Product and cost for one cycle on the customer's feed chart, column by column.</p>`
         + `<div class="split"><div>${inputsHtml()}</div><div data-results>${resultsHtml()}</div></div>`
         + `<div class="actions">
-            <button class="btn btn--primary" data-act="pdf">${ICONS.pdf}Export PDF</button>
+            <button class="btn btn--primary" data-act="pdf" data-mode="customer">${ICONS.pdf}Customer PDF</button>
+            <button class="btn" data-act="pdf" data-mode="internal">Internal PDF</button>
             <button class="btn" data-act="share" aria-label="Share link">${ICONS.link}<span class="btn__label">Share link</span></button>
           </div>`
         + footHtml({});
@@ -292,28 +339,21 @@ export function mount(root) {
     }
 
     function renderPrint() {
-      const { est, cost } = results();
-      const date = new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-      const chips = [getLine(state.line).label, state.preset === "custom" ? "Custom EC" : state.preset === "high" ? "High strength" : "Standard strength",
-        state.schedule === "commercial" ? "Commercial (Stack → Swell)" : "Swell Through Flower",
-        `${fmt(est.totalGal, 0)} gal per cycle`, state.phUp ? (state.alk ? `Source water ${state.alk} ppm` : "RO water") : "No pH Up"];
-      const products = est.products.filter(p => p.included).map(p => {
-        const c = cost.lines.find(l => l.name === p.name);
-        return `<tr><td>${esc(p.name)}</td><td class="r num">${fmt(p.amount, 1)} ${p.unitType === "gal" ? "gal" : "lb"}</td><td class="r num">${fmt(p.units, 1)} × ${p.unitSize} ${p.unitType === "gal" ? "gal" : "lb"}</td><td class="r num">${c && c.cost ? money(c.cost) : "–"}</td></tr>`;
-      }).join("");
-      const cols = est.columns.map((c, i) => `<tr><td>${esc(SHORT[i])}</td><td>${esc(c.recipe)}</td><td class="r num">${c.ec.toFixed(1)}</td><td class="r num">${fmt(c.weeks, 0)}</td><td class="r num">${fmt(c.gallons, 0)}</td>${state.phUp ? `<td class="r num">${c.phUp.target.toFixed(1)}</td><td class="r num">${c.phUp.gPerGal.toFixed(3)}</td>` : ""}</tr>`).join("");
-      /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = `<section class="sheet">`
-        + sheetHeadHtml({ root: "", kicker: "Team · usage estimate", title: "Usage Estimate", date, chips })
-        + `<div class="s-h" style="margin-top:6px">Products for one cycle</div>
-          <table class="s-mini"><thead><tr><th>Product</th><th class="r">Amount</th><th class="r">Order</th><th class="r">Cost</th></tr></thead><tbody>${products}
-          <tr class="total"><td>Total per cycle</td><td></td><td></td><td class="r num">${cost.total ? money(cost.total) : "–"}</td></tr></tbody></table>
-          <p class="s-note">Per gallon ${cost.total ? `$${fmt(cost.perGal, 4)}` : "–"} · per year (${fmt(state.cycles, 0)} cycles) ${cost.total ? money(cost.perYear) : "–"}${cost.unpriced.length ? ` · no price for ${esc(cost.unpriced.join(", "))}` : ""}</p>`
-        + `<div class="s-h" style="margin-top:16px">By column</div>
-          <table class="s-mini"><thead><tr><th>Column</th><th>Recipe</th><th class="r">EC</th><th class="r">Weeks</th><th class="r">Gallons</th>${state.phUp ? '<th class="r">Target pH</th><th class="r">pH Up g/gal</th>' : ""}</tr></thead><tbody>${cols}</tbody></table>`
-        + (state.phUp ? `<p class="s-note">pH Up per column = refit dose to pH 5.9 × target multiplier − alkalinity ÷ ${DATA.phUp.alkPpmPerGPerGal}, floored at zero.${state.line === "cplus" ? " C+ pH Up curves are modeled only; no bench check yet." : ""}</p>` : "")
-        + `<div class="s-notes"><div class="s-h">Notes</div><div class="s-lines"></div></div>`
-        + sheetFootHtml("Internal · Front Row Ag team")
-        + `</section>`;
+      const { est, cost, purchase } = results();
+      const line = getLine(state.line);
+      /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = renderUsagePrint({
+        mode: state.printMode, root: "", est, cost, purchase, metric: state.metric, showPrices: state.showPrices, prices: state.prices,
+        lineLabel: line.label, lineId: state.line,
+        strengthLabel: state.preset === "custom" ? "Custom EC" : state.preset === "high" ? "High strength" : "Standard strength",
+        strengthPhrase: state.preset === "custom" ? "custom EC targets" : state.preset === "high" ? "high strength" : "standard strength",
+        scheduleLabel: state.schedule === "commercial" ? "Commercial (Stack → Swell)" : "Swell Through Flower",
+        facility: state.facility.trim(), preparedBy: state.preparedBy.trim(), date: displayDate(state.date), notes: state.notes,
+        inputs: {
+          vegWeeks: state.vegWeeks, vegGalPerWeek: state.vegGalPerWeek, flowerGalPerWeek: state.flowerGalPerWeek,
+          phoszyme: state.phoszyme, phUp: state.phUp, alk: state.alk, triologic: state.triologic, triVeg: state.triVeg, triFlower: state.triFlower,
+          si: state.si, siGal: state.siGal, siRate: state.siRate,
+        },
+      });
     }
 
     root.innerHTML = `<div class="app" data-app></div><div class="print-root" data-print></div>`;
@@ -328,12 +368,17 @@ export function mount(root) {
         else if (set === "preset") { state.preset = /** @type {any} */ (val); if (val !== "custom") state.ec = { ...DATA.ecPresets[/** @type {"high" | "standard"} */ (val)] }; }
         else if (set === "schedule") state.schedule = val;
         else if (set === "tier") { state.tier = val; applyTier(); }
+        else if (set === "units") state.metric = val === "metric";
         else /** @type {any} */ (state)[set] = !(/** @type {any} */ (state)[set]);
         return render();
       }
       const act = el.getAttribute("data-act");
       if (act === "theme") { toggleTheme(); render(); }
-      else if (act === "pdf") printDocument(`FRA usage estimate ${getLine(state.line).label}`, renderPrint);
+      else if (act === "pdf") {
+        state.printMode = el.getAttribute("data-mode") === "customer" ? "customer" : "internal";
+        const name = state.printMode === "customer" ? "Usage Estimate" : "Usage Analysis (internal)";
+        printDocument(fileSafe(["Front Row Ag", getLine(state.line).label, name, state.facility].filter(Boolean).join(" - ")), renderPrint);
+      }
       else if (act === "share") {
         const r = await shareUrl(window.location.href, "FRA usage estimate");
         if (r === "copied") toast("Link copied (prices are not in the link)");
@@ -343,6 +388,15 @@ export function mount(root) {
 
     root.addEventListener("input", event => {
       const el = /** @type {HTMLInputElement} */ (event.target);
+      const textKey = /** @type {"facility" | "preparedBy" | "date" | "notes" | null} */ (el.getAttribute("data-text"));
+      if (textKey) {
+        if (textKey === "date") { if (/^\d{4}-\d{2}-\d{2}$/.test(el.value)) state.date = el.value; }
+        else state[textKey] = el.value.slice(0, TEXT_MAX[textKey]);
+        if (textKey === "preparedBy") writeStored("fra-usage-rep", state.preparedBy.trim());
+        renderPrint();
+        if (textKey !== "notes") syncUrl();
+        return;
+      }
       const priceName = el.getAttribute("data-price");
       if (priceName) {
         const v = Number(el.value);
@@ -368,7 +422,7 @@ export function mount(root) {
         state.preset = PHASES.every(p => state.ec[p] === pr.high[p]) ? "high" : PHASES.every(p => state.ec[p] === pr.standard[p]) ? "standard" : "custom";
         root.querySelectorAll("[data-set=preset]").forEach(b => b.setAttribute("aria-pressed", String(b.getAttribute("data-val") === state.preset)));
       } else if (key === "fw" && phase) state.flowerWeeks[phase] = n;
-      else /** @type {any} */ (state)[key] = n;
+      else /** @type {any} */ (state)[key] = VOLUME_INPUTS.has(key) && state.metric ? n / DATA.units.litersPerGallon : n;
       renderResults();
     });
 

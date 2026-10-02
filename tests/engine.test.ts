@@ -477,6 +477,25 @@ describe("usage", () => {
     expect(cost.unpriced).toEqual(["Part B", "Bloom"]);
   });
 
+  test("purchase: per year = per cycle × cycles, whole packages round up, metric from the unit constants", () => {
+    const est = E.usageEstimate({ ...base, triologic: true, triologicVegGalPerWeek: 500, triologicFlowerGalPerWeek: 1000 });
+    const buy = E.usagePurchase(est, 5);
+    const partA = buy.products.find((p: any) => p.name === "Part A")!;
+    expect(partA.perYear).toBeCloseTo(amount(est, "Part A") * 5, 9);
+    expect(partA.perYearUnits).toBe(E.usageUnitsNeeded(amount(est, "Part A") * 5, 25));
+    expect(partA.perYearWholeUnits).toBe(Math.ceil(partA.perYearUnits));
+    expect(partA.perYearMetric).toBeCloseTo(partA.perYear * 454 / 1000, 9);
+    expect(partA.unitSizeMetric).toBeCloseTo(11.35, 9);
+    const tri = buy.products.find((p: any) => p.name === "Triologic")!;
+    expect(tri.liquid).toBe(true);
+    expect(tri.perCycleMetric).toBeCloseTo(tri.perCycle * 3.785, 9);
+    expect(buy.products.map((p: any) => p.name)).toEqual(["Part A", "Part B", "Bloom", "Triologic"]);
+    expect(buy.galPerYear).toBe(92000 * 5);
+    expect(E.usagePurchase(est, 0).products[0].perYearWholeUnits).toBe(0);
+    expect(E.usageUnitsNeeded(50, 25)).toBe(2);
+    expect(E.usagePurchase({ ...est, products: [{ ...est.products[0], amount: 50 }] } as any, 1).products[0].perYearWholeUnits).toBe(2);
+  });
+
   test("the engine holds no prices", () => {
     const text = JSON.stringify(DATA);
     expect(text).not.toMatch(/price/i);

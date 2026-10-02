@@ -132,6 +132,39 @@ export function usageUnitsNeeded(amount, unitSize) {
 }
 
 /**
+ * Order quantities for the included products: per cycle and per year, in bags (or jugs)
+ * to 0.1 and in whole packages, with the metric amount (kg dry, L liquid) for each.
+ * @param {ReturnType<typeof usageEstimate>} estimate
+ * @param {number} [cyclesPerYear]
+ */
+export function usagePurchase(estimate, cyclesPerYear = 1) {
+  const { gramsPerPound, litersPerGallon } = DATA.units;
+  const cycles = nonNegative(cyclesPerYear);
+  /** @param {number} amount @param {boolean} liquid */
+  const metric = (amount, liquid) => liquid ? amount * litersPerGallon : amount * gramsPerPound / 1000;
+  const products = estimate.products.filter(p => p.included).map(p => {
+    const liquid = p.unitType === "gal";
+    const annual = p.amount * cycles;
+    const annualUnits = usageUnitsNeeded(annual, p.unitSize);
+    return {
+      name: p.name, unitSize: p.unitSize, unitType: p.unitType, liquid,
+      unitSizeMetric: metric(p.unitSize, liquid),
+      perCycle: p.amount, perCycleMetric: metric(p.amount, liquid), perCycleUnits: p.units,
+      perYear: annual, perYearMetric: metric(annual, liquid), perYearUnits: annualUnits,
+      perYearWholeUnits: Math.max(0, Math.ceil(annualUnits - 1e-9)),
+    };
+  });
+  return {
+    products,
+    cyclesPerYear: cycles,
+    galPerCycle: estimate.totalGal,
+    litersPerCycle: estimate.totalL,
+    galPerYear: estimate.totalGal * cycles,
+    litersPerYear: estimate.totalL * cycles,
+  };
+}
+
+/**
  * Cost of the estimate at the given prices (per bag or jug, by product name). Products
  * without a price cost nothing and are listed in `unpriced`.
  * @param {ReturnType<typeof usageEstimate>} estimate
