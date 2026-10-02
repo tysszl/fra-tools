@@ -92,6 +92,7 @@ describe("quick mode page state", () => {
     expect(a).toContain("Mother plants are not included");
     expect(a).toContain("10 ppm alkalinity");
     expect(a).toContain("9 weeks of flower");
+    expect(a).toContain("5 harvests per year");
   });
 });
 

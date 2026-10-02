@@ -35,6 +35,10 @@ import { CONTACT, esc, sheetFootHtml } from "../../shared/chrome.js";
  */
 
 const STAGES = DATA.phaseLabels.print;
+/** Quick mode counts no mother plants, so its veg stage is plain "Veg". @param {UsagePrintView} v @param {number} i */
+function stage(v, i) { return v.quick && i === 0 ? "Veg" : STAGES[i]; }
+/** "harvests" in Quick mode (as on screen), "cycles" in the full calculator. @param {UsagePrintView} v */
+function cyclesWord(v) { return v.quick ? "harvests" : "cycles"; }
 
 /** @param {number} n @param {number} [d] */
 export function fmt(n, d = 1) {
@@ -87,7 +91,7 @@ function head(v, kicker, title) {
 /** @param {UsagePrintView} v */
 function chips(v) {
   const u = unitsFor(v.metric);
-  const list = [v.lineLabel, v.strengthLabel, v.scheduleLabel, `${u.volume(v.purchase.galPerCycle)} per cycle`, `${fmt(v.purchase.cyclesPerYear, 0)} cycles per year`];
+  const list = [v.lineLabel, v.strengthLabel, v.scheduleLabel, `${u.volume(v.purchase.galPerCycle)} per cycle`, `${fmt(v.purchase.cyclesPerYear, 0)} ${cyclesWord(v)} per year`];
   return `<div class="s-setup">${list.map(c => `<span>${esc(c)}</span>`).join("")}</div>`;
 }
 
@@ -101,7 +105,7 @@ function scheduleTable(v, withPhUp = false) {
   const u = unitsFor(v.metric);
   const rows = v.est.columns.map((c, i) => {
     const perWeek = c.phase === "Veg" ? v.inputs.vegGalPerWeek : v.inputs.flowerGalPerWeek;
-    return `<tr><td>${esc(STAGES[i])}</td><td>${esc(c.recipe)}</td><td class="r num">${c.ec.toFixed(1)}</td><td class="r num">${wk(c.weeks)}</td>`
+    return `<tr><td>${esc(stage(v, i))}</td><td>${esc(c.recipe)}</td><td class="r num">${c.ec.toFixed(1)}</td><td class="r num">${wk(c.weeks)}</td>`
       + `<td class="r num">${esc(u.volume(perWeek))}</td><td class="r num">${esc(u.volume(c.gallons))}</td>`
       + (withPhUp ? `<td class="r num">${c.phUp.target.toFixed(1)}</td><td class="r num">${c.phUp.gPerGal.toFixed(3)}${c.phUp.overMax ? " !" : ""}</td>` : "")
       + `</tr>`;
@@ -129,7 +133,7 @@ export function assumptions(v) {
   return [
     ...quick,
     `${v.lineLabel} at ${v.strengthPhrase}, ${v.scheduleLabel} schedule. Each stage uses its recipe at the target EC in the schedule above.`,
-    `Each cycle: ${wk(i.vegWeeks)} weeks of veg at ${u.volume(i.vegGalPerWeek)} of feed per week, then ${wk(Math.round(flowerWeeks(v) * 10) / 10)} weeks of flower at ${u.volume(i.flowerGalPerWeek)} per week; ${fmt(v.purchase.cyclesPerYear, 0)} cycles per year.`,
+    `Each cycle: ${wk(i.vegWeeks)} weeks of veg at ${u.volume(i.vegGalPerWeek)} of feed per week, then ${wk(Math.round(flowerWeeks(v) * 10) / 10)} weeks of flower at ${u.volume(i.flowerGalPerWeek)} per week; ${fmt(v.purchase.cyclesPerYear, 0)} ${cyclesWord(v)} per year.`,
     `Feed volume is the finished feed delivered to plants. Nothing is added for runoff, flushing or spills.`,
     i.phoszyme ? `PhosZyme at ${phzRate} in every ${perVol} of feed, with the base nutrients reduced so the final EC stays on target.` : "",
     i.phUp ? `pH Up (potassium carbonate) to each stage's target pH, for source water with ${i.alk ? `${fmt(i.alk, 0)} ppm alkalinity as CaCO3` : "no alkalinity (RO)"}. Real use depends on your water and dripper pH; higher alkalinity needs less.` : "",
@@ -163,7 +167,7 @@ function customer(v) {
     : "";
   const stats = [
     ["Feed per cycle", u.volume(v.purchase.galPerCycle)],
-    ["Cycles per year", fmt(v.purchase.cyclesPerYear, 0)],
+    [v.quick ? "Harvests per year" : "Cycles per year", fmt(v.purchase.cyclesPerYear, 0)],
     ["Feed per year", u.volume(v.purchase.galPerYear)],
     ...(priced ? [["Product per year", money(v.cost.perYear)]] : []),
   ];

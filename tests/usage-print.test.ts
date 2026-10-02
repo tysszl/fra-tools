@@ -73,6 +73,16 @@ describe("usage PDF", () => {
     expect(off).not.toMatch(/PhosZyme|pH Up|Triologic|Si /);
   });
 
+  test("quick mode: veg stage is plain Veg and the header counts harvests", () => {
+    const quick = renderUsagePrint(view({ quick: { canopyFt2: 10000, flowerPlants: 5000, vegPlants: 5500 } }));
+    expect(quick).not.toContain("Veg / Moms");
+    expect(quick).toContain("5 harvests per year");
+    expect(quick).toContain("Harvests per year");
+    const full = renderUsagePrint(view());
+    expect(full).toContain("Veg / Moms");
+    expect(full).toContain("5 cycles per year");
+  });
+
   test("a long facility name stays one escaped string", () => {
     const long = "Northern California Cultivation Cooperative & Partners — Greenhouse Range B";
     const html = renderUsagePrint(view({ facility: long }));
