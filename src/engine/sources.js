@@ -125,7 +125,7 @@ export const SOURCES = Object.freeze({
   "usage.quick.alkPpm": "Tyler 2026-10-02 (quick mode prices pH Up for 10 ppm source alkalinity)",
   "usage.quick.triologicTreatedDaysPerWeek": "TS § Product Usage › Triologic (1x per week); one day's feed treated per TS § Feed Volume for Usage Estimates",
   "usage.quick.siSprayGalPer100Ft2": "TS § Feed Volume for Usage Estimates (1 gal spray per 100 ft²)",
-  "usage.quick.siMlPerGal": "TS § Product Usage › Front Row Si (midpoint of 0.5-2 ml/gal)",
+  "usage.quick.siMlPerGal": "TS § Feed Volume for Usage Estimates (Si at 1 ml/gal)",
   "usage.quick.siSpraysPerCycle": "TS § Product Usage › Front Row Si (1x weekly up to day 21 of flower)",
 });
 
