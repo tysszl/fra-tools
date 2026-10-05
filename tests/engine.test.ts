@@ -75,7 +75,8 @@ describe("approval snapshot", () => {
       lbDecimals: 1, rateDecimals: 3, labelDecimals: 2,
     });
     expect(DATA.lines.cplus.customStock).toEqual({
-      maxLbPerGal: { partA: 2, partB: 2, bloom: 1.333 }, minLbPerGal: 0.1, defaultLbs: { partA: 50, partB: 50, bloom: 50 },
+      maxLbPerGal: { partA: 2, partB: 2, bloom: 1.5 }, cautionAboveLbPerGal: { bloom: 1.333 },
+      minLbPerGal: 0.1, defaultLbs: { partA: 50, partB: 50, bloom: 50 },
       lbDecimals: 1, rateDecimals: 3, labelDecimals: 2,
     });
     expect(DATA.lines.cplus.stockMethods).toEqual({
@@ -312,10 +313,10 @@ describe("settings", () => {
     expect(E.tankVolumes(s)).toEqual({ tankA: 50, tankB: 50 });
   });
 
-  test("C+ team-mode custom stock clamps to 0.1 lb/gal .. 2/2/1.333 lb/gal and labels itself", () => {
+  test("C+ team-mode custom stock clamps to 0.1 lb/gal .. 2/2/1.5 lb/gal and labels itself", () => {
     expect(E.normalizeCustomLbs("cplus", "partA", 200, 75)).toBe(150);
     expect(E.normalizeCustomLbs("cplus", "partB", 200, 75)).toBe(150);
-    expect(E.normalizeCustomLbs("cplus", "bloom", 200, 75)).toBe(100);
+    expect(E.normalizeCustomLbs("cplus", "bloom", 200, 75)).toBe(112.5);
     expect(E.normalizeCustomLbs("cplus", "bloom", 1, 50)).toBe(5);
     expect(E.normalizeCustomLbs("cplus", "partB", "x", 50)).toBe(50);
     const s = E.resolveFeedSettings({ line: "cplus", method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 } });

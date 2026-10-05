@@ -120,6 +120,10 @@ export function buildView(chart, t, options) {
     if (s.line === "cplus" && cplusTwoDoserEqualRate(s)) chartNotes.push({ kind: "info", text: t("twoDoser.equal") });
     else chartNotes.push({ kind: "info", text: t("twoDoser.rates") });
   }
+  if (stockMode && !twoDoser && s.method === "custom" && s.line === "cplus"
+    && customStockRates(s.customLbs, s.stockTankVolumeGal).bloom > DATA.lines.cplus.customStock.cautionAboveLbPerGal.bloom) {
+    chartNotes.push({ kind: "info", text: t("custom.mkpCool") });
+  }
   if (chart.phoszymeWarning.text) chartNotes.push({ kind: "warn", text: phoszymeWarning(chart, t, options.lang) });
 
   const rates = supplementRates(metric);

@@ -92,6 +92,7 @@ const en = {
   "twoDoser.veg": "Veg / Moms is not served in 2-doser: a combined {combo} tank can't deliver a zero-{bloom} Veg recipe. Run veg / moms on a separate {a} + {b} feed.",
   "twoDoser.rates": "The two tanks run at different injection rates. Set each doser to the rate on its own row, then confirm with EC/PPM validation.",
   "twoDoser.equal": "At 0.75 lb/gal CaNO3 with a Swell finish, both dosers run the same rate.",
+  "custom.mkpCool": "MKP above 1.33 lb/gal may not fully dissolve in cool water. Mix in room-temperature water and confirm the validation EC before use.",
 
   // Stock tanks
   "sec.tanks": "Stock tanks",
@@ -393,6 +394,7 @@ const es = {
   "twoDoser.veg": "Veg / Madres no se cubre con 2 dosificadores: un tanque combinado {combo} no puede entregar una receta Veg sin {bloom}. Alimente veg / madres con una mezcla aparte de {a} + {b}.",
   "twoDoser.rates": "Los dos tanques corren a tasas de inyección distintas. Ajuste cada dosificador a la tasa de su propia fila y confirme con la validación de EC/PPM.",
   "twoDoser.equal": "Con CaNO3 a 0.75 lb/gal y final Swell, ambos dosificadores corren a la misma tasa.",
+  "custom.mkpCool": "El MKP por encima de 1.33 lb/gal puede no disolverse por completo en agua fría. Mézclelo en agua a temperatura ambiente y confirme la EC de validación antes de usarlo.",
 
   "sec.tanks": "Tanques madre",
   "tanks.each": "{vol} {unit} cada uno",

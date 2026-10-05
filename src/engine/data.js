@@ -214,9 +214,11 @@ export const DATA = deepFreeze({
       },
       // Applies to every C+ stock tank, 3-doser and 2-doser.
       stockTankVolume: { defaultGal: 50, minGal: 10, maxGal: 100000, decimals: 1 },
-      // Team mode only, 3 dosers. MKP stops at 1.333 lb/gal, near its room-temperature solubility.
+      // Team mode only, 3 dosers. MKP stops at 1.5 lb/gal; above 1.333 the chart prints a
+      // cool-water caution, since 2 lb/gal is about its room-temperature solubility.
       customStock: {
-        maxLbPerGal: { partA: 2, partB: 2, bloom: 1.333 },
+        maxLbPerGal: { partA: 2, partB: 2, bloom: 1.5 },
+        cautionAboveLbPerGal: { bloom: 1.333 },
         minLbPerGal: 0.1,
         defaultLbs: { partA: 50, partB: 50, bloom: 50 },
         lbDecimals: 1,

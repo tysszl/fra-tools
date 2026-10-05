@@ -72,6 +72,15 @@ describe("strings", () => {
       ["150 lb", "2 lb/gal", "Validates at 3.80 EC"], ["75 lb", "1 lb/gal", "Validates at 1.70 EC"], ["100 lb", "1.333 lb/gal", "Validates at 1.56 EC"],
     ]);
     expect(print).toContain("Custom 2/1/1.33 lb/gal");
+    expect(view.chartNotes.map(n => n.text).join(" ")).not.toContain("cool water");
+  });
+
+  test("C+ custom MKP above 1.333 lb/gal prints the cool-water caution", () => {
+    const { print, view } = render({ line: "cplus", method: "custom", stockTankVolumeGal: 50, customLbs: { partA: 100, partB: 75, bloom: 75 } }, "en", "team");
+    expect(view.chips).toContain("Custom 2 / 1.5 / 1.5 lb/gal · 3 dosers");
+    expect(view.tanks.map(tank => tank.validates)).toEqual(["Validates at 3.80 EC", "Validates at 2.55 EC", "Validates at 1.75 EC"]);
+    expect(print).toContain("MKP above 1.33 lb/gal may not fully dissolve in cool water");
+    expect(render({ line: "cplus", method: "custom", stockTankVolumeGal: 50, customLbs: { partA: 100, partB: 75, bloom: 75 } }, "es", "team").print).toContain("agua fría");
   });
 });
 
