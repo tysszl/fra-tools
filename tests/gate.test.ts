@@ -5,14 +5,12 @@ import { GATES, gateHash, gateMatches, gateUnlock } from "../shared/gate.js";
 describe("access gates", () => {
   test("hashes are the djb2 of the trimmed, lowercased code", () => {
     expect(gateHash("")).toBe("1505");
-    expect(gateMatches("cplus", "  CPLUS26 ")).toBe(gateHash("cplus26") === GATES.cplus.hash);
+    expect(gateMatches("team", "  FRATEAM26 ")).toBe(gateHash("frateam26") === GATES.team.hash);
   });
 
-  test("the C+ code opens only C+; a wrong code opens nothing", () => {
-    expect(gateMatches("cplus", "CPLUS26")).toBe(true);
-    expect(gateMatches("team", "CPLUS26")).toBe(false);
+  test("only the team code opens; the retired C+ code and wrong codes open nothing", () => {
+    expect(gateUnlock(["team"], "FRATEAM26")).toEqual({ name: "team", code: "frateam26" });
     expect(gateUnlock(["team"], "CPLUS26")).toBeNull();
-    expect(gateUnlock(["cplus", "team"], "CPLUS26")).toEqual({ name: "cplus", code: "cplus26" });
-    expect(gateUnlock(["cplus", "team"], "nope")).toBeNull();
+    expect(gateUnlock(["team"], "nope")).toBeNull();
   });
 });

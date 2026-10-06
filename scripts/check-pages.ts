@@ -2,7 +2,7 @@
 // dark, Edit sheets open, and exported PDFs, rasterized page by page with pdftoppm for
 // review.
 //
-//   PLAYWRIGHT=<path to a playwright install> CPLUS_KEY=<C+ code> bun scripts/check-pages.ts <out-dir>
+//   PLAYWRIGHT=<path to a playwright install> bun scripts/check-pages.ts <out-dir>
 //
 // The team gate is served with a test-only team code, so the check never needs the real one;
 // the sealed price list then stays closed and the usage page shows typed prices.
@@ -23,7 +23,6 @@ const out = resolve(process.argv[2] ?? "check-pages-out");
 mkdirSync(out, { recursive: true });
 const { chromium, webkit, devices } = await import(process.env.PLAYWRIGHT ?? "playwright");
 const root = resolve(import.meta.dir, "..");
-const key = process.env.CPLUS_KEY ?? "";
 const teamKey = "check-pages";
 const djb2 = (s: string) => { let h = 5381; for (const c of s) h = (((h << 5) + h) + c.charCodeAt(0)) >>> 0; return h.toString(16); };
 
@@ -57,10 +56,8 @@ async function open(url: string, width: number, scheme: "light" | "dark") {
 }
 
 const withKey = (url: string) => {
-  // `team=1` opens C+ with the team code instead of the C+ code.
-  const team = url.includes("team=1") || ["usage-calc.html", "feed-calc-admin.html", "team.html"].some(page => url.startsWith(page));
-  const code = team ? teamKey : url.startsWith("cplus-calc.html") ? key : "";
-  return code ? `${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(code)}` : url;
+  const team = ["usage-calc.html", "feed-calc-admin.html", "team.html", "cplus-calc.html"].some(page => url.startsWith(page));
+  return team ? `${url}${url.includes("?") ? "&" : "?"}key=${encodeURIComponent(teamKey)}` : url;
 };
 
 // Screens
@@ -72,8 +69,7 @@ const SCREENS: Array<[string, string]> = [
   ["feed-es", "feed-calc.html?lang=es&phup=yes&bf=yes&tri=yes"],
   ["hub", "index.html"],
   ["team", "team.html"],
-  ["cplus-teamcode", "cplus-calc.html?team=1"],
-  ["cplus-team-custom", "cplus-calc.html?team=1&m=custom&pa=150&pb=75&pbl=100&tv=75"],
+  ["cplus-team-custom", "cplus-calc.html?m=custom&pa=150&pb=75&pbl=100&tv=75"],
   ["hub-es", "index.html?lang=es"],
   ["phup", "ph-up-calc.html"],
   ["phup-cplus-stock", "ph-up-calc.html?line=cplus&mode=stock&alk=25&warm=1"],
@@ -117,7 +113,7 @@ const PDFS: Array<[string, string, number?, ((page: any) => Promise<void>)?]> = 
   ["cplus-stock", "cplus-calc.html?fac=Green%20Valley%20Farms"],
   ["cplus-2doser", "cplus-calc.html?d=2&phz=yes&fp=near-ripen"],
   ["admin-custom", "feed-calc-admin.html?m=custom&pa=100&pb=60&pbl=40&tv=40&u=mL%2FL"],
-  ["cplus-team-custom", "cplus-calc.html?team=1&m=custom&pa=150&pb=75&pbl=100&tv=75"],
+  ["cplus-team-custom", "cplus-calc.html?m=custom&pa=150&pb=75&pbl=100&tv=75"],
   ["spanish", "feed-calc.html?lang=es&m=1-1-1&p=standard&fac=Granja%20Norte"],
   ["phup-dtr", "ph-up-calc.html", 1],
   ["phup-cplus-stock", "ph-up-calc.html?line=cplus&mode=stock&conc=100&unit=pct&alk=25&warm=1", 1],

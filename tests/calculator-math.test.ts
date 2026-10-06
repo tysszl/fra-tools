@@ -14,8 +14,8 @@ const GENERATED_END = "// END GENERATED: nutrition-core";
 
 describe("public calculator navigation", () => {
   test("lists the customer tools and no team tools", () => {
-    for (const href of ["feed-calc.html", "ph-up-calc.html", "ph-down-calc.html", "cal-hypo/", "cplus-calc.html"]) expect(toolsIndex).toContain(`tool("${href}"`);
-    for (const href of ["usage-calc.html", "feed-calc-admin.html"]) expect(toolsIndex).not.toContain(href);
+    for (const href of ["feed-calc.html", "ph-up-calc.html", "ph-down-calc.html", "cal-hypo/"]) expect(toolsIndex).toContain(`tool("${href}"`);
+    for (const href of ["usage-calc.html", "feed-calc-admin.html", "cplus-calc.html"]) expect(toolsIndex).not.toContain(href);
   });
 
   test("brands the feed calculator and collapses customization by default", () => {

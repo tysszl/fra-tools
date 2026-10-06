@@ -47,58 +47,40 @@ export function mount(root, page) {
   };
 
   /** @type {"customer" | "team"} */
-  let mode = page.mode;
+  const mode = page.mode;
   const decoded = decodeParams(params, { line: page.line, mode });
   const state = {
     settings: resolveFeedSettings(decoded.input),
     facility: decoded.extras.facility,
     show: decoded.extras.show,
     lang: initialLang(params),
-    /** @type {string | null} */
-    key: null,
     sheetOpen: false,
   };
   let t = translator(STRINGS, state.lang);
 
-  /** @type {import("../../shared/gate.js").GateName[]} */
-  const gates = page.mode === "team" ? ["team"] : page.gate ? ["cplus", "team"] : [];
-  if (gates.length) {
-    const found = gateFind(gates, params);
-    if (!found) {
-      renderGate();
-      return;
-    }
-    unlock(found);
+  if (page.mode === "team" && !gateFind(["team"], params)) {
+    renderGate();
+    return;
   }
   start();
 
-  /** @param {{ name: string, code: string }} opened  Only the C+ code rides along in share links. */
-  function unlock(opened) {
-    state.key = opened.name === "cplus" ? opened.code : null;
-    if (opened.name === "team" && mode !== "team") {
-      mode = "team";
-      state.settings = resolveFeedSettings(decodeParams(params, { line: page.line, mode }).input);
-    }
-  }
 
   function renderGate() {
     document.documentElement.lang = state.lang;
     root.innerHTML = `<main class="gate"><div class="card gate__card">
       <img class="bar__logo bar__logo--light" src="${assets.logoLight}" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${assets.logoDark}" alt="Front Row Ag">
-      <h1>${esc(t(page.mode === "team" ? "gate.team.title" : "gate.title"))}</h1>
-      <p>${esc(t(page.mode === "team" ? "gate.team.intro" : "gate.intro"))}</p>
+      <h1>${esc(t("gate.team.title"))}</h1>
+      <p>${esc(t("gate.team.intro"))}</p>
       <form data-gate><input class="input" name="code" placeholder="${esc(t("gate.placeholder"))}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${esc(t("gate.placeholder"))}">
       <button class="btn btn--primary" type="submit">${esc(t("gate.unlock"))}</button></form>
-      <p class="gate__err" hidden>${esc(t(page.mode === "team" ? "gate.team.error" : "gate.error"))}</p>
+      <p class="gate__err" hidden>${esc(t("gate.team.error"))}</p>
       <p class="gate__foot"><a href="https://www.frontrowag.com" target="_blank" rel="noopener">frontrowag.com</a></p>
     </div></main>`;
     const form = /** @type {HTMLFormElement} */ (root.querySelector("[data-gate]"));
     form.addEventListener("submit", event => {
       event.preventDefault();
       const value = /** @type {HTMLInputElement} */ (form.elements.namedItem("code")).value;
-      const opened = gateUnlock(gates, value);
-      if (opened) {
-        unlock(opened);
+      if (gateUnlock(["team"], value)) {
         start();
       } else {
         /** @type {HTMLElement} */ (root.querySelector(".gate__err")).hidden = false;
@@ -133,7 +115,7 @@ export function mount(root, page) {
 
   function syncUrl() {
     replaceUrl(encodeParams(state.settings, {
-      facility: state.facility, show: state.show, lang: state.lang, key: state.key, mode,
+      facility: state.facility, show: state.show, lang: state.lang, mode,
     }));
   }
 

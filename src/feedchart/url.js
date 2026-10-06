@@ -6,7 +6,7 @@
 //   a=direct   d=2   m=<method>   tv=<gal>   ca=<lb/gal>   fp=near-ripen   phz=yes
 //   u=<unit>   p=standard|custom   ec_<phase>=<EC>   rs=<schedule>   rp_<phase>=<recipe>
 //   pa/pb/pbl=<lb> (team mode, both lines)   phup=yes   bf=yes   tri=yes   fac=<name>   lang=es
-//   key=<code> (C+ gate)   t=light|dark (read by shared/theme.js)
+//   t=light|dark (read by shared/theme.js)
 // `si` is retired and ignored.
 import { DATA, getLine, formatStockTankVolume } from "../engine/index.js";
 
@@ -123,12 +123,11 @@ export function decodeParams(p, page) {
 /**
  * Query parameters for a chart, writing only what differs from the defaults.
  * @param {FeedSettings} s
- * @param {Extras & { lang: string, key?: string | null, mode: "customer" | "team" }} extras
+ * @param {Extras & { lang: string, mode: "customer" | "team" }} extras
  */
 export function encodeParams(s, extras) {
   const p = new URLSearchParams();
   const line = getLine(s.line);
-  if (extras.key) p.set("key", extras.key);
   if (extras.lang !== "en") p.set("lang", extras.lang);
   if (extras.facility) p.set("fac", extras.facility);
   if (s.application !== "stock") p.set("a", s.application);

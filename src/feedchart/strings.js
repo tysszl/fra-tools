@@ -299,12 +299,9 @@ const en = {
   "help.tri": "Triologic is a microbial inoculant containing Mycorrhization Helper Bacteria. It amplifies mycorrhizal colonization as a weekly hand-water drench alongside a separate mycorrhizal inoculant.",
   "help.si": "Front Row Si is a foliar spray; its rate is always listed with the supplements.",
 
-  // Access gate (C+)
-  "gate.title": "Front Row Ag · Component Plus Calculator",
-  "gate.intro": "This calculator is part of Front Row Ag's commercial Component Plus program and is available to participating customers. Enter the access code provided by your Front Row Ag representative.",
+  // Access gate (team)
   "gate.placeholder": "Access code",
   "gate.unlock": "Unlock Calculator",
-  "gate.error": "That code didn't match. Check with your Front Row Ag representative.",
   "gate.team.title": "Front Row Ag · Team Feed Chart",
   "gate.team.intro": "Team mode is for the Front Row Ag team. Enter the team code from the Notion Team Tools page.",
   "gate.team.error": "That code didn't match. The team code is on the Notion Team Tools page.",
@@ -594,11 +591,8 @@ const es = {
   "help.tri": "Triologic es un inoculante microbiano con bacterias auxiliares de la micorrización. Amplifica la colonización micorrízica como riego manual semanal junto con un inoculante micorrízico aparte.",
   "help.si": "Front Row Si es una aspersión foliar; su dosis siempre aparece con los suplementos.",
 
-  "gate.title": "Front Row Ag · Calculadora Component Plus",
-  "gate.intro": "Esta calculadora es parte del programa comercial Component Plus de Front Row Ag y está disponible para los clientes participantes. Ingrese el código de acceso que le dio su representante de Front Row Ag.",
   "gate.placeholder": "Código de acceso",
   "gate.unlock": "Desbloquear calculadora",
-  "gate.error": "Ese código no coincide. Consulte con su representante de Front Row Ag.",
   "gate.team.title": "Front Row Ag · Tabla del equipo",
   "gate.team.intro": "El modo de equipo es para el equipo de Front Row Ag. Ingrese el código del equipo de la página Team Tools de Notion.",
   "gate.team.error": "Ese código no coincide. El código del equipo está en la página Team Tools de Notion.",

@@ -6,7 +6,7 @@ Front Row Ag calculator tools, hosted on GitHub Pages at `tools.frontrowag.com`.
 
 - `index.html`: tool hub (English and Spanish)
 - `feed-calc.html`: Feed Chart, 3-Part (stock concentrate and direct to reservoir; 2 or 3 dosers)
-- `cplus-calc.html`: Feed Chart, Component Plus (C+ access code, or the team code)
+- `cplus-calc.html`: Feed Chart, Component Plus (team code only)
 - `team.html`: team portal (team code; noindex)
 - `feed-calc-admin.html`: Feed Chart, team mode (custom stock strength; team code)
 - `ph-up-calc.html`: pH Up dosing per feed-chart column

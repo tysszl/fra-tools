@@ -5,11 +5,10 @@
 // Notion Team Tools page.
 import { readStored, writeStored } from "./storage.js";
 
-/** @typedef {"cplus" | "team"} GateName */
+/** @typedef {"team"} GateName */
 
-/** cplus: Component Plus customers. team: the team portal, Feed Chart team mode, C+ and usage. */
+/** team: the team portal, Feed Chart team mode, Component Plus and usage. */
 export const GATES = {
-  cplus: { hash: "d5ab5114", storage: "fra-cplus-key" },
   team: { hash: "d1c47d4d", storage: "fra-team-key" },
 };
 

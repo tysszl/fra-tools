@@ -88,7 +88,7 @@ describe("share links", () => {
   const PAGES = {
     "feed-calc.html": { run: compilePage<any>("feed-calc.html", ["state"]), page: { line: "3part", mode: "customer" } as Page },
     "feed-calc-admin.html": { run: compilePage<any>("feed-calc-admin.html", ["state"]), page: { line: "3part", mode: "team" } as Page },
-    "cplus-calc.html": { run: compilePage<any>("cplus-calc.html", ["state"]), page: { line: "cplus", mode: "customer" } as Page },
+    "cplus-calc.html": { run: compilePage<any>("cplus-calc.html", ["state"]), page: { line: "cplus", mode: "team" } as Page },
   };
   const LINKS: Array<[keyof typeof PAGES, string]> = [
     ["feed-calc.html", ""],
@@ -238,7 +238,7 @@ describe("entry pages", () => {
   test("each page mounts the shared app; team and C+ pages stay out of search", () => {
     const read = (f: string) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
     expect(read("feed-calc.html")).toContain('mount(document.getElementById("app"), { line: "3part", mode: "customer" })');
-    expect(read("cplus-calc.html")).toContain("gate: true");
+    expect(read("cplus-calc.html")).toContain('mode: "team"');
     for (const f of ["cplus-calc.html", "feed-calc-admin.html"]) expect(read(f)).toContain('name="robots" content="noindex');
     expect(read("feed-calc.html")).not.toContain("robots");
   });
