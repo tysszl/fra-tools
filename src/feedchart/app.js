@@ -125,7 +125,6 @@ export function mount(root, page) {
       case "application": return update(s => { s.application = /** @type {any} */ (value); });
       case "dosers": return update(s => { s.doserCount = value === "2" ? 2 : 3; });
       case "method": return update(s => { s.method = value; });
-      case "ca": return update(s => { s.cplusCaStockLbPerGal = Number(value); });
       case "fp": return update(s => { s.cplusFinalPhase = /** @type {any} */ (value); });
       case "unit": return update(s => { s.unit = /** @type {any} */ (value); });
       case "preset": return update(s => { s.ecPreset = /** @type {any} */ (value); });
@@ -432,9 +431,6 @@ export function mount(root, page) {
         + `<p class="field__help">${esc(t("field.lbCharged"))}. ${esc(t("help.customLbs", { a: caps.partA, b: caps.partB, bl: caps.bloom, names: [line.stockNames.partA, line.stockNames.partB, line.stockNames.bloom].join(" / ") }))}</p>`));
     }
     if (stockMode && twoDoser && s.line === "cplus") {
-      fields.push(field(t("field.caStock"),
-        seg("ca", DATA.lines.cplus.twoDoser.caStockOptions.map(o => [String(o), t(`opt.ca.${o}`)]), String(s.cplusCaStockLbPerGal), true)
-        + `<p class="field__help">${esc(t("help.caStock"))}</p>`));
       fields.push(field(t("field.finalPhase"),
         seg("fp", DATA.lines.cplus.twoDoser.finalPhaseOptions.map(o => [o, t(`opt.fp.${o}`)]), s.cplusFinalPhase)
         + `<p class="field__help">${esc(t("help.finalPhase"))}</p>`));
@@ -451,12 +447,13 @@ export function mount(root, page) {
     if (twoDoser) {
       fields.push(field(t("field.schedule"), `<p class="field__help">${esc(t(`help.schedule.locked.${s.line}`))}</p>`));
     } else {
-      const schedules = [["commercial", t("opt.schedule.commercial")], ["swell-flower", t("opt.schedule.swell-flower")]];
+      const single = line.singleRecipeSchedule;
+      const schedules = [["commercial", t("opt.schedule.commercial")], [single, t(`opt.schedule.${single}`)]];
       if (s.recipeSchedule === "custom") schedules.push(["custom", t("opt.schedule.custom")]);
       fields.push(field(t("field.schedule"),
         seg("schedule", /** @type {Array<[string, string]>} */ (schedules), s.recipeSchedule)
         + `<div class="grid5" style="margin-top:10px">${PHASES.map((phase, i) => `<div><label for="rp-${phase}">${esc(t(`phase.short.${i}`))}</label><select class="input" id="rp-${phase}" data-input="rp:${phase}">${line.recipeNames.map(name => `<option${name === s.phaseRecipe[phase] ? " selected" : ""}>${esc(name)}</option>`).join("")}</select></div>`).join("")}</div>`
-        + help([t("help.schedule.commercial"), t("help.schedule.swell-flower"), t("help.schedule.custom")])
+        + help([t("help.schedule.commercial"), t(`help.schedule.${single}`), t("help.schedule.custom")])
         + `<p class="field__help">${esc(t("foot.contact"))}</p>`));
     }
 

@@ -3,6 +3,8 @@
 // startup path from URL params, and asserts the engine in src/engine reproduces every
 // number they show, except where a named exception (EXCEPTIONS below) records one of
 // Tyler's 2026-09-29 rulings. Each exception checks the allowed difference exactly.
+// SUPERSEDED lists the settings a later ruling replaced outright; the matrix leaves them
+// out and tests/engine.test.ts pins their current behavior.
 import { describe, expect, test } from "bun:test";
 import { compilePage } from "./support/page-runtime";
 import * as E from "../src/engine/index.js";
@@ -14,7 +16,7 @@ const PHASES: Phase[] = ["Veg", "Stretch", "Stack", "Swell", "Ripen"];
 const FEED_EXPORTS = [
   "state", "computeFeedRows", "calcStockTanks", "buildSummary", "getPhaseRecipeName", "getRecipeScheduleLabel",
   "isHighStrengthFlowerChart", "getBrandedAdditives", "getTankVolumes", "stockConfigLabel",
-  "getCplusPhRanges", "getSupplementRows", "getPhaseRecipeLabel", "isTwoDoserEqualRate",
+  "getCplusPhRanges", "getSupplementRows", "getPhaseRecipeLabel",
 ];
 
 const PAGES = {
@@ -33,8 +35,6 @@ type Config = {
   method?: string;
   customLbs?: { partA: number; partB: number; bloom: number };
   tv?: number;
-  ca?: number;
-  fp?: "swell" | "near-ripen";
   unit: string;
   preset: "high" | "standard" | "custom";
   customEc?: Record<Phase, number>;
@@ -61,7 +61,6 @@ const SCHEDULES: Record<"3part" | "cplus", Array<Pick<Config, "schedule" | "phas
   ],
   cplus: [
     { schedule: "commercial" },
-    { schedule: "swell-flower" },
     { schedule: "custom", phaseRecipe: { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Swell", Ripen: "Ripen" } },
     { schedule: "custom", phaseRecipe: { Veg: "Ripen", Stretch: "Veg", Stack: "Stack", Swell: "Ripen", Ripen: "Swell" } },
   ],
@@ -93,9 +92,6 @@ function buildMatrix(): Config[] {
   }
   const cp = "cplus-calc.html" as const;
   for (const tv of [50, 5]) each({ page: cp, line: "cplus", application: "stock", doserCount: 3, tv }, STOCK_UNITS, SCHEDULES.cplus);
-  for (const ca of [0.75, 1]) for (const fp of ["swell", "near-ripen"] as const) for (const tv of [50, 12.5]) {
-    each({ page: cp, line: "cplus", application: "stock", doserCount: 2, ca, fp, tv }, STOCK_UNITS, SCHEDULES.cplus.slice(0, 1));
-  }
   each({ page: cp, line: "cplus", application: "direct", doserCount: 3 }, DIRECT_UNITS, SCHEDULES.cplus);
   return configs;
 }
@@ -111,8 +107,6 @@ function toSearch(c: Config) {
     p.set("pb", String(c.customLbs.partB));
     p.set("pbl", String(c.customLbs.bloom));
   }
-  if (c.ca !== undefined) p.set("ca", String(c.ca));
-  if (c.fp) p.set("fp", c.fp);
   if (c.phz) p.set("phz", "yes");
   ["si", "phup", "bf", "tri"].forEach(key => p.set(key, "yes"));
   p.set("u", c.unit);
@@ -131,8 +125,6 @@ function toEngineInput(c: Config) {
     method: c.method,
     customLbs: c.customLbs,
     stockTankVolumeGal: c.tv,
-    cplusCaStockLbPerGal: c.ca,
-    cplusFinalPhase: c.fp,
     unit: c.unit,
     ecPreset: c.preset,
     targetEc: c.customEc,
@@ -151,10 +143,15 @@ const EXCEPTIONS = {
   cplusMinTank: "N14: C+ minimum stock tank is 10 gal (was 1); smaller entries fall back to 50",
   metricCharge: "N17: metric stock weights from exact litres and g/L, rounded once, on both lines (3-Part rounded litres and g/L first)",
   metricValidation: "N18: metric validation is 250 mL of stock in 20 L (was 400 mL), validation EC computed for that sample from exact g/L",
-  cplusTank2Solve: "N19: C+ 2-doser Tank 2 rate uses the whole-tank solve, as 3-Part does (was the C+ share alone)",
   supplementCopy: "N4-N11: one set of supplement rates on every surface (BioFlo 15 maintenance, pH Up 0.2-0.25 max with the high-strength stop on both lines, Triologic up to 2 mL/gal)",
 } as const;
 type ExceptionId = keyof typeof EXCEPTIONS;
+
+// Replaced outright by a later ruling, so left out of the matrix (R&D 2026-10-07, Tyler confirmed).
+const SUPERSEDED = {
+  cplusTwoDoser: "C+ 2-doser locks Stack with a Stack-ratio Tank 2 (CaNO3 1.00; C+ 1.00 + MKP 0.84 lb/gal); the legacy page locked Swell (0.75/1.00 CaNO3; C+ 0.75 + MKP 1.00)",
+  cplusSwellFlower: "C+ single-recipe flower is Stack Through Flower; the legacy page's C+ Swell Through Flower is gone (rs=swell-flower now opens Stack)",
+} as const;
 const applied: Record<ExceptionId, number> = Object.fromEntries(Object.keys(EXCEPTIONS).map(k => [k, 0])) as any;
 
 const decimalsOf = (display: string) => (display.includes(".") ? display.split(".")[1].length : 0);
@@ -164,17 +161,6 @@ function cellDiffers(legacy: any, engine: any, c: Config, row: string, phase: Ph
   if (!legacy || !engine) return legacy === engine ? false : "null mismatch";
   if (Math.abs(legacy.ec - engine.ec) > 1e-12) return "ec";
   if (legacy.display === engine.display && legacy.dosage === engine.dosage) return false;
-  // N19: the whole-tank solve scales the C+ tank's dose by twoDoserTank2TargetEc / target.
-  if (row === "tank2" && c.line === "cplus" && !(c.fp === "near-ripen" && phase === "Ripen")) {
-    const scale = E.twoDoserTank2TargetEc(E.resolveFeedSettings(toEngineInput(c)), phase, 1);
-    const isRatio = engine.display.startsWith("1:");
-    const ev = isRatio ? 1 / Number(engine.display.slice(2)) : Number(engine.display);
-    const lv = isRatio ? 1 / Number(legacy.display.slice(2)) : Number(legacy.display);
-    const tolerance = isRatio
-      ? lv * scale * (1 / (Number(legacy.display.slice(2)) - 1)) * 2
-      : 0.5 * 10 ** -decimalsOf(legacy.display) * (1 + scale) + 0.5 * 10 ** -decimalsOf(engine.display) + 1e-9;
-    if (scale !== 1 && Math.abs(ev - lv * scale) <= tolerance) { applied.cplusTank2Solve++; return false; }
-  }
   if (engine.display.startsWith("1:") || legacy.display.startsWith("1:")) return "ratio";
   // Legacy 3-Part 2-doser showed mL/gal to 0.1 but kept the numeric dosage whole.
   if (c.doserCount === 2 && legacy.display === engine.display && Number(engine.display) === engine.dosage) {
@@ -369,9 +355,6 @@ function compareConfig(c: Config, mismatches: string[]) {
     })), expected.rows);
     check("supplements (screen)", suppDetails(element("supp-list").innerHTML), expected.rows.map(row => row.detail));
     check("supplements (summary)", summarySupplementLines(summary.plain), expected.summary);
-    if (c.doserCount === 2) {
-      check("2-doser equal rate", api.isTwoDoserEqualRate(), E.cplusTwoDoserEqualRate(chart.settings));
-    }
   }
 
   if (c.application === "stock") {
@@ -397,7 +380,7 @@ function comparePh(c: Config, chart: any, oldPh: ReturnType<typeof legacyPh>, ch
     const flowerGroup = c.line === "3part" ? ["Stretch", "Stack", "Swell"].includes(col.recipe) : ["Stack", "Swell"].includes(col.recipe);
     const legacyText = flowerGroup ? oldPh.flower : oldPh.vegRipen;
     const ec = chart.settings.targetEc[PHASES[i]];
-    const recipes = c.line === "cplus" && c.doserCount === 2 && c.fp === "near-ripen" && i === 4 ? ["Swell", "Ripen"] : [col.recipe];
+    const recipes = [col.recipe];
     const limit = Math.min(...recipes.map(recipe => {
       const fit = (E.DATA.lines[c.line].phCeilingFit as any)[recipe];
       const x = Math.log10(ec);
@@ -436,7 +419,7 @@ function compareMetricStock(chart: any, legacy: any, engine: any, check: (w: str
 describe("named exceptions", () => {
   test("each exception is intended and documented", () => {
     expect(Object.keys(EXCEPTIONS).sort()).toEqual([
-      "cplusMinTank", "cplusTank2Solve", "metricCharge", "metricValidation", "nonzeroNeverDash", "perColumnCeiling", "supplementCopy", "twoDoserPrecision", "twoDoserVegLabel",
+      "cplusMinTank", "metricCharge", "metricValidation", "nonzeroNeverDash", "perColumnCeiling", "supplementCopy", "twoDoserPrecision", "twoDoserVegLabel",
     ]);
   });
 
@@ -456,7 +439,9 @@ describe("engine reproduces the current feed pages", () => {
     const count = (page: PageName) => MATRIX.filter(c => c.page === page).length;
     expect(count("feed-calc.html")).toBe(544);
     expect(count("feed-calc-admin.html")).toBe(1056);
-    expect(count("cplus-calc.html")).toBe(576);
+    expect(count("cplus-calc.html")).toBe(240);
+    expect(MATRIX.some(c => c.line === "cplus" && (c.doserCount === 2 || c.schedule === "swell-flower"))).toBe(false);
+    expect(Object.keys(SUPERSEDED)).toEqual(["cplusTwoDoser", "cplusSwellFlower"]);
   });
 
   for (const page of Object.keys(PAGES) as PageName[]) {

@@ -5,7 +5,7 @@
 // inputs carried over. Prices preload from the sealed price list (usage-prices.js) when
 // the page holds the team code, or are typed in. Exports a customer proposal PDF (annual
 // order, assumptions, prices only when turned on) or an internal analysis PDF (usage-print.js).
-import { DATA, getLine, quickUsageInput, quickVolumes, usageCost, usageEstimate, usageProducts, usagePurchase } from "../engine/index.js";
+import { DATA, getLine, presetScheduleKey, scheduleForLine, quickUsageInput, quickVolumes, usageCost, usageEstimate, usageProducts, usagePurchase } from "../engine/index.js";
 import { assumptions, renderUsagePrint, unitsFor } from "./usage-print.js";
 import { loadPriceList, tierPrices } from "./usage-prices.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
@@ -85,6 +85,11 @@ const ADVANCED_PARAMS = ["vw", "vg", "fg", "w0", "e0", "e1", "e2", "e3", "e4", "
 /** @param {number} n Round to 0.1 for inputs and links. */
 const tenth = n => Math.round(n * 10) / 10;
 
+/** @param {string} key */
+function scheduleLabel(key) {
+  return /** @type {Record<string, { label: string }>} */ (DATA.recipeSchedules.options)[key].label;
+}
+
 /**
  * Page state from the URL. Links without `m` open Quick unless they carry a full-calculator
  * parameter, so links made before Quick mode keep opening the same chart.
@@ -104,7 +109,7 @@ export function initialState(params, key) {
     canopy: num(params.get("ft"), Q.canopyFt2, 1e7),
     line: line0,
     preset: /** @type {"high" | "standard" | "custom"} */ (preset0),
-    schedule: params.get("rs") === "swell-flower" ? "swell-flower" : "commercial",
+    schedule: presetScheduleKey(line0, params.get("rs") ?? ""),
     /** @type {Record<Phase, number>} */
     ec: { ...DATA.ecPresets[preset0] },
     vegWeeks: num(params.get("vw"), D.vegWeeks, 52),
@@ -336,7 +341,7 @@ export function mount(root) {
       return `<section class="card form" style="padding-bottom:6px">`
         + field("Product line", seg("line", [["3part", "3-Part"], ["cplus", "Component Plus"]], state.line))
         + field("Feed strength (target EC)", seg("preset", [["high", "High"], ["standard", "Standard"], ["custom", "Custom"]], state.preset) + `<div style="margin-top:10px">${grid5}</div>`)
-        + field("Recipe schedule", seg("schedule", [["commercial", "Commercial"], ["swell-flower", "Swell Through Flower"]], state.schedule))
+        + field("Recipe schedule", seg("schedule", [["commercial", "Commercial"], [getLine(state.line).singleRecipeSchedule, scheduleLabel(getLine(state.line).singleRecipeSchedule)]], state.schedule))
         + field("Weeks per column", weeks)
         + field(state.metric ? "Liters of feed per week" : "Gallons of feed per week", `<div class="grid3" style="grid-template-columns:1fr 1fr"><div><label>Veg</label>${numInput("vegGalPerWeek", state.vegGalPerWeek, "Veg gal per week", 'step="100"')}</div><div><label>Flower</label>${numInput("flowerGalPerWeek", state.flowerGalPerWeek, "Flower gal per week", 'step="100"')}</div></div>`)
         + field("Additives", `<div class="toggles">${tog("phoszyme", state.phoszyme, "PhosZyme")}${tog("phUp", state.phUp, "pH Up")}${tog("triologic", state.triologic, "Triologic")}${tog("si", state.si, "Si (foliar)")}</div>`)
@@ -505,7 +510,7 @@ export function mount(root) {
         lineLabel: line.label, lineId: state.line,
         strengthLabel: preset === "custom" ? "Custom EC" : preset === "high" ? "High strength" : "Standard strength",
         strengthPhrase: preset === "custom" ? "custom EC targets" : preset === "high" ? "high strength" : "standard strength",
-        scheduleLabel: inp.schedule === "swell-flower" ? "Swell Through Flower" : "Commercial (Stack → Swell)",
+        scheduleLabel: scheduleLabel(presetScheduleKey(state.line, inp.schedule ?? "")),
         facility: state.facility.trim(), preparedBy: state.preparedBy.trim(), date: displayDate(state.date), notes: state.notes,
         quick: quick() ? { canopyFt2: state.canopy, ...quickVolumes(state.canopy) } : null,
         inputs: {
@@ -530,7 +535,7 @@ export function mount(root) {
       const val = el.getAttribute("data-val") ?? "";
       if (set) {
         if (set === "mode") { if (val === "advanced") quickToAdvanced(state); else state.mode = "quick"; }
-        else if (set === "line") { state.line = val === "cplus" ? "cplus" : "3part"; applyTier(state); }
+        else if (set === "line") { state.line = val === "cplus" ? "cplus" : "3part"; state.schedule = scheduleForLine(state.line, state.schedule); applyTier(state); }
         else if (set === "preset") { state.preset = /** @type {any} */ (val); if (val !== "custom") state.ec = { ...DATA.ecPresets[/** @type {"high" | "standard"} */ (val)] }; }
         else if (set === "schedule") state.schedule = val;
         else if (set === "units") state.metric = val === "metric";

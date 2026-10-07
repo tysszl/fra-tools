@@ -66,7 +66,7 @@ export function phRanges(settings) {
     const recipe = recipeForPhase(settings, phase);
     const ec = Number(settings.targetEc[phase]);
     let result = dripperPhRange(settings.line, recipe, ec);
-    // C+ 2-doser Near Ripen sits between Swell and Ripen; it takes the lower limit.
+    // C+ 2-doser Near Ripen sits between the locked recipe (Stack) and Ripen; it takes the lower limit.
     if (nearRipen(settings, phase)) {
       const ripen = dripperPhRange(settings.line, "Ripen", ec);
       if (ripen.limit < result.limit) result = ripen;

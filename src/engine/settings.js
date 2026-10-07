@@ -17,12 +17,11 @@ import { DATA, getLine } from "./data.js";
  * @property {string} method                    3-doser stock method ("3-2-2", "4-3-3", "1-1-1"; C+ "1-1-1"; team-mode "custom" on both lines).
  * @property {RoleValues} customLbs             Team-mode custom charge per tank (lb), keyed by role on the chart's line.
  * @property {number} stockTankVolumeGal        3-Part 2-doser and custom; every C+ tank.
- * @property {number} cplusCaStockLbPerGal      C+ 2-doser CaNO3 stock (0.75 or 1.00).
- * @property {"swell" | "near-ripen"} cplusFinalPhase  C+ 2-doser final phase.
+ * @property {"stack" | "near-ripen"} cplusFinalPhase  C+ 2-doser final phase.
  * @property {FeedUnit} unit
  * @property {"high" | "standard" | "custom"} ecPreset
  * @property {Record<Phase, number>} targetEc
- * @property {string} recipeSchedule            "commercial", "swell-flower", or "custom".
+ * @property {string} recipeSchedule            "commercial", the line's single-recipe schedule ("swell-flower" 3-Part, "stack-flower" C+), or "custom".
  * @property {Record<Phase, string>} phaseRecipe
  * @property {boolean} usePhoszyme
  */
@@ -49,18 +48,43 @@ export function formatStockTankVolume(lineId, value) {
 }
 
 /** @param {unknown} value */
-export function normalizeCplusCaStock(value) {
-  const twoDoser = DATA.lines.cplus.twoDoser;
-  const parsed = Number(value);
-  return /** @type {readonly number[]} */ (twoDoser.caStockOptions).includes(parsed) ? parsed : twoDoser.defaultCaStock;
-}
-
-/** @param {unknown} value */
 export function normalizeCplusFinalPhase(value) {
   const twoDoser = DATA.lines.cplus.twoDoser;
   return /** @type {readonly unknown[]} */ (twoDoser.finalPhaseOptions).includes(value)
-    ? /** @type {"swell" | "near-ripen"} */ (value)
-    : /** @type {"swell"} */ (twoDoser.defaultFinalPhase);
+    ? /** @type {"stack" | "near-ripen"} */ (value)
+    : /** @type {"stack"} */ (twoDoser.defaultFinalPhase);
+}
+
+/**
+ * A schedule key as the line knows it: retired keys the line aliases (C+ "swell-flower"
+ * → "stack-flower") map to their replacement; anything else passes through.
+ * @param {LineId} lineId
+ * @param {string} key
+ */
+export function lineScheduleKey(lineId, key) {
+  const aliases = /** @type {Record<string, string>} */ (getLine(lineId).scheduleAliases);
+  return Object.hasOwn(aliases, key) ? aliases[key] : key;
+}
+
+/**
+ * A preset schedule key for pages that offer only the preset schedules (pH Up, usage):
+ * the line's key for `key` (aliases applied), else the default schedule.
+ * @param {LineId} lineId
+ * @param {string} key
+ */
+export function presetScheduleKey(lineId, key) {
+  const mapped = lineScheduleKey(lineId, key);
+  return Object.hasOwn(getLine(lineId).schedules, mapped) ? mapped : DATA.recipeSchedules.defaultSchedule;
+}
+
+/**
+ * The same choice on another line: commercial stays commercial; any other schedule
+ * becomes that line's single-recipe flower schedule.
+ * @param {LineId} lineId
+ * @param {string} key
+ */
+export function scheduleForLine(lineId, key) {
+  return key === DATA.recipeSchedules.defaultSchedule ? key : getLine(lineId).singleRecipeSchedule;
 }
 
 /**
@@ -117,7 +141,7 @@ export function resolveFeedSettings(input = {}) {
     ? { ...presetTargets, ...(input.targetEc ?? {}) }
     : { ...presetTargets };
   const schedules = /** @type {Record<string, Record<Phase, string>>} */ (line.schedules);
-  const recipeSchedule = input.recipeSchedule ?? DATA.recipeSchedules.defaultSchedule;
+  const recipeSchedule = lineScheduleKey(lineId, input.recipeSchedule ?? DATA.recipeSchedules.defaultSchedule);
   const phaseRecipe = recipeSchedule === "custom"
     ? { ...schedules[DATA.recipeSchedules.defaultSchedule], ...(input.phaseRecipe ?? {}) }
     : { ...(schedules[recipeSchedule] ?? schedules[DATA.recipeSchedules.defaultSchedule]) };
@@ -137,7 +161,6 @@ export function resolveFeedSettings(input = {}) {
     method,
     customLbs,
     stockTankVolumeGal,
-    cplusCaStockLbPerGal: normalizeCplusCaStock(input.cplusCaStockLbPerGal ?? DATA.lines.cplus.twoDoser.defaultCaStock),
     cplusFinalPhase: normalizeCplusFinalPhase(input.cplusFinalPhase),
     unit,
     ecPreset,
@@ -169,8 +192,8 @@ export function effectiveMethod(settings) {
 }
 
 /**
- * The recipe the math uses for a phase. Two dosers lock every phase to Swell,
- * including Veg (which the 2-doser chart leaves blank).
+ * The recipe the math uses for a phase. Two dosers lock every phase to the line's
+ * 2-doser recipe (3-Part Swell, C+ Stack), including Veg (which the 2-doser chart leaves blank).
  * @param {FeedSettings} settings
  * @param {Phase} phase
  */
@@ -188,7 +211,7 @@ export function recipeLabel(settings, phase) {
   if (settings.doserCount !== 2) return settings.phaseRecipe[phase];
   if (phase === "Veg") return "Veg";
   if (settings.line === "cplus" && phase === "Ripen" && settings.cplusFinalPhase === "near-ripen") return "Near Ripen";
-  return "Swell";
+  return getLine(settings.line).twoDoser.recipe;
 }
 
 /**
@@ -204,9 +227,7 @@ export function stockRates(settings, method = effectiveMethod(settings)) {
   const line = getLine(settings.line);
   const entry = /** @type {Record<string, { rates: RoleValues }>} */ (line.stockMethods)[method];
   if (!entry) throw new Error(`Unknown ${settings.line} stock method: ${method}`);
-  const rates = { ...entry.rates };
-  if (settings.line === "cplus" && method === "2-doser") rates.partA = normalizeCplusCaStock(settings.cplusCaStockLbPerGal);
-  return rates;
+  return { ...entry.rates };
 }
 
 /**
@@ -262,19 +283,11 @@ export function stockConfigLabel(settings) {
 export function recipeScheduleLabel(settings) {
   const options = /** @type {Record<string, { label: string, printLabel?: string }>} */ (DATA.recipeSchedules.options);
   if (settings.doserCount === 2) {
+    const recipe = getLine(settings.line).twoDoser.recipe;
     return settings.line === "cplus" && settings.cplusFinalPhase === "near-ripen"
-      ? "Swell + Near Ripen"
-      : options["locked-swell"].label;
+      ? `${recipe} + Near Ripen`
+      : options[`locked-${recipe.toLowerCase()}`].label;
   }
   const option = options[settings.recipeSchedule];
   return option.printLabel || option.label;
-}
-
-/**
- * C+ 2-doser: both dosers run one rate only with 0.75 lb/gal CaNO3 and a Swell final phase.
- * @param {FeedSettings} settings
- */
-export function cplusTwoDoserEqualRate(settings) {
-  return normalizeCplusCaStock(settings.cplusCaStockLbPerGal) === DATA.lines.cplus.twoDoser.defaultCaStock
-    && settings.cplusFinalPhase === "swell";
 }

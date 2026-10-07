@@ -47,6 +47,15 @@ describe("quick mode page state", () => {
     expect(initialState(new URLSearchParams("b=fra&ve=2&fe=2&fw=4"), "k").mode).toBe("advanced");
   });
 
+  test("schedule links: C+ Swell Through Flower opens Stack Through Flower; 3-Part keeps Swell", () => {
+    const cplus = initialState(new URLSearchParams("m=a&b=cplus&rs=swell-flower"), "k");
+    expect(cplus.schedule).toBe("stack-flower");
+    expect(stateParams(cplus).get("rs")).toBe("stack-flower");
+    expect(initialState(new URLSearchParams("m=a&b=cplus&rs=stack-flower"), "k").schedule).toBe("stack-flower");
+    expect(initialState(new URLSearchParams("m=a&rs=swell-flower"), "k").schedule).toBe("swell-flower");
+    expect(initialState(new URLSearchParams("m=a&rs=stack-flower"), "k").schedule).toBe("commercial");
+  });
+
   test("share links round-trip quick mode", () => {
     const s = initialState(new URLSearchParams(""), "k");
     Object.assign(s, { line: "cplus", canopy: 24000, cycles: 4, phoszyme: true, si: true, tier: "cplus-mixed", facility: "Green Valley", showPrices: true });

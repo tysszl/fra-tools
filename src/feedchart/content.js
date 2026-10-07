@@ -2,7 +2,7 @@
 // Everything the Feed Chart shows, as plain data in the chart's language: chart cells,
 // setup chips, tanks, steps, notes, supplements, and the copy-summary text. The screen
 // (app.js) and the printed sheets (print.js) render from this one model.
-import { DATA, getLine, supplementRates, formatTargetEc, isMetricUnit, formatStockTankVolume, formatLbPerGal, customStockRates, cplusTwoDoserEqualRate } from "../engine/index.js";
+import { DATA, getLine, supplementRates, formatTargetEc, isMetricUnit, formatStockTankVolume, formatLbPerGal, customStockRates, stockRates } from "../engine/index.js";
 
 /** @typedef {ReturnType<import("../engine/chart.js").computeFeedChart>} Chart */
 /** @typedef {(key: string, vars?: Record<string, string | number>) => string} T */
@@ -47,7 +47,7 @@ export function buildView(chart, t, options) {
       const vols = chart.tankVolumes;
       if (vols && (s.line === "3part" || s.line === "cplus")) chips.push(t("chip.tankGal", { vol: formatStockTankVolume(s.line, s.stockTankVolumeGal) }));
       if (s.line === "cplus") {
-        chips.push(t("chip.caStock", { rate: s.cplusCaStockLbPerGal.toFixed(2) }));
+        chips.push(t("chip.caStock", { rate: stockRates(s).partA.toFixed(2) }));
         if (s.cplusFinalPhase === "near-ripen") chips.push(t("chip.nearRipen"));
       }
     } else if (s.method === "custom") {
@@ -61,7 +61,7 @@ export function buildView(chart, t, options) {
   }
   chips.push(t(`unit.${s.unit}`));
   chips.push(t(s.ecPreset === "high" ? "chip.high" : s.ecPreset === "standard" ? "chip.standard" : "chip.customEc"));
-  chips.push(t(twoDoser ? "chip.schedule.locked" : `chip.schedule.${s.recipeSchedule}`));
+  chips.push(twoDoser ? t("chip.schedule.locked", { recipe: line.twoDoser.recipe }) : t(`chip.schedule.${s.recipeSchedule}`));
   if (s.usePhoszyme) chips.push(t("chip.phz"));
 
   // ── Chart ──
@@ -117,8 +117,7 @@ export function buildView(chart, t, options) {
     chartNotes.push({ kind: "info", text: t("twoDoser.veg", {
       combo: `${names.partB} + ${names.bloom}`, bloom: names.bloom, a: line.fullNames.partA, b: line.fullNames.partB,
     }) });
-    if (s.line === "cplus" && cplusTwoDoserEqualRate(s)) chartNotes.push({ kind: "info", text: t("twoDoser.equal") });
-    else chartNotes.push({ kind: "info", text: t("twoDoser.rates") });
+    chartNotes.push({ kind: "info", text: t("twoDoser.rates") });
   }
   if (stockMode && !twoDoser && s.method === "custom" && s.line === "cplus"
     && customStockRates(s.customLbs, s.stockTankVolumeGal).bloom > DATA.lines.cplus.customStock.cautionAboveLbPerGal.bloom) {

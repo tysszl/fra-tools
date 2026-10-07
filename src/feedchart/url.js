@@ -3,12 +3,13 @@
 // so every link already sent to a customer (feed-calc, cplus-calc, feed-calc-admin,
 // including hidden options such as ?m=4-3-3) opens the same chart.
 //
-//   a=direct   d=2   m=<method>   tv=<gal>   ca=<lb/gal>   fp=near-ripen   phz=yes
+//   a=direct   d=2   m=<method>   tv=<gal>   fp=near-ripen   phz=yes
 //   u=<unit>   p=standard|custom   ec_<phase>=<EC>   rs=<schedule>   rp_<phase>=<recipe>
 //   pa/pb/pbl=<lb> (team mode, both lines)   phup=yes   bf=yes   tri=yes   fac=<name>   lang=es
 //   t=light|dark (read by shared/theme.js)
-// `si` is retired and ignored.
-import { DATA, getLine, formatStockTankVolume } from "../engine/index.js";
+// `si` and `ca` (C+ 2-doser CaNO3 stock, now fixed at 1.00 lb/gal) are retired and ignored.
+// C+ rs=swell-flower opens the C+ single-recipe schedule, Stack through flower.
+import { DATA, getLine, formatStockTankVolume, lineScheduleKey } from "../engine/index.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -60,7 +61,6 @@ export function decodeParams(p, page) {
 
   if (p.has("tv")) input.stockTankVolumeGal = Number(p.get("tv"));
   if (page.line === "cplus" && twoDoser) {
-    if (p.has("ca")) input.cplusCaStockLbPerGal = Number(p.get("ca"));
     if (p.has("fp")) input.cplusFinalPhase = /** @type {any} */ (p.get("fp"));
   }
   if (page.mode === "team") {
@@ -93,7 +93,7 @@ export function decodeParams(p, page) {
 
   if (!twoDoser) {
     const schedules = /** @type {Record<string, Record<Phase, string>>} */ (line.schedules);
-    const rs = p.get("rs") ?? "";
+    const rs = lineScheduleKey(page.line, p.get("rs") ?? "");
     const retired = page.line === "3part" && /** @type {readonly string[]} */ (DATA.recipeSchedules.retired).includes(rs);
     const recipes = /** @type {readonly string[]} */ (line.recipeNames);
     const fallback = schedules[DATA.recipeSchedules.defaultSchedule];
@@ -140,7 +140,6 @@ export function encodeParams(s, extras) {
       p.set("d", "2");
       if (s.line === "3part") tankParam();
       if (s.line === "cplus") {
-        if (s.cplusCaStockLbPerGal !== DATA.lines.cplus.twoDoser.defaultCaStock) p.set("ca", String(s.cplusCaStockLbPerGal));
         if (s.cplusFinalPhase !== DATA.lines.cplus.twoDoser.defaultFinalPhase) p.set("fp", s.cplusFinalPhase);
       }
     } else if (s.method !== line.defaultMethod) {

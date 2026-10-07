@@ -35,6 +35,7 @@ const THREE_PART_TWO_DOSER_PART_B_LB = 28;
 
 const COMMERCIAL_SCHEDULE = { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" };
 const SWELL_FLOWER_SCHEDULE = { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" };
+const STACK_FLOWER_SCHEDULE = { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Stack" };
 
 export const DATA = deepFreeze({
   units: {
@@ -100,14 +101,19 @@ export const DATA = deepFreeze({
     warmLineF: 77,
   },
 
+  // Each line offers the commercial schedule and one single-recipe flower schedule
+  // (lines.<id>.singleRecipeSchedule). `retired` applies to 3-Part links only: they open
+  // the commercial chart and ignore their rp_ overrides.
   recipeSchedules: {
     defaultSchedule: "commercial",
     retired: ["standard", "stack-flower"],
     options: {
       commercial: { label: "Commercial (Stack → Swell)", selectable: true },
       "swell-flower": { label: "Swell Through Flower", selectable: true },
+      "stack-flower": { label: "Stack Through Flower", selectable: true },
       custom: { label: "Custom", printLabel: "Custom Recipe Schedule", selectable: false },
       "locked-swell": { label: "Swell Recipe Locked", selectable: false, lockedOnly: true },
+      "locked-stack": { label: "Stack Recipe Locked", selectable: false, lockedOnly: true },
     },
   },
 
@@ -138,6 +144,8 @@ export const DATA = deepFreeze({
       },
       recipeNames: ["Veg", "Stretch", "Stack", "Swell", "Ripen"],
       schedules: { commercial: COMMERCIAL_SCHEDULE, "swell-flower": SWELL_FLOWER_SCHEDULE },
+      singleRecipeSchedule: "swell-flower",
+      scheduleAliases: {},
       defaultMethod: "3-2-2",
       methods: ["4-3-3", "3-2-2", "1-1-1"],
       stockMethods: {
@@ -197,19 +205,24 @@ export const DATA = deepFreeze({
         Ripen: { partA: 0.315, partB: 0.30, bloom: 0.385 },
       },
       recipeNames: ["Veg", "Stack", "Swell", "Ripen"],
-      schedules: { commercial: COMMERCIAL_SCHEDULE, "swell-flower": SWELL_FLOWER_SCHEDULE },
+      // Single-recipe flower runs Stack (R&D 2026-10-07). Links written while it was
+      // Swell (rs=swell-flower) open the Stack schedule.
+      schedules: { commercial: COMMERCIAL_SCHEDULE, "stack-flower": STACK_FLOWER_SCHEDULE },
+      singleRecipeSchedule: "stack-flower",
+      scheduleAliases: { "swell-flower": "stack-flower" },
       defaultMethod: "1-1-1",
       methods: ["1-1-1"],
+      // 2-doser: Tank 1 CaNO3 1.00 lb/gal (a 50 lb bag per 50 gal); Tank 2 C+ 1.00 + MKP
+      // 0.84 lb/gal (50 + 42 lb per 50 gal), 0.7% off Stack's exact MKP:C+ weight ratio
+      // (0.184/0.195)/(0.32/0.283) = 0.834. The tanks run at different rates.
       stockMethods: {
         "1-1-1": { rates: { partA: 1.00, partB: 1.00, bloom: 1.00 } },
-        "2-doser": { rates: { partA: 0.75, partB: 0.75, bloom: 1.00 } },
+        "2-doser": { rates: { partA: 1.00, partB: 1.00, bloom: 0.84 } },
       },
       twoDoser: {
-        recipe: "Swell",
-        caStockOptions: [0.75, 1.00],
-        defaultCaStock: 0.75,
-        finalPhaseOptions: ["swell", "near-ripen"],
-        defaultFinalPhase: "swell",
+        recipe: "Stack",
+        finalPhaseOptions: ["stack", "near-ripen"],
+        defaultFinalPhase: "stack",
         nearRipenCaEcShare: 0.315,
       },
       // Applies to every C+ stock tank, 3-doser and 2-doser.

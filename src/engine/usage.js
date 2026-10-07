@@ -5,13 +5,14 @@
 import { DATA, getLine } from "./data.js";
 import { doseGramsPerGallon, phoszymeAdjustment } from "./dose.js";
 import { phUpDose } from "./phup.js";
+import { lineScheduleKey } from "./settings.js";
 
 /** @typedef {import("./data.js").LineId} LineId */
 /** @typedef {import("./data.js").Phase} Phase */
 /**
  * @typedef {object} UsageInput
  * @property {LineId} lineId
- * @property {string} [schedule]                 "commercial" (default) or "swell-flower"
+ * @property {string} [schedule]                 "commercial" (default) or the line's single-recipe schedule (C+ maps "swell-flower" to "stack-flower")
  * @property {Partial<Record<Phase, number>>} ec Target EC per chart column (final, incl. PhosZyme).
  * @property {number} vegWeeks
  * @property {number} vegGalPerWeek
@@ -59,7 +60,7 @@ export function usageProducts(lineId) {
  */
 export function usageColumns(input) {
   const line = getLine(input.lineId);
-  const schedule = /** @type {Record<string, Record<Phase, string>>} */ (line.schedules)[input.schedule ?? DATA.recipeSchedules.defaultSchedule]
+  const schedule = /** @type {Record<string, Record<Phase, string>>} */ (line.schedules)[lineScheduleKey(input.lineId, input.schedule ?? DATA.recipeSchedules.defaultSchedule)]
     ?? line.schedules.commercial;
   return DATA.phases.map(phase => {
     const recipe = schedule[phase];
