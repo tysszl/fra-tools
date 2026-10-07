@@ -17,7 +17,7 @@ export const SOURCES = Object.freeze({
   "feedUnits.decimals": "undocumented (page display rounding)",
   "feedUnits.factors": "FR § Calculation Procedure › Stock concentrate mode (unit conversions)",
 
-  "phoszyme.ecPerGram": "TS § EC Contributions; FR § PhosZyme Handling",
+  "phoszyme.ecPerGram": "FR § PhosZyme Handling",
   "phoszyme.directGramsPerGallon": "TS § Product Usage › PhosZyme; FR § PhosZyme Handling › DTR setups",
   "phoszyme.stockCarrierRatio": "TS § Product Usage › PhosZyme (10% of carrier); FR § PhosZyme Handling › Stock concentrate setups",
   "phoszyme.directEc": "FR § PhosZyme Handling › EC scaling rule (0.088 = 0.4 × 0.220)",
@@ -34,7 +34,7 @@ export const SOURCES = Object.freeze({
   "validation.displayDecimals": "undocumented (page display rounding)",
 
   "lines.3part.label": "undocumented (page label)",
-  "lines.3part.ecPerGram": "TS § EC Contributions; FR § 3-Part Line › Products & EC per gram per gallon",
+  "lines.3part.ecPerGram": "FR § 3-Part Line › Products & EC per gram per gallon",
   "lines.3part.recipes": "FR § 3-Part Line › Per-recipe EC contribution % by part",
   "lines.3part.schedules": "FR § 3-Part Line › Recipe EC targets (commercial chart; Swell default)",
   "lines.3part.defaultMethod": "TS § Stock Concentrate Methods (3-2-2 standard)",
