@@ -1,7 +1,7 @@
 // @ts-check
 // pH Up calculator: target pH and pH Up (potassium carbonate) dose for each column of
 // the feed chart, from the engine's refit curves and per-column dripper ceilings.
-import { DATA, getLine, phUpDose, phUpDoseTo59, phUpStockMlPerGal, phUpStockPercent } from "../engine/index.js";
+import { DATA, getLine, presetScheduleKey, scheduleForLine, phUpDose, phUpDoseTo59, phUpStockMlPerGal, phUpStockPercent } from "../engine/index.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { copyText } from "../../shared/clipboard.js";
@@ -57,6 +57,11 @@ function numParam(v, lo, hi) {
 }
 
 /** @param {string} r */
+/** @param {string} key */
+function scheduleLabel(key) {
+  return /** @type {Record<string, { label: string }>} */ (DATA.recipeSchedules.options)[key].label;
+}
+
 function cap(r) { return r ? r[0].toUpperCase() + r.slice(1).toLowerCase() : r; }
 
 /** @param {HTMLElement} root */
@@ -69,7 +74,7 @@ export function mount(root) {
   const state = {
     line: line0,
     preset: /** @type {"high" | "standard" | "custom"} */ (params.get("p") === "standard" ? "standard" : "high"),
-    schedule: params.get("rs") === "swell-flower" ? "swell-flower" : "commercial",
+    schedule: presetScheduleKey(line0, params.get("rs") ?? ""),
     /** @type {Record<Phase, number>} */
     ec: { ...DATA.ecPresets.high },
     /** @type {Record<Phase, string>} */
@@ -147,7 +152,7 @@ export function mount(root) {
   function chips() {
     const lineLabel = getLine(state.line).label;
     const strength = state.preset === "high" ? "High strength" : state.preset === "standard" ? "Standard strength" : "Custom EC";
-    const schedule = state.customRecipes ? "Custom recipes" : state.schedule === "commercial" ? "Commercial (Stack → Swell)" : "Swell Through Flower";
+    const schedule = state.customRecipes ? "Custom recipes" : scheduleLabel(state.schedule);
     const delivery = state.mode === "dtr"
       ? `Direct to reservoir · ${fmtNum(state.reservoir)} gal`
       : `Stock · ${stockGPerGal()} g/gal`;
@@ -318,7 +323,7 @@ export function mount(root) {
       field("Feed strength", seg("preset", [["high", "High"], ["standard", "Standard"], ["custom", "Custom"]], state.preset)
         + `<div style="margin-top:10px">${grid(p => `<input class="input num" type="number" inputmode="decimal" step="0.1" min="0.1" max="10" data-input="ec" data-phase="${p}" value="${state.ec[p].toFixed(1)}" aria-label="Target EC ${p}">`)}</div>`,
         "Target EC for each column, as on your feed chart."),
-      field("Recipe schedule", seg("schedule", [["commercial", "Commercial"], ["swell-flower", "Swell Through Flower"]], state.customRecipes ? "" : state.schedule)
+      field("Recipe schedule", seg("schedule", [["commercial", "Commercial"], [line.singleRecipeSchedule, scheduleLabel(line.singleRecipeSchedule)]], state.customRecipes ? "" : state.schedule)
         + `<div style="margin-top:10px">${grid(p => `<select class="input" data-change="recipe" data-phase="${p}" aria-label="Recipe ${p}">${line.recipeNames.map(r => `<option${r === state.recipe[p] ? " selected" : ""}>${esc(r)}</option>`).join("")}</select>`)}</div>`),
       field("Target pH", grid(p => `<select class="input" data-change="target" data-phase="${p}" aria-label="Target pH ${p}"><option value="">Auto</option>${TARGETS.map(t => `<option value="${t}"${state.target[p] === t ? " selected" : ""}>${t.toFixed(1)}</option>`).join("")}</select>`),
         "Auto is 0.1 below the top of the column's dripper pH range, never above 5.9."),
@@ -442,6 +447,7 @@ export function mount(root) {
       if (set) {
         if (set === "line") {
           state.line = val === "cplus" ? "cplus" : "3part";
+          state.schedule = scheduleForLine(state.line, state.schedule);
           applySchedule();
           PHASES.forEach(p => { state.target[p] = null; });
         } else if (set === "preset") {

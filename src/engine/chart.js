@@ -108,7 +108,7 @@ export function extraDecimals(settings) {
 
 /**
  * Bloom-role : Part B-role by weight as Tank 2 is charged (3-Part 50 lb : 28 lb;
- * C+ 1.00 : 0.75 lb/gal).
+ * C+ MKP 0.84 : C+ 1.00 lb/gal).
  * @param {FeedSettings} settings
  */
 export function tank2BloomToPartBRatio(settings) {

@@ -29,8 +29,8 @@ function configs() {
   }
   out.push({ line: "3part", method: "custom", unit: "mL/L" }, { line: "3part", method: "4-3-3" });
   out.push({ line: "cplus", method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 }, usePhoszyme: true });
-  out.push({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen", cplusCaStockLbPerGal: 1 });
-  out.push({ line: "cplus", recipeSchedule: "swell-flower" }, { line: "3part", ecPreset: "custom", targetEc: { Swell: 0.05 } });
+  out.push({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" });
+  out.push({ line: "cplus", recipeSchedule: "stack-flower" }, { line: "3part", recipeSchedule: "swell-flower" }, { line: "3part", ecPreset: "custom", targetEc: { Swell: 0.05 } });
   out.push({ line: "3part", application: "direct", usePhoszyme: true, ecPreset: "custom", targetEc: { Ripen: 0.05 } });
   return out;
 }
@@ -131,6 +131,48 @@ describe("share links", () => {
     }
   });
 
+  test("C+ single-recipe and 2-doser links open the Stack charts; 3-Part links are unchanged", () => {
+    const open = (search: string, line: "3part" | "cplus") =>
+      E.resolveFeedSettings(decodeParams(new URLSearchParams(search), { line, mode: "customer" }).input);
+    const extras = { facility: "", show: { phup: false, bf: false, tri: false }, lang: "en", mode: "customer" as const };
+    // Old C+ Swell Through Flower links open Stack Through Flower, and re-share as stack-flower.
+    const old = open("?rs=swell-flower&u=mL%2FL", "cplus");
+    expect(old.recipeSchedule).toBe("stack-flower");
+    expect(old.phaseRecipe).toEqual({ Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Stack" });
+    expect(encodeParams(old, extras).get("rs")).toBe("stack-flower");
+    expect(open("?rs=swell-flower&rp_ripen=Ripen", "cplus").phaseRecipe).toEqual({ Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Ripen" });
+    // 3-Part: swell-flower is still Swell; stack-flower is still retired to the commercial chart.
+    expect(open("?rs=swell-flower", "3part").phaseRecipe).toEqual({ Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" });
+    expect(open("?rs=stack-flower&rp_stack=Ripen", "3part").recipeSchedule).toBe("commercial");
+    // Old C+ 2-doser links (any ca) open the Stack lock with the 1.00 lb/gal CaNO3 tank; ca is no longer written.
+    for (const search of ["?d=2", "?d=2&ca=0.75", "?d=2&ca=1&fp=near-ripen"]) {
+      const s = open(search, "cplus");
+      expect(E.recipeForPhase(s, "Swell")).toBe("Stack");
+      expect(E.stockRates(s)).toEqual({ partA: 1, partB: 1, bloom: 0.84 });
+      expect(encodeParams(s, extras).has("ca")).toBe(false);
+    }
+    expect(open("?d=2&fp=near-ripen", "cplus").cplusFinalPhase).toBe("near-ripen");
+    expect(open("?d=2&fp=swell", "cplus").cplusFinalPhase).toBe("stack");
+  });
+
+  test("C+ 2-doser screen and print say Stack, never Swell", () => {
+    for (const lang of ["en", "es"] as const) for (const cplusFinalPhase of ["stack", "near-ripen"] as const) {
+      const { print, view, summary } = render({ line: "cplus", doserCount: 2, cplusFinalPhase }, lang);
+      expect(print).not.toContain("Swell");
+      expect(summary.plain).not.toContain("Swell");
+      expect(summary.html).not.toContain("Swell");
+      expect(view.chips).toContain(lang === "en" ? "Stack locked" : "Stack fijo");
+      expect(view.chips).toContain("CaNO3 1.00 lb/gal");
+      expect(view.phases.slice(1).map(p => p.recipe)).toEqual(cplusFinalPhase === "stack" ? ["Stack", "Stack", "Stack", "Stack"] : ["Stack", "Stack", "Stack", "Near Ripen"]);
+      if (lang === "en") {
+        expect(view.tanks.map(tank => [tank.weight, tank.validates])).toEqual([
+          ["50 lb", "Validates at 1.90 EC"], ["50 lb Component Plus · 42 lb MKP", "Tank validates at 2.68 EC"],
+        ]);
+      }
+    }
+    expect(render({ line: "3part", doserCount: 2 }, "en").view.chips).toContain("Swell locked");
+  });
+
   test("the retired Si toggle is ignored", () => {
     const { extras } = decodeParams(new URLSearchParams("?si=yes&phup=yes"), { line: "3part", mode: "customer" });
     expect(extras.show).toEqual({ phup: true, bf: false, tri: false });
@@ -149,8 +191,9 @@ describe("share links", () => {
       [{ line: "3part", mode: "team" }, { method: "custom", stockTankVolumeGal: 40, customLbs: { partA: 90, partB: 50.5, bloom: 40 } }],
       [{ line: "cplus", mode: "team" }, { method: "custom", stockTankVolumeGal: 75, customLbs: { partA: 150, partB: 75, bloom: 100 }, ecPreset: "custom", targetEc: { Veg: 3, Stretch: 3, Stack: 2.7, Swell: 2.4, Ripen: 1.8 } }],
       [{ line: "cplus", mode: "team" }, { method: "custom", customLbs: { partA: 62.5, partB: 40, bloom: 30.1 }, unit: "mL/L", usePhoszyme: true }],
-      [{ line: "cplus", mode: "customer" }, { doserCount: 2, cplusCaStockLbPerGal: 1, cplusFinalPhase: "near-ripen", stockTankVolumeGal: 12.5 }],
-      [{ line: "cplus", mode: "customer" }, { stockTankVolumeGal: 75, recipeSchedule: "swell-flower", unit: "mL/L" }],
+      [{ line: "cplus", mode: "customer" }, { doserCount: 2, cplusFinalPhase: "near-ripen", stockTankVolumeGal: 12.5 }],
+      [{ line: "cplus", mode: "customer" }, { stockTankVolumeGal: 75, recipeSchedule: "stack-flower", unit: "mL/L" }],
+      [{ line: "3part", mode: "customer" }, { recipeSchedule: "swell-flower" }],
     ];
     for (const [page, input] of cases) {
       const settings = E.resolveFeedSettings({ ...input, line: page.line });
@@ -209,8 +252,8 @@ describe("printed chart", () => {
   });
 
   test("dripper pH prints per column, with no at-the-line note", () => {
-    const { print, view } = render({ line: "cplus", recipeSchedule: "swell-flower" }, "en");
-    expect(view.phases.map(p => p.ph && p.ph.text)).toEqual(["5.5–6.0", "5.5", "5.5–5.6", "5.5–5.6", "5.5–5.9"]);
+    const { print, view } = render({ line: "cplus", recipeSchedule: "stack-flower" }, "en");
+    expect(view.phases.map(p => p.ph && p.ph.text)).toEqual(["5.5–6.0", "5.5", "5.5–5.6", "5.5–5.7", "5.5–5.9"]);
     expect(print).not.toContain("calcium-phosphate line");
   });
 

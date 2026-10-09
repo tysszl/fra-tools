@@ -55,8 +55,12 @@ describe("approval snapshot", () => {
     });
     const commercial = { Veg: "Veg", Stretch: "Stack", Stack: "Swell", Swell: "Swell", Ripen: "Ripen" };
     const swellFlower = { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" };
+    const stackFlower = { Veg: "Veg", Stretch: "Stack", Stack: "Stack", Swell: "Stack", Ripen: "Stack" };
+    // 3-Part's single-recipe flower is Swell; C+'s is Stack (R&D 2026-10-07).
     expect(DATA.lines["3part"].schedules).toEqual({ commercial, "swell-flower": swellFlower });
-    expect(DATA.lines.cplus.schedules).toEqual({ commercial, "swell-flower": swellFlower });
+    expect(DATA.lines["3part"]).toMatchObject({ singleRecipeSchedule: "swell-flower", scheduleAliases: {} });
+    expect(DATA.lines.cplus.schedules).toEqual({ commercial, "stack-flower": stackFlower });
+    expect(DATA.lines.cplus).toMatchObject({ singleRecipeSchedule: "stack-flower", scheduleAliases: { "swell-flower": "stack-flower" } });
     expect(DATA.phaseLabels.print).toEqual(["Veg / Moms", "Week 1–2", "Week 3–5", "Week 6–8/9", "Final 1–2 Wks"]);
   });
 
@@ -81,9 +85,12 @@ describe("approval snapshot", () => {
     });
     expect(DATA.lines.cplus.stockMethods).toEqual({
       "1-1-1": { rates: { partA: 1, partB: 1, bloom: 1 } },
-      "2-doser": { rates: { partA: 0.75, partB: 0.75, bloom: 1 } },
+      "2-doser": { rates: { partA: 1, partB: 1, bloom: 0.84 } },
     });
-    expect(DATA.lines.cplus.twoDoser).toMatchObject({ caStockOptions: [0.75, 1], nearRipenCaEcShare: 0.315 });
+    expect(DATA.lines.cplus.twoDoser).toEqual({
+      recipe: "Stack", finalPhaseOptions: ["stack", "near-ripen"], defaultFinalPhase: "stack", nearRipenCaEcShare: 0.315,
+    });
+    expect(tp.twoDoser.recipe).toBe("Swell");
     expect(DATA.lines.cplus.stockTankVolume.minGal).toBe(10);
     expect(DATA.validation).toEqual({ us: { sampleMl: 250, waterGal: 5 }, metric: { sampleMl: 250, waterL: 20 }, displayDecimals: 2 });
   });
@@ -261,25 +268,60 @@ describe("documented values", () => {
     const rows = Object.fromEntries(E.computeFeedChart({ line: "cplus" }).stock!.rows.map(r => [r.key, r.valEC]));
     expect([rows.partA, rows.partB, rows.bloom]).toEqual([1.9, 1.7, 1.17]);
     expect(Math.round((rows.partB + rows.phz) * 100) / 100).toBe(1.83);
+    // 2-doser, Stack-ratio build: CaNO3 50 lb, C+ 50 lb + MKP 42 lb, each in 50 gal.
     const two = E.computeFeedChart({ line: "cplus", doserCount: 2 });
-    expect(two.stock!.rows.map(r => r.valEC)).toEqual([1.43, 1.27, 0.1, 1.17]);
-    expect(two.stock!.tank2Total).toBe("2.44");
-    expect(E.computeFeedChart({ line: "cplus", doserCount: 2, usePhoszyme: true }).stock!.tank2Total).toBe("2.54");
+    expect(two.stock!.rows.map(r => [r.key, r.wt, r.conc, r.valEC])).toEqual([
+      ["partA", 50, 1, 1.9], ["partB", 50, 1, 1.7], ["phz", 5, 0.1, 0.13], ["bloom", 42, 0.84, 0.98],
+    ]);
+    expect(two.stock!.tank2Total).toBe("2.68");
+    expect(E.computeFeedChart({ line: "cplus", doserCount: 2, usePhoszyme: true }).stock!.tank2Total).toBe("2.81");
   });
 
-  test("C+ 2-doser rates print exactly as the FR controlled outputs table", () => {
+  test("C+ 2-doser: Stack locked, separate rates, Tank 2 within 0.7% of Stack's MKP:C+ ratio", () => {
+    const exact = (0.184 / 0.195) / (0.32 / 0.283);
+    expect(exact).toBeCloseTo(0.834, 3);
+    expect(Math.abs(0.84 / exact - 1)).toBeLessThan(0.0075);
     const rates = (settings: any, index: number) =>
       E.computeFeedChart({ line: "cplus", doserCount: 2, ...settings }).rows.map(row => row.cells[index]!.display);
-    const swell3 = { ecPreset: "custom", targetEc: { Stretch: 3.0 } };
-    expect(rates(swell3, 1)).toEqual(["38.8", "38.8"]);
-    expect(rates({ ...swell3, cplusCaStockLbPerGal: 1 }, 1)).toEqual(["29.1", "38.8"]);
-    expect(rates({ cplusFinalPhase: "near-ripen" }, 4)).toEqual(["19.9", "25.2"]);
-    expect(rates({ cplusFinalPhase: "near-ripen", cplusCaStockLbPerGal: 1 }, 4)).toEqual(["14.9", "25.2"]);
-    const mlPerGal = (role: "partA" | "partB", lbPerGal: number) =>
-      E.doseGramsPerGallon("cplus", "Swell", role, 3.0) / (lbPerGal * 454) * 3785;
-    expect(mlPerGal("partA", 0.75)).toBeCloseTo(38.8, 1);
-    expect(mlPerGal("partB", 0.75)).toBeCloseTo(38.8, 1);
-    expect(mlPerGal("partA", 1)).toBeCloseTo(29.1, 1);
+    const stack3 = { ecPreset: "custom", targetEc: { Stretch: 3.0 } };
+    expect(rates(stack3, 1)).toEqual(["39.1", "28.2"]);
+    expect(rates({}, 1)).toEqual(["39.1", "28.2"]);
+    expect(rates({}, 2)).toEqual(["35.2", "25.4"]);
+    expect(rates({}, 3)).toEqual(["31.3", "22.6"]);
+    expect(rates({}, 4)).toEqual(["23.5", "16.9"]);
+    expect(rates({ cplusFinalPhase: "near-ripen" }, 4)).toEqual(["14.9", "23.0"]);
+    expect(E.doseGramsPerGallon("cplus", "Stack", "partA", 3.0) / 454 * 3785).toBeCloseTo(39.1, 1);
+    const chart = E.computeFeedChart({ line: "cplus", doserCount: 2 });
+    expect(chart.phases.map(p => p.recipe)).toEqual(["Stack", "Stack", "Stack", "Stack", "Stack"]);
+    expect(chart.phases.map(p => p.recipeLabel)).toEqual(["Veg", "Stack", "Stack", "Stack", "Stack"]);
+    expect(chart.recipeScheduleLabel).toBe("Stack Recipe Locked");
+    // CaNO3 keeps Stack's 49.6%; Tank 2 delivers the remaining 50.4%.
+    const col = chart.rows.map(row => row.cells[1]!.ec);
+    expect(col[0]).toBeCloseTo(3.0 * 0.496, 12);
+    expect(col[0] + col[1]).toBeCloseTo(3.0, 12);
+  });
+
+  test("C+ 2-doser Near Ripen: CaNO3 31.5%, the Stack-shaped Tank 2 delivers 43.4% C+ / 25.1% MKP", () => {
+    const chart = E.computeFeedChart({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" });
+    expect(chart.phases[4].recipeLabel).toBe("Near Ripen");
+    expect(chart.recipeScheduleLabel).toBe("Stack + Near Ripen");
+    const [ca, combo] = chart.rows.map(row => row.cells[4]!.ec);
+    expect(ca).toBeCloseTo(1.8 * 0.315, 12);
+    expect(combo).toBeCloseTo(1.8 * 0.685, 12);
+    const cplusEc = 1.0 * 0.283, mkpEc = 0.84 * 0.195;
+    expect(+(68.5 * cplusEc / (cplusEc + mkpEc)).toFixed(1)).toBe(43.4);
+    expect(+(68.5 * mkpEc / (cplusEc + mkpEc)).toFixed(1)).toBe(25.1);
+  });
+
+  test("3-Part is unchanged: 2-doser locks Swell, single-recipe flower is Swell", () => {
+    const two = E.computeFeedChart({ line: "3part", doserCount: 2 });
+    expect(two.phases.map(p => p.recipeLabel)).toEqual(["Veg", "Swell", "Swell", "Swell", "Swell"]);
+    expect(two.recipeScheduleLabel).toBe("Swell Recipe Locked");
+    const single = E.computeFeedChart({ line: "3part", recipeSchedule: "swell-flower" });
+    expect(single.phases.map(p => p.recipe)).toEqual(["Veg", "Swell", "Swell", "Swell", "Swell"]);
+    expect(single.recipeScheduleLabel).toBe("Swell Through Flower");
+    // 3-Part never had a live Stack-through schedule: stack-flower falls back to commercial.
+    expect(E.resolveFeedSettings({ line: "3part", recipeSchedule: "stack-flower" }).recipeSchedule).toBe("commercial");
   });
 });
 
@@ -329,7 +371,7 @@ describe("settings", () => {
       ["partA", 150, 2, 3.8], ["partB", 75, 1, 1.7], ["phz", 7.5, 0.1, 0.13], ["bloom", 100, 1.333, 1.56],
     ]);
     // Two dosers ignore the custom charge.
-    expect(E.stockRates({ ...s, doserCount: 2 })).toEqual({ partA: 0.75, partB: 0.75, bloom: 1 });
+    expect(E.stockRates({ ...s, doserCount: 2 })).toEqual({ partA: 1, partB: 1, bloom: 0.84 });
   });
 
   test("C+ custom at 1/1/1 lb/gal in 50 gal is the standard 1-1-1 chart", () => {
@@ -363,9 +405,24 @@ describe("settings", () => {
   });
 
   test("recipe schedule derivation", () => {
-    expect(E.deriveRecipeSchedule("cplus", DATA.lines.cplus.schedules["swell-flower"])).toBe("swell-flower");
+    expect(E.deriveRecipeSchedule("cplus", DATA.lines.cplus.schedules["stack-flower"])).toBe("stack-flower");
+    expect(E.deriveRecipeSchedule("3part", DATA.lines["3part"].schedules["swell-flower"])).toBe("swell-flower");
     expect(E.resolveFeedSettings({ recipeSchedule: "custom", phaseRecipe: { Ripen: "Swell" } as any }).recipeSchedule).toBe("custom");
-    expect(E.recipeScheduleLabel(E.resolveFeedSettings({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" }))).toBe("Swell + Near Ripen");
+    expect(E.recipeScheduleLabel(E.resolveFeedSettings({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" }))).toBe("Stack + Near Ripen");
+    // C+ single-recipe flower is Stack; the old swell-flower key opens it.
+    const cplusSingle = E.computeFeedChart({ line: "cplus", recipeSchedule: "stack-flower" });
+    expect(cplusSingle.phases.map(p => p.recipe)).toEqual(["Veg", "Stack", "Stack", "Stack", "Stack"]);
+    expect(cplusSingle.recipeScheduleLabel).toBe("Stack Through Flower");
+    expect(E.resolveFeedSettings({ line: "cplus", recipeSchedule: "swell-flower" }).recipeSchedule).toBe("stack-flower");
+    // An explicit all-Swell C+ chart is still possible as a custom schedule.
+    const allSwell = { Veg: "Veg", Stretch: "Swell", Stack: "Swell", Swell: "Swell", Ripen: "Swell" } as any;
+    expect(E.resolveFeedSettings({ line: "cplus", recipeSchedule: "custom", phaseRecipe: allSwell }).recipeSchedule).toBe("custom");
+    expect(E.presetScheduleKey("cplus", "swell-flower")).toBe("stack-flower");
+    expect(E.presetScheduleKey("3part", "swell-flower")).toBe("swell-flower");
+    expect(E.presetScheduleKey("3part", "stack-flower")).toBe("commercial");
+    expect(E.scheduleForLine("3part", "stack-flower")).toBe("swell-flower");
+    expect(E.scheduleForLine("cplus", "swell-flower")).toBe("stack-flower");
+    expect(E.scheduleForLine("cplus", "commercial")).toBe("commercial");
   });
 });
 
@@ -380,8 +437,10 @@ describe("pH ranges", () => {
   test("C+: each column follows its own recipe and EC; at the line the range closes to 5.5", () => {
     expect(cols({ line: "cplus" })).toEqual(["5.5–6.0", "5.5", "5.5–5.6", "5.5–5.6", "5.5–5.9"]);
     expect(cols({ line: "cplus", ecPreset: "standard" })).toEqual(["5.5–6.0", "5.5–5.7", "5.5–5.7", "5.5–5.8", "5.5–6.0"]);
-    const flags = E.computeFeedChart({ line: "cplus", recipeSchedule: "swell-flower" }).ph.columns.map(c => c && c.atLine);
-    expect(flags).toEqual([false, true, false, false, false]);
+    const single = E.computeFeedChart({ line: "cplus", recipeSchedule: "stack-flower" }).ph.columns;
+    expect(single.map(c => c && c.text)).toEqual(["5.5–6.0", "5.5", "5.5–5.6", "5.5–5.7", "5.5–5.9"]);
+    expect(single.map(c => c && c.atLine)).toEqual([false, true, false, false, false]);
+    expect(single.slice(1).map(c => c!.limit)).toEqual([3.0, 2.7, 2.4, 1.8].map(ec => E.dripperPhRange("cplus", "Stack", ec).limit));
   });
 
   test("ceiling: modeled limit to the nearest 0.1, floor 5.5, cap 6.0, cap below the fit floor", () => {
@@ -395,10 +454,12 @@ describe("pH ranges", () => {
     expect(E.formatPhRange([5.5, 5.5])).toBe("5.5");
   });
 
-  test("C+ 2-doser Near Ripen takes the lower of the Swell and Ripen limits", () => {
-    const col = E.computeFeedChart({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" }).ph.columns[4]!;
-    const lower = Math.min(E.dripperPhRange("cplus", "Swell", 1.8).limit, E.dripperPhRange("cplus", "Ripen", 1.8).limit);
-    expect(col.limit).toBe(lower);
+  test("C+ 2-doser columns use the Stack fit; Near Ripen takes the lower of the Stack and Ripen limits", () => {
+    const columns = E.computeFeedChart({ line: "cplus", doserCount: 2, cplusFinalPhase: "near-ripen" }).ph.columns;
+    expect(columns.slice(1, 4).map(c => c!.limit)).toEqual([3.0, 2.7, 2.4].map(ec => E.dripperPhRange("cplus", "Stack", ec).limit));
+    expect(columns.map(c => c && c.text)).toEqual([null, "5.5", "5.5–5.6", "5.5–5.7", "5.5–5.9"]);
+    const lower = Math.min(E.dripperPhRange("cplus", "Stack", 1.8).limit, E.dripperPhRange("cplus", "Ripen", 1.8).limit);
+    expect(columns[4]!.limit).toBe(lower);
   });
 
   test("2-doser: the unserved Veg column has no range", () => {
@@ -435,6 +496,9 @@ describe("usage", () => {
       "Veg 3 2000", "Stack 3 20000", "Swell 2.7 30000", "Swell 2.4 30000", "Ripen 1.8 10000",
     ]);
     expect(E.usageColumns({ ...base, schedule: "swell-flower" }).map(c => c.recipe)).toEqual(["Veg", "Swell", "Swell", "Swell", "Swell"]);
+    const cplus = { ...base, lineId: "cplus" as const };
+    expect(E.usageColumns({ ...cplus, schedule: "stack-flower" }).map(c => c.recipe)).toEqual(["Veg", "Stack", "Stack", "Stack", "Stack"]);
+    expect(E.usageColumns({ ...cplus, schedule: "swell-flower" }).map(c => c.recipe)).toEqual(["Veg", "Stack", "Stack", "Stack", "Stack"]);
   });
 
   test("base products sum each column's recipe dose", () => {
@@ -547,9 +611,9 @@ describe("stock and 2-doser rulings", () => {
     const chart = E.computeFeedChart({ line: "cplus", doserCount: 2, unit: "injection %" });
     const cell = chart.rows[1].cells[1]!;
     const t2 = E.twoDoserTank2TargetEc(chart.settings, "Stretch", 3.0);
-    const cplusGramsPerGal = E.doseGramsPerGallon("cplus", "Swell", "partB", t2);
-    const delivered = cplusGramsPerGal * 0.283 + cplusGramsPerGal * (1 / 0.75) * 0.195;
+    const cplusGramsPerGal = E.doseGramsPerGallon("cplus", "Stack", "partB", t2);
+    const delivered = cplusGramsPerGal * 0.283 + cplusGramsPerGal * 0.84 * 0.195;
     expect(cell.ec).toBeCloseTo(delivered, 12);
-    expect(cell.ec).toBeCloseTo(3.0 * (0.3294 + 0.3022), 12);
+    expect(cell.ec).toBeCloseTo(3.0 * (0.32 + 0.184), 12);
   });
 });
