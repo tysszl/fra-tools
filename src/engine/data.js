@@ -347,7 +347,7 @@ export const DATA = deepFreeze({
   // Prices are inputs (an optional untracked prices.json), never stored here.
   usage: {
     triologicMlPerTreatedGal: 1,
-    siFoliarMlPerGal: 2,
+    siFoliarMlPerGal: 1,
     bagRoundUpDecimals: 1,
     productDefaults: {
       "3part": {

@@ -115,7 +115,7 @@ export const SOURCES = Object.freeze({
   "phDown.referencePpm": "undocumented (quick-reference rows)",
 
   "usage.triologicMlPerTreatedGal": "TS § Product Usage › Triologic",
-  "usage.siFoliarMlPerGal": "TS § Product Usage › Front Row Si (foliar 0.5–2 mL/gal; budgets at the top of the range); Si is foliar-only per CL 09-29",
+  "usage.siFoliarMlPerGal": "TS § Product Usage › Front Row Si (foliar 0.5–2 mL/gal) and § Feed Volume for Usage Estimates (1 ml/gal planning rate); Si is foliar-only per CL 09-29",
   "usage.bagRoundUpDecimals": "undocumented (page rounding)",
   "usage.productDefaults": "undocumented (package sizes)",
   "usage.additiveDefaults": "undocumented (package sizes)",

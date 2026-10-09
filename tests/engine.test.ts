@@ -118,7 +118,7 @@ describe("approval snapshot", () => {
 
   test("usage numbers", () => {
     expect(DATA.usage).toMatchObject({
-      triologicMlPerTreatedGal: 1, siFoliarMlPerGal: 2,
+      triologicMlPerTreatedGal: 1, siFoliarMlPerGal: 1,
       defaults: { vegWeeks: 2, vegGalPerWeek: 1000, flowerWeeks: { Stretch: 2, Stack: 3, Swell: 3, Ripen: 1 }, flowerGalPerWeek: 10000 },
     });
   });
@@ -528,7 +528,7 @@ describe("usage", () => {
   test("Triologic per treated gallon; Si only as foliar", () => {
     const est = E.usageEstimate({ ...base, triologic: true, triologicVegGalPerWeek: 500, triologicFlowerGalPerWeek: 1000, si: true, siFoliarGal: 400 });
     expect(amount(est, "Triologic")).toBeCloseTo((2 * 500 + 9 * 1000) / 3785, 9);
-    expect(amount(est, "Si")).toBeCloseTo(400 * 2 / 3785, 9);
+    expect(amount(est, "Si")).toBeCloseTo(400 * 1 / 3785, 9);
     expect(est.products.find((p: any) => p.name === "Si").byColumn).toEqual([0, 0, 0, 0, 0]);
   });
 
