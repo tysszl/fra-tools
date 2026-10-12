@@ -386,6 +386,7 @@ td.pc, th.pc { color: var(--pc); }
 
 /* ---------- shared tool chrome ---------- */
 .bar__home { display: block; }
+.logo-link { display: inline-block; }
 .backlink { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none; }
 .backlink svg { width: 15px; height: 15px; }
 .backlink:hover { color: var(--ink); }
@@ -482,6 +483,7 @@ td.pc, th.pc { color: var(--pc); }
 .sheet .num { font-family: var(--num); }
 .s-head { display: flex; align-items: flex-start; gap: 16px; padding-bottom: 12px; border-bottom: 2px solid #141716; }
 .s-head .logo { height: 42px; }
+.s-head .logo-link { display: block; flex: none; }
 .s-title { flex: 1; }
 .s-kicker { font: 650 9.5px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: #b3121b; }
 .s-title h3 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; margin-top: 3px; }
@@ -580,6 +582,7 @@ textarea.input { height: auto; min-height: 96px; padding: 10px 12px; line-height
   :root { color-scheme: light; }
   .app, .scrim, .sheet-panel, .toast, .gate { display: none !important; }
   .print-root { display: block; }
+  .logo-link, .bar__home { text-decoration: none; color: inherit; outline: none; }
   .sheet { break-after: page; page-break-after: always; }
   .sheet:last-child { break-after: auto; page-break-after: auto; }
 }

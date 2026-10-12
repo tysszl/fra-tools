@@ -16,6 +16,18 @@ export const ICONS = {
 
 export const CONTACT = "order@solsticeag.com · +1 844-420-6883";
 
+/** The FRA logo links to the main site on every page and print sheet (same tab). */
+export const HOME_URL = "https://www.frontrowag.com/";
+
+/**
+ * Wrap logo markup in the link to frontrowag.com.
+ * @param {string} inner  Logo <img> markup.
+ * @param {string} [cls]  Anchor class.
+ */
+export function logoLink(inner, cls = "logo-link") {
+  return `<a class="${cls}" href="${HOME_URL}" aria-label="Front Row Ag home">${inner}</a>`;
+}
+
 /** @param {unknown} value */
 export function esc(value) {
   return String(value ?? "").replace(/[&<>"']/g, c => /** @type {Record<string, string>} */ ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -26,14 +38,13 @@ export function esc(value) {
  * @param {object} args
  * @param {string} args.root        Path prefix to the site root ("" or "../").
  * @param {string} [args.tool]      Tool name beside the logo.
- * @param {string} [args.home]      Link target for the logo.
  * @param {{ lang: string, label: string }} [args.lang]  Current language and the button's aria-label.
  * @param {string} [args.themeLabel]
  */
-export function barHtml({ root, tool, home, lang, themeLabel = "Switch light or dark theme" }) {
+export function barHtml({ root, tool, lang, themeLabel = "Switch light or dark theme" }) {
   const logos = `<img class="bar__logo bar__logo--light" src="${root}assets/feed-chart/logo-dark.png" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${root}assets/feed-chart/logo-white.png" alt="Front Row Ag">`;
   return `<header class="bar" data-bar>`
-    + (home ? `<a class="bar__home" href="${home}">${logos}</a>` : logos)
+    + logoLink(logos, "bar__home")
     + (tool ? `<span class="bar__tool">${esc(tool)}</span>` : "")
     + `<span class="bar__sp"></span>`
     + (lang ? `<button class="ib" data-act="lang" aria-label="${esc(lang.label)}" lang="${lang.lang === "en" ? "es" : "en"}">${lang.lang === "en" ? "ES" : "EN"}</button>` : "")
@@ -102,7 +113,7 @@ export function sheetLinesHtml() {
  * @param {string[]} [args.chips]
  */
 export function sheetHeadHtml({ root, kicker, title, date, chips = [] }) {
-  return `<header class="s-head"><img class="logo" src="${root}assets/feed-chart/logo-dark.png" alt="Front Row Ag">`
+  return `<header class="s-head">${logoLink(`<img class="logo" src="${root}assets/feed-chart/logo-dark.png" alt="Front Row Ag">`)}`
     + `<div class="s-title"><div class="s-kicker">${esc(kicker)}</div><h3>${esc(title)}</h3></div>`
     + `<div class="s-meta">${esc(date)}<br>tools.frontrowag.com</div></header>`
     + (chips.length ? `<div class="s-setup">${chips.map(c => `<span>${esc(c)}</span>`).join("")}</div>` : "");

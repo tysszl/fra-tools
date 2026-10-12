@@ -84,7 +84,7 @@ export function mount(root) {
 
   function render() {
     root.innerHTML = `<div class="app">`
-      + barHtml({ root: "", tool: "pH Down", home: "./" })
+      + barHtml({ root: "", tool: "pH Down" })
       + backLinkHtml("All tools")
       + `<h1 class="title">pH Down Calculator</h1><p class="lede">70% phosphoric acid to neutralize source-water alkalinity before feeding.</p>`
       + `<section class="card form">
