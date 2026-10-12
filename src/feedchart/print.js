@@ -30,7 +30,7 @@ function head(view, t, assets, sheet, withQr) {
     + `<img class="logo" src="${assets.logo}" alt="Front Row Ag">`
     + `<div class="s-title"><div class="s-kicker">${esc(t("print.kicker", { line: view.lineLabel, sheet }))}</div><h3>${esc(view.sheetTitle)}</h3></div>`
     + `<div class="s-meta">${view.facility ? `${esc(t("print.preparedFor"))} <b>${esc(view.facility)}</b><br>` : ""}${esc(view.date)}<br>tools.frontrowag.com</div>`
-    + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : `<div class="s-qr" aria-hidden="true"></div>`)
+    + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : `<div class="s-qr s-qr--slot" aria-hidden="true"></div>`)
     + `</header>`
     + `<div class="s-setup">${view.chips.filter(chip => chip !== view.applicationLabel).map(chip => `<span>${esc(chip)}</span>`).join("")}</div>`;
 }

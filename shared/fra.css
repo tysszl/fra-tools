@@ -488,6 +488,7 @@ td.pc, th.pc { color: var(--pc); }
 .s-meta { text-align: right; font-size: 10px; color: #5b625f; line-height: 1.55; }
 .s-meta b { color: #141716; font-weight: 650; }
 .s-qr { height: .78in; width: .78in; margin-left: 4px; }
+.s-qr--slot { height: 0; }
 .s-setup { display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0 12px; }
 .s-setup span { font-size: 9.5px; font-weight: 600; padding: 3px 7px; border-radius: 4px; background: #f0f2f1; color: #2a2f2d; }
 .s-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; table-layout: fixed; }
