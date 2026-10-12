@@ -3,7 +3,7 @@
 // usage estimate). The code is stored, so each tool opens without asking again.
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { gateFind, gateUnlock } from "../../shared/gate.js";
-import { ICONS, barHtml, esc, footHtml, logoLink } from "../../shared/chrome.js";
+import { ICONS, backLinkHtml, barHtml, esc, footHtml, logoLink } from "../../shared/chrome.js";
 
 const TOOLS = [
   ["feed-calc-admin.html", "Feed Chart · Team mode", "3-Part charts with custom stock strength and tank size, for building a customer's chart."],
@@ -42,6 +42,7 @@ export function mount(root) {
         <span class="tool__go" aria-hidden="true">${ICONS.arrow}</span></a>`;
     root.innerHTML = `<div class="app">`
       + barHtml({ root: "" })
+      + backLinkHtml("All tools")
       + `<h1 class="title">Team Tools</h1><p class="lede">For the Front Row Ag team. Don't share this page or the team code with customers.</p>`
       + `<nav class="hub">${TOOLS.map(tool).join("")}</nav>`
       + `<p class="hub__k">Customer tools</p><p class="lede" style="margin-top:6px"><a href="./">tools.frontrowag.com</a>: Feed Chart, pH Up, pH Down, calcium hypochlorite.</p>`
