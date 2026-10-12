@@ -167,7 +167,7 @@ const en = {
 
   // Supplements
   "sec.supps": "Supplements",
-  "supps.hint": "Add pH Up, BioFlo, or Triologic to this list in Edit.",
+  "supps.hint": "+ Add pH Up, BioFlo, or Triologic",
   "supp.si.name": "Front Row Si",
   "supp.si.rate": "{rate}",
   "supp.si.note": "Foliar spray, once weekly, from Veg through week 3 of flower.",
@@ -462,7 +462,7 @@ const es = {
   "stock.tank2Total": "Total Tanque 2",
 
   "sec.supps": "Suplementos",
-  "supps.hint": "Agregue pH Up, BioFlo o Triologic a esta lista en Editar.",
+  "supps.hint": "+ Agregar pH Up, BioFlo o Triologic",
   "supp.si.name": "Front Row Si",
   "supp.si.rate": "{rate}",
   "supp.si.note": "Aspersión foliar, una vez por semana, de Veg a la semana 3 de floración.",

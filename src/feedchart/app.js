@@ -156,7 +156,8 @@ export function mount(root, page) {
     const el = /** @type {HTMLElement} */ (target);
     if (el.dataset.set) return set(el.dataset.set, el.dataset.val ?? "");
     switch (el.dataset.act) {
-      case "edit": return openSheet();
+      case "edit":
+      case "add-supps": return openSheet();
       case "close": return closeSheet();
       case "theme": {
         toggleTheme();
@@ -262,7 +263,7 @@ export function mount(root, page) {
       const cells = v.rows.map(row => {
         const cell = row.cells[i];
         if (!cell || cell.dash) return `<td><span class="dash">–</span></td>`;
-        return `<td class="pc ${row.cls}"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`;
+        return `<td class="pc ${row.cls}"><div class="v num">${esc(cell.display)}</div><div class="s num">EC ${esc(cell.ecText)}</div></td>`;
       }).join("");
       const sub = p.served
         ? `<div class="rc">${esc(p.recipe)}</div>${p.ph ? `<div class="phr">${esc(t("chart.ph", { range: p.ph.text }))}</div>` : ""}`
@@ -284,7 +285,7 @@ export function mount(root, page) {
     const ec = `<tr class="ecr"><th colspan="2">${esc(t("chart.targetEc"))}</th>${v.phases.map((p, i) => `<td><span class="num">${p.served ? esc(p.ec) : "–"}</span>${v.bars[i] ? barHtml2(/** @type {any} */ (v.bars[i]), 110) : ""}</td>`).join("")}</tr>`;
     const parts = v.rows.map(row => `<tr class="${row.cls}"><th class="pc"><span class="dot"></span> ${productName(row.label)}</th>${unitHelper(v)}${row.cells.map(cell => (!cell || cell.dash
       ? `<td><span class="dash">–</span></td>`
-      : `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`)).join("")}</tr>`).join("");
+      : `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`)).join("")}</tr>`).join("");
     const ph = `<tr class="phrow"><th colspan="2">${esc(t("chart.dripperPh"))}</th>${v.phases.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
     return `<div class="card chart chart--wide"><table><thead>${head}</thead><tbody>${recipe}${ec}${parts}${ph}</tbody></table></div>`;
   }
@@ -325,7 +326,7 @@ export function mount(root, page) {
     const shown = v.supplements.filter(sup => sup.shown);
     return `<div class="sec"><h2>${esc(t("sec.supps"))}</h2></div><div class="card supps">`
       + shown.map(sup => `<div class="supp"><span class="supp__n">${esc(sup.name)}</span><span class="supp__r num">${esc(sup.rate)}</span><span class="supp__d">${esc(sup.note)}</span></div>`).join("")
-      + (shown.length < v.supplements.length ? `<div class="supp supp--hint"><span class="supp__d">${esc(t("supps.hint"))}</span></div>` : "")
+      + (shown.length < v.supplements.length ? `<button type="button" class="supp-add" data-act="add-supps">${esc(t("supps.hint"))}</button>` : "")
       + `</div>`;
   }
 
@@ -393,8 +394,6 @@ export function mount(root, page) {
 
     /** @type {string[]} */
     const fields = [];
-    fields.push(field(t("field.facility"),
-      `<input class="input" data-input="facility" value="${esc(state.facility)}" placeholder="${esc(t("field.facilityPlaceholder"))}" autocomplete="organization" maxlength="80"><p class="field__help">${esc(t("field.facilityHelp"))}</p>`));
     fields.push(field(t("field.application"),
       seg("application", [["stock", t("opt.stock")], ["direct", t("opt.direct")]], s.application)
       + help([t("help.application.stock"), t("help.application.direct")])));
@@ -467,6 +466,10 @@ export function mount(root, page) {
       + `<button type="button" class="tog" data-set="show" data-val="tri" aria-pressed="${state.show.tri}">${esc(t("opt.tri"))}</button>`
       + `</div><p class="field__help">${esc(t("help.supps"))}</p>`
       + help([t(`help.phz.${s.line}`), t("help.phup", phupRates), t("help.bioflo"), t("help.tri"), t("help.si")])));
+
+    // Optional: last, after the settings that change the chart.
+    fields.push(field(t("field.facility"),
+      `<input class="input" data-input="facility" value="${esc(state.facility)}" placeholder="${esc(t("field.facilityPlaceholder"))}" autocomplete="organization" maxlength="80"><p class="field__help">${esc(t("field.facilityHelp"))}</p>`));
 
     sheet.innerHTML = `<div class="sheet-panel__grab"></div>
       <div class="sheet-panel__head"><h2 id="sheet-title">${esc(t("edit.title"))}</h2><button class="ib" data-act="close" aria-label="${esc(t("action.close"))}">${ICONS.close}</button></div>

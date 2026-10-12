@@ -32,7 +32,7 @@ function head(view, t, assets, sheet, withQr) {
     + `<div class="s-meta">${view.facility ? `${esc(t("print.preparedFor"))} <b>${esc(view.facility)}</b><br>` : ""}${esc(view.date)}<br>tools.frontrowag.com</div>`
     + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : "")
     + `</header>`
-    + `<div class="s-setup">${view.chips.map(chip => `<span>${esc(chip)}</span>`).join("")}</div>`;
+    + `<div class="s-setup">${view.chips.filter(chip => chip !== view.applicationLabel).map(chip => `<span>${esc(chip)}</span>`).join("")}</div>`;
 }
 
 /** Product name for the chart's label column: a long combined tank name breaks before its last part, so it does not widen the column. @param {string} label */
@@ -61,7 +61,7 @@ function pageOne(view, t, assets, total) {
   const partRows = view.rows.map(row => `<tr class="part ${row.cls}"><th class="pc">${productName(row.label)}</th>${helper}${row.cells.map(cell => {
     if (!cell) return `<td class="dash">–</td>`;
     if (cell.dash) return `<td class="dash">–</td>`;
-    return `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`;
+    return `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`;
   }).join("")}</tr>`).join("");
   const phRow = `<tr class="phrow"><th colspan="2">${esc(t("chart.dripperPh"))}</th>${cols.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
 
