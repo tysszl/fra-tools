@@ -84,6 +84,43 @@ describe("strings", () => {
   });
 });
 
+describe("units and method on the sheets", () => {
+  // Every printed amount names its unit, and the sheet title names the method and stock layout.
+  const UNIT: Record<string, string> = { "mL/gal": "mL/gal", "mL/L": "mL/L", "injection %": "%", ratio: "", "g/gal": "g/gal", "g/L": "g/L" };
+
+  test("every chart amount carries its unit on print and in the view", () => {
+    for (const input of configs()) for (const lang of ["en", "es"] as const) {
+      const { view, print } = render(input, lang, input.method === "custom" ? "team" : "customer");
+      expect(view.cellUnit).toBe(UNIT[view.unit]);
+      const cells = [...print.matchAll(/<td class="pc"><div class="v num">(.*?)<\/div>/g)].map(m => m[1]);
+      expect(cells.length).toBeGreaterThan(0);
+      for (const cell of cells) {
+        if (view.unit === "ratio") expect(cell).toMatch(/^1:\d+$/);
+        else expect(cell).toMatch(new RegExp(`^[\\d.]+<span class="u"> ${view.cellUnit.replace(/[/%]/g, "\\$&")}</span>$`));
+      }
+      expect(print).toContain(`<th class="u">${view.unitLabel}</th>`);
+    }
+  });
+
+  test("sheet titles name the method and stock layout", () => {
+    const cases: Array<[any, "en" | "es", string]> = [
+      [{ line: "3part", method: "3-2-2" }, "en", "3-2-2 Stock Concentrate"],
+      [{ line: "3part", method: "4-3-3" }, "en", "4-3-3 Stock Concentrate"],
+      [{ line: "3part", doserCount: 2 }, "en", "2-Doser Stock Concentrate"],
+      [{ line: "3part", method: "custom" }, "en", "Custom Stock Concentrate"],
+      [{ line: "cplus" }, "en", "1-1-1 Stock Concentrate"],
+      [{ line: "3part", application: "direct" }, "en", "Direct to Reservoir"],
+      [{ line: "3part", method: "3-2-2" }, "es", "Concentrado 3-2-2"],
+      [{ line: "3part", application: "direct" }, "es", "Directo a la reserva"],
+    ];
+    for (const [input, lang, title] of cases) {
+      const { view, print } = render(input, lang, input.method === "custom" ? "team" : "customer");
+      expect(view.sheetTitle).toBe(title);
+      expect(print.match(new RegExp(`<h3>${title}</h3>`, "g"))?.length).toBe(2);
+    }
+  });
+});
+
 describe("share links", () => {
   const PAGES = {
     "feed-calc.html": { run: compilePage<any>("feed-calc.html", ["state"]), page: { line: "3part", mode: "customer" } as Page },

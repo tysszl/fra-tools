@@ -23,16 +23,21 @@ export function renderPrint(view, t, assets) {
 
 /**
  * @param {View} view @param {T} t @param {{ logo: string, qr: string }} assets
- * @param {string} title @param {boolean} withQr
+ * @param {string} sheet  Which sheet, for the kicker; the title is the method. @param {boolean} withQr
  */
-function head(view, t, assets, title, withQr) {
+function head(view, t, assets, sheet, withQr) {
   return `<header class="s-head">`
     + `<img class="logo" src="${assets.logo}" alt="Front Row Ag">`
-    + `<div class="s-title"><div class="s-kicker">${esc(t("print.kicker", { line: view.lineLabel, application: view.applicationLabel }))}</div><h3>${esc(title)}</h3></div>`
+    + `<div class="s-title"><div class="s-kicker">${esc(t("print.kicker", { line: view.lineLabel, sheet }))}</div><h3>${esc(view.sheetTitle)}</h3></div>`
     + `<div class="s-meta">${view.facility ? `${esc(t("print.preparedFor"))} <b>${esc(view.facility)}</b><br>` : ""}${esc(view.date)}<br>tools.frontrowag.com</div>`
     + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : "")
     + `</header>`
     + `<div class="s-setup">${view.chips.map(chip => `<span>${esc(chip)}</span>`).join("")}</div>`;
+}
+
+/** The unit after a chart amount; screen and print share it. @param {View} view */
+export function unitSpan(view) {
+  return view.cellUnit ? `<span class="u"> ${esc(view.cellUnit)}</span>` : "";
 }
 
 /** @param {number} n @param {number} total @param {T} t */
@@ -43,13 +48,13 @@ function foot(n, total, t) {
 /** @param {View} view @param {T} t @param {{ logo: string, qr: string }} assets @param {number} total */
 function pageOne(view, t, assets, total) {
   const cols = view.phases;
-  const headRow = `<tr><th></th>${cols.map(p => `<th>${esc(p.long)}</th>`).join("")}</tr>`;
+  const headRow = `<tr><th class="u">${esc(view.unitLabel)}</th>${cols.map(p => `<th>${esc(p.long)}</th>`).join("")}</tr>`;
   const recipeRow = `<tr class="rec"><th>${esc(t("chart.recipe"))}</th>${cols.map(p => `<td>${esc(p.recipe)}</td>`).join("")}</tr>`;
   const ecRow = `<tr class="ecr"><th>${esc(t("chart.targetEc"))}</th>${cols.map(p => `<td class="num">${p.served ? esc(p.ec) : "–"}</td>`).join("")}</tr>`;
   const partRows = view.rows.map(row => `<tr class="part ${row.cls}"><th class="pc">${esc(row.label)}</th>${row.cells.map(cell => {
     if (!cell) return `<td class="dash">–</td>`;
     if (cell.dash) return `<td class="dash">–</td>`;
-    return `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`;
+    return `<td class="pc"><div class="v num">${esc(cell.display)}${unitSpan(view)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`;
   }).join("")}</tr>`).join("");
   const phRow = `<tr class="phrow"><th>${esc(t("chart.dripperPh"))}</th>${cols.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
 

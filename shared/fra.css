@@ -198,6 +198,9 @@ h1.title { font-weight: 700; font-size: 26px; letter-spacing: -.02em; line-heigh
 .chart .off .ph { color: var(--muted); }
 .chart th .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
 .chart th .th-name { text-transform: none; letter-spacing: .01em; white-space: normal; display: inline-block; max-width: 7em; text-align: right; }
+.chart th .th-u { display: block; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 10px; }
+.chart th.u { text-transform: none; letter-spacing: 0; }
+.chart .v .u { font-size: .6em; font-weight: 550; }
 
 .k-partA { --pc: var(--c-a); }
 .k-partB, .k-partBphoszyme, .k-tank2 { --pc: var(--c-b); }
@@ -486,6 +489,8 @@ td.pc, th.pc { color: var(--pc); }
 .s-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; table-layout: fixed; }
 .s-table th, .s-table td { padding: 7px 5px; text-align: center; border-bottom: 1px solid #e4e7e5; }
 .s-table thead th { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; font-weight: 650; color: #fff; background: #141716; border-bottom: 0; }
+.s-table thead th.u { text-transform: none; letter-spacing: 0; font-size: 10px; text-align: left; }
+.s-table .part td .v .u { font-size: 10px; font-weight: 550; }
 .s-table thead th .wk { display: block; font-size: 8.5px; letter-spacing: .02em; text-transform: none; font-weight: 500; color: #c9cfcc; margin-top: 1px; }
 .s-table tbody th { text-align: left; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; font-weight: 650; color: #5b625f; width: 1.3in; line-height: 1.25; }
 .s-table tbody th.pc { color: var(--pc); }

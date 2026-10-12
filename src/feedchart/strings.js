@@ -203,8 +203,10 @@ const en = {
   "ec.perUnit": "EC per {unit}",
 
   // Print
-  "print.kicker": "{line} · {application}",
+  "print.kicker": "{line} · {sheet}",
   "print.feedChart": "Feed Chart",
+  "print.title.stock": "{label} Stock Concentrate",
+  "print.title.direct": "Direct to Reservoir",
   "print.mixing": "Mixing Instructions",
   "print.preparedFor": "Prepared for",
   "print.notes": "Notes",
@@ -494,8 +496,10 @@ const es = {
   "ec.contribution": "Aporte de EC",
   "ec.perUnit": "EC por {unit}",
 
-  "print.kicker": "{line} · {application}",
+  "print.kicker": "{line} · {sheet}",
   "print.feedChart": "Tabla de alimentación",
+  "print.title.stock": "Concentrado {label}",
+  "print.title.direct": "Directo a la reserva",
   "print.mixing": "Instrucciones de mezcla",
   "print.preparedFor": "Preparado para",
   "print.notes": "Notas",

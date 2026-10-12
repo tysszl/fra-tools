@@ -17,6 +17,11 @@ import { DATA, getLine, supplementRates, formatTargetEc, isMetricUnit, formatSto
 
 const HIGHER_LOWER_ROWS = 8;
 
+/** Unit printed after every chart amount. Ratio cells ("1:125") carry their own. */
+const CELL_UNIT = /** @type {Record<string, string>} */ ({
+  "mL/gal": "mL/gal", "mL/L": "mL/L", "injection %": "%", ratio: "", "g/gal": "g/gal", "g/L": "g/L",
+});
+
 /** @param {string} key */
 function rowClass(key) {
   return `k-${key.replace(/[^A-Za-z0-9]/g, "")}`;
@@ -37,6 +42,10 @@ export function buildView(chart, t, options) {
 
   const lineLabel = t(`lines.${s.line}`);
   const applicationLabel = t(stockMode ? "chip.stock" : "chip.direct");
+  // Sheet title names the method and stock layout, so a 4-3-3 sheet never reads as 3-2-2.
+  const sheetTitle = stockMode
+    ? t("print.title.stock", { label: !twoDoser && s.method === "custom" ? t("opt.custom") : chart.stockConfigLabel })
+    : t("print.title.direct");
 
   // ── Setup chips ──
   /** @type {string[]} */
@@ -276,6 +285,8 @@ export function buildView(chart, t, options) {
     unit: s.unit,
     unitLabel: t(`unit.${s.unit}`),
     unitCaption: t(`unitCaption.${s.unit}`),
+    cellUnit: CELL_UNIT[s.unit] ?? "",
+    sheetTitle,
     phases,
     rows,
     bars,

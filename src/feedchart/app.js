@@ -13,7 +13,7 @@ import { gateFind, gateUnlock } from "../../shared/gate.js";
 import { STRINGS } from "./strings.js";
 import { decodeParams, encodeParams } from "./url.js";
 import { buildView, buildSummary, esc } from "./content.js";
-import { renderPrint } from "./print.js";
+import { renderPrint, unitSpan } from "./print.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -256,7 +256,7 @@ export function mount(root, page) {
 
   /** @param {View} v */
   function chartRows(v) {
-    const head = `<tr><th>${esc(t("chart.phase"))}</th><th>${esc(t("chart.ec"))}</th>${v.rows.map(row => `<th class="${row.cls}"><span class="dot"></span><span class="th-name">${esc(row.short)}</span></th>`).join("")}</tr>`;
+    const head = `<tr><th>${esc(t("chart.phase"))}</th><th>${esc(t("chart.ec"))}</th>${v.rows.map(row => `<th class="${row.cls}"><span class="dot"></span><span class="th-name">${esc(row.short)}</span>${v.cellUnit ? `<span class="th-u">${esc(v.cellUnit)}</span>` : ""}</th>`).join("")}</tr>`;
     const body = v.phases.map((p, i) => {
       const bar = v.bars[i];
       const cells = v.rows.map(row => {
@@ -279,12 +279,12 @@ export function mount(root, page) {
 
   /** @param {View} v */
   function chartWide(v) {
-    const head = `<tr><th></th>${v.phases.map(p => `<th>${esc(p.short)}</th>`).join("")}</tr>`;
+    const head = `<tr><th class="u">${esc(v.unitLabel)}</th>${v.phases.map(p => `<th>${esc(p.short)}</th>`).join("")}</tr>`;
     const recipe = `<tr class="rec"><th>${esc(t("chart.recipe"))}</th>${v.phases.map(p => `<td>${p.served ? esc(p.recipe) : `<span class="dash">${esc(t("chart.notServed"))}</span>`}</td>`).join("")}</tr>`;
     const ec = `<tr class="ecr"><th>${esc(t("chart.targetEc"))}</th>${v.phases.map((p, i) => `<td><span class="num">${p.served ? esc(p.ec) : "–"}</span>${v.bars[i] ? barHtml2(/** @type {any} */ (v.bars[i]), 110) : ""}</td>`).join("")}</tr>`;
     const parts = v.rows.map(row => `<tr class="${row.cls}"><th class="pc"><span class="dot"></span> ${esc(row.label)}</th>${row.cells.map(cell => (!cell || cell.dash
       ? `<td><span class="dash">–</span></td>`
-      : `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`)).join("")}</tr>`).join("");
+      : `<td class="pc"><div class="v num">${esc(cell.display)}${unitSpan(v)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`)).join("")}</tr>`).join("");
     const ph = `<tr class="phrow"><th>${esc(t("chart.dripperPh"))}</th>${v.phases.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
     return `<div class="card chart chart--wide"><table><thead>${head}</thead><tbody>${recipe}${ec}${parts}${ph}</tbody></table></div>`;
   }
@@ -489,7 +489,7 @@ export function mount(root, page) {
   }
 
   function exportPdf() {
-    const name = fileSafe(["Front Row Ag", t(`lines.${state.settings.line}`), t("print.feedChart"), state.facility].filter(Boolean).join(" - "));
+    const name = fileSafe(["Front Row Ag", t(`lines.${state.settings.line}`), t("print.feedChart"), view().sheetTitle, state.facility].filter(Boolean).join(" - "));
     printDocument(name);
   }
 
