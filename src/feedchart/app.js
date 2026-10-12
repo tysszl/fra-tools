@@ -284,7 +284,7 @@ export function mount(root, page) {
     const recipe = `<tr class="rec"><th colspan="2">${esc(t("chart.recipe"))}</th>${v.phases.map(p => `<td>${p.served ? esc(p.recipe) : `<span class="dash">${esc(t("chart.notServed"))}</span>`}</td>`).join("")}</tr>`;
     const ec = `<tr class="ecr"><th colspan="2">${esc(t("chart.targetEc"))}</th>${v.phases.map((p, i) => `<td><span class="num">${p.served ? esc(p.ec) : "–"}</span>${v.bars[i] ? barHtml2(/** @type {any} */ (v.bars[i]), 110) : ""}</td>`).join("")}</tr>`;
     const parts = v.rows.map(row => `<tr class="${row.cls}"><th class="pc"><span class="dot"></span> ${productName(row.label)}</th>${unitHelper(v)}${row.cells.map(cell => (!cell || cell.dash
-      ? `<td><span class="dash">–</span></td>`
+      ? `<td><div class="v dash">–</div><div class="s">&nbsp;</div></td>`
       : `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`)).join("")}</tr>`).join("");
     const ph = `<tr class="phrow"><th colspan="2">${esc(t("chart.dripperPh"))}</th>${v.phases.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
     return `<div class="card chart chart--wide"><table><thead>${head}</thead><tbody>${recipe}${ec}${parts}${ph}</tbody></table></div>`;

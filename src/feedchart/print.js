@@ -30,7 +30,7 @@ function head(view, t, assets, sheet, withQr) {
     + `<img class="logo" src="${assets.logo}" alt="Front Row Ag">`
     + `<div class="s-title"><div class="s-kicker">${esc(t("print.kicker", { line: view.lineLabel, sheet }))}</div><h3>${esc(view.sheetTitle)}</h3></div>`
     + `<div class="s-meta">${view.facility ? `${esc(t("print.preparedFor"))} <b>${esc(view.facility)}</b><br>` : ""}${esc(view.date)}<br>tools.frontrowag.com</div>`
-    + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : "")
+    + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : `<div class="s-qr" aria-hidden="true"></div>`)
     + `</header>`
     + `<div class="s-setup">${view.chips.filter(chip => chip !== view.applicationLabel).map(chip => `<span>${esc(chip)}</span>`).join("")}</div>`;
 }
@@ -59,8 +59,7 @@ function pageOne(view, t, assets, total) {
   const recipeRow = `<tr class="rec"><th colspan="2">${esc(t("chart.recipe"))}</th>${cols.map(p => `<td>${esc(p.recipe)}</td>`).join("")}</tr>`;
   const ecRow = `<tr class="ecr"><th colspan="2">${esc(t("chart.targetEc"))}</th>${cols.map(p => `<td class="num">${p.served ? esc(p.ec) : "–"}</td>`).join("")}</tr>`;
   const partRows = view.rows.map(row => `<tr class="part ${row.cls}"><th class="pc">${productName(row.label)}</th>${helper}${row.cells.map(cell => {
-    if (!cell) return `<td class="dash">–</td>`;
-    if (cell.dash) return `<td class="dash">–</td>`;
+    if (!cell || cell.dash) return `<td class="dash"><div class="v">–</div><div class="s">&nbsp;</div></td>`;
     return `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`;
   }).join("")}</tr>`).join("");
   const phRow = `<tr class="phrow"><th colspan="2">${esc(t("chart.dripperPh"))}</th>${cols.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
@@ -127,7 +126,7 @@ function pageTwo(view, t, assets, total) {
     const h = view.stockHead;
     const body = view.stockTableRows.map(r => `<tr class="${r.sub ? "sub" : ""}"><td class="num">${esc(r.tank)}</td><td>${r.sub ? "+ " : ""}${esc(r.part)}</td><td class="r num">${esc(r.vol)}</td><td class="r num">${esc(r.wt)}</td><td class="r num">${esc(r.conc)}</td><td class="r num">${esc(r.sample)}</td><td class="r num">${esc(r.ecG)}</td><td class="r num"><b>${esc(r.valEC)}</b></td></tr>`).join("")
       + (view.tank2Total ? `<tr class="total"><td></td><td>${esc(t("stock.tank2Total"))}</td><td></td><td></td><td></td><td></td><td></td><td class="r num">${esc(view.tank2Total)}</td></tr>` : "");
-    const table = `<table class="s-mini"><thead><tr><th>${esc(t("stock.tank"))}</th><th>${esc(t("stock.part"))}</th><th class="r">${esc(h.vol)}</th><th class="r">${esc(h.wt)}</th><th class="r">${esc(h.conc)}</th><th class="r">${esc(h.sample)}</th><th class="r">${esc(h.ecG)}</th><th class="r">${esc(t("stock.validEc"))}</th></tr></thead><tbody>${body}</tbody></table>`;
+    const table = `<table class="s-mini"><thead><tr><th>${esc(t("stock.tank"))}</th><th>${esc(t("stock.part"))}</th><th class="r unit">${esc(h.vol)}</th><th class="r unit">${esc(h.wt)}</th><th class="r unit">${esc(h.conc)}</th><th class="r unit">${esc(h.sample)}</th><th class="r unit">${esc(h.ecG)}</th><th class="r">${esc(t("stock.validEc"))}</th></tr></thead><tbody>${body}</tbody></table>`;
     const phz = view.settings.usePhoszyme ? `<p class="s-note">${esc(t("val.phz", { carrier: view.carrier }))}</p>` : "";
     stock = `<div class="s-two s-two--stock"><div><div class="s-h">${esc(t("stock.title", { label: view.stockLabel }))}</div>${table}</div>`
       + `<div><div class="s-h">${esc(t("sec.validation"))}</div><ol class="s-list">${view.validationSteps.map(s => `<li>${esc(s)}</li>`).join("")}</ol>${phz}</div></div>`;
