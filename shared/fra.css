@@ -199,8 +199,6 @@ h1.title { font-weight: 700; font-size: 26px; letter-spacing: -.02em; line-heigh
 .chart th .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
 .chart th .th-name { text-transform: none; letter-spacing: .01em; white-space: normal; display: inline-block; max-width: 7em; text-align: right; }
 .chart th .th-u { display: block; text-transform: none; letter-spacing: 0; font-weight: 500; font-size: 10px; }
-.chart--wide .hu { width: 96px; padding-left: 0; padding-right: 0; text-align: left; color: var(--faint); }
-.chart--wide td.hu .v { font-size: 11px; font-weight: 550; line-height: 22px; }
 
 .k-partA { --pc: var(--c-a); }
 .k-partB, .k-partBphoszyme, .k-tank2 { --pc: var(--c-b); }
@@ -233,6 +231,11 @@ td.pc, th.pc { color: var(--pc); }
 .chart--wide .mix { margin: 8px auto 0; }
 .chart--wide tbody tr:last-child th { border-bottom: 0; }
 .chart--wide .phrow td { font-size: 13px; font-weight: 600; }
+.chart--wide thead th:not(:first-child) { width: 17%; }
+.chart--wide tbody th { white-space: nowrap; width: auto; }
+.chart--wide tbody tr:not(.rec):not(.ecr):not(.phrow) th { width: 1%; padding-right: 0; }
+.chart--wide td.hu { width: 1%; white-space: nowrap; padding: 11px 6px 11px 12px; text-align: left; color: var(--faint); }
+.chart--wide td.hu .v { font-size: 11px; font-weight: 550; line-height: 22px; }
 .chart select { font-size: 13px; }
 
 @media (min-width: 760px) {
@@ -489,8 +492,6 @@ td.pc, th.pc { color: var(--pc); }
 .s-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; table-layout: fixed; }
 .s-table th, .s-table td { padding: 7px 5px; text-align: center; border-bottom: 1px solid #e4e7e5; }
 .s-table thead th { font-size: 9px; letter-spacing: .07em; text-transform: uppercase; font-weight: 650; color: #fff; background: #141716; border-bottom: 0; }
-.s-table .hu { width: .75in; padding-left: 0; padding-right: 0; text-align: left; }
-.s-table .part td.hu .v { font-size: 9.5px; font-weight: 550; color: #7b827f; line-height: calc(18px * 1.15); }
 .s-table thead th .wk { display: block; font-size: 8.5px; letter-spacing: .02em; text-transform: none; font-weight: 500; color: #c9cfcc; margin-top: 1px; }
 .s-table tbody th { text-align: left; font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; font-weight: 650; color: #5b625f; width: 1.3in; line-height: 1.25; }
 .s-table tbody th.pc { color: var(--pc); }
@@ -503,6 +504,14 @@ td.pc, th.pc { color: var(--pc); }
 .s-table .dash { color: #a3a9a6; }
 .s-table tr.phrow td { font-size: 11px; font-weight: 650; }
 .s-table tr.off td { color: #a3a9a6; }
+/* Feed chart: the product name and its unit/EC helper fit their text; the five phase columns share the rest. */
+.s-table--feed { table-layout: auto; }
+.s-table--feed thead th:not(:first-child) { width: 17%; }
+.s-table--feed tbody th { width: auto; white-space: nowrap; }
+.s-table--feed tr.part th { width: 1%; padding-right: 0; }
+.s-table--feed td.hu { width: 1%; white-space: nowrap; padding: 7px 4px 7px 10px; text-align: left; }
+.s-table--feed td.hu .v { font-size: 9.5px; font-weight: 550; color: #7b827f; line-height: calc(18px * 1.15); }
+.s-table--feed td.hu .s { font-size: 8.5px; color: #7b827f; }
 .s-note { font-size: 9px; color: #6b726f; margin-top: 6px; line-height: 1.5; }
 .s-warn { font-size: 9.5px; color: #8a5a00; background: #fff6e0; padding: 6px 8px; border-radius: 4px; margin-top: 6px; }
 .s-two { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; margin-top: 16px; }

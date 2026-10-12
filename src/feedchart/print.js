@@ -35,6 +35,12 @@ function head(view, t, assets, sheet, withQr) {
     + `<div class="s-setup">${view.chips.map(chip => `<span>${esc(chip)}</span>`).join("")}</div>`;
 }
 
+/** Product name for the chart's label column: a long combined tank name breaks before its last part, so it does not widen the column. @param {string} label */
+export function productName(label) {
+  const at = label.lastIndexOf(" + ");
+  return label.length > 14 && at > 0 ? `${esc(label.slice(0, at))} +<br>${esc(label.slice(at + 3))}` : esc(label);
+}
+
 /** Helper column right of each product name: the amount's unit on the main line, EC on the sub line. Screen and print share it. @param {View} view */
 export function unitHelper(view) {
   return `<td class="hu"><div class="v">${esc(view.unitLabel)}</div><div class="s">EC</div></td>`;
@@ -49,15 +55,15 @@ function foot(n, total, t) {
 function pageOne(view, t, assets, total) {
   const cols = view.phases;
   const helper = unitHelper(view);
-  const headRow = `<tr><th></th><th class="hu"></th>${cols.map(p => `<th>${esc(p.long)}</th>`).join("")}</tr>`;
-  const recipeRow = `<tr class="rec"><th>${esc(t("chart.recipe"))}</th><td class="hu"></td>${cols.map(p => `<td>${esc(p.recipe)}</td>`).join("")}</tr>`;
-  const ecRow = `<tr class="ecr"><th>${esc(t("chart.targetEc"))}</th><td class="hu"></td>${cols.map(p => `<td class="num">${p.served ? esc(p.ec) : "–"}</td>`).join("")}</tr>`;
-  const partRows = view.rows.map(row => `<tr class="part ${row.cls}"><th class="pc">${esc(row.label)}</th>${helper}${row.cells.map(cell => {
+  const headRow = `<tr><th colspan="2"></th>${cols.map(p => `<th>${esc(p.long)}</th>`).join("")}</tr>`;
+  const recipeRow = `<tr class="rec"><th colspan="2">${esc(t("chart.recipe"))}</th>${cols.map(p => `<td>${esc(p.recipe)}</td>`).join("")}</tr>`;
+  const ecRow = `<tr class="ecr"><th colspan="2">${esc(t("chart.targetEc"))}</th>${cols.map(p => `<td class="num">${p.served ? esc(p.ec) : "–"}</td>`).join("")}</tr>`;
+  const partRows = view.rows.map(row => `<tr class="part ${row.cls}"><th class="pc">${productName(row.label)}</th>${helper}${row.cells.map(cell => {
     if (!cell) return `<td class="dash">–</td>`;
     if (cell.dash) return `<td class="dash">–</td>`;
     return `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)} EC</div></td>`;
   }).join("")}</tr>`).join("");
-  const phRow = `<tr class="phrow"><th>${esc(t("chart.dripperPh"))}</th><td class="hu"></td>${cols.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
+  const phRow = `<tr class="phrow"><th colspan="2">${esc(t("chart.dripperPh"))}</th>${cols.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
 
   const notes = [
     `${t("chart.valuesAre", { caption: view.unitCaption })} ${t("chart.subEc")}`,
@@ -80,7 +86,7 @@ function pageOne(view, t, assets, total) {
 
   return `<section class="sheet">`
     + head(view, t, assets, t("print.feedChart"), true)
-    + `<table class="s-table"><thead>${headRow}</thead><tbody>${recipeRow}${ecRow}${partRows}${phRow}</tbody></table>`
+    + `<table class="s-table s-table--feed"><thead>${headRow}</thead><tbody>${recipeRow}${ecRow}${partRows}${phRow}</tbody></table>`
     + notes.map(n => `<p class="s-note">${esc(n)}</p>`).join("")
     + warns.map(n => `<p class="s-warn">${esc(n)}</p>`).join("")
     + `<p class="s-note"><i>${esc(t("chart.disclaimer"))}</i></p>`

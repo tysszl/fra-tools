@@ -93,7 +93,7 @@ describe("units and method on the sheets", () => {
     for (const input of configs()) for (const lang of ["en", "es"] as const) {
       const { view, print } = render(input, lang, input.method === "custom" ? "team" : "customer");
       const unit = (lang === "en" ? UNIT_EN : UNIT_ES)[view.unit];
-      const rows = [...print.matchAll(/<tr class="part [^"]*"><th class="pc">[^<]*<\/th>(<td class="hu">.*?<\/td>)/g)].map(m => m[1]);
+      const rows = [...print.matchAll(/<tr class="part [^"]*"><th class="pc">(?:[^<]|<br>)*<\/th>(<td class="hu">.*?<\/td>)/g)].map(m => m[1]);
       expect(rows.length).toBe(view.rows.length);
       for (const helper of rows) expect(helper).toBe(`<td class="hu"><div class="v">${unit}</div><div class="s">EC</div></td>`);
       // Amounts themselves carry no suffix.
