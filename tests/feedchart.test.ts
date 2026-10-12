@@ -85,20 +85,19 @@ describe("strings", () => {
 });
 
 describe("units and method on the sheets", () => {
-  // Every printed amount names its unit, and the sheet title names the method and stock layout.
-  const UNIT: Record<string, string> = { "mL/gal": "mL/gal", "mL/L": "mL/L", "injection %": "%", ratio: "", "g/gal": "g/gal", "g/L": "g/L" };
+  // Every amount row has a helper column naming its unit and EC, and the sheet title names the method and stock layout.
+  const UNIT_EN: Record<string, string> = { "mL/gal": "mL/gal", "mL/L": "mL/L", "injection %": "injection %", ratio: "ratio", "g/gal": "g/gal", "g/L": "g/L" };
+  const UNIT_ES: Record<string, string> = { ...UNIT_EN, "injection %": "% de inyección", ratio: "proporción" };
 
-  test("every chart amount carries its unit on print and in the view", () => {
+  test("every amount row has a helper column with the mode's unit and EC", () => {
     for (const input of configs()) for (const lang of ["en", "es"] as const) {
       const { view, print } = render(input, lang, input.method === "custom" ? "team" : "customer");
-      expect(view.cellUnit).toBe(UNIT[view.unit]);
-      const cells = [...print.matchAll(/<td class="pc"><div class="v num">(.*?)<\/div>/g)].map(m => m[1]);
-      expect(cells.length).toBeGreaterThan(0);
-      for (const cell of cells) {
-        if (view.unit === "ratio") expect(cell).toMatch(/^1:\d+$/);
-        else expect(cell).toMatch(new RegExp(`^[\\d.]+<span class="u"> ${view.cellUnit.replace(/[/%]/g, "\\$&")}</span>$`));
-      }
-      expect(print).toContain(`<th class="u">${view.unitLabel}</th>`);
+      const unit = (lang === "en" ? UNIT_EN : UNIT_ES)[view.unit];
+      const rows = [...print.matchAll(/<tr class="part [^"]*"><th class="pc">[^<]*<\/th>(<td class="hu">.*?<\/td>)/g)].map(m => m[1]);
+      expect(rows.length).toBe(view.rows.length);
+      for (const helper of rows) expect(helper).toBe(`<td class="hu"><div class="v">${unit}</div><div class="s">EC</div></td>`);
+      // Amounts themselves carry no suffix.
+      for (const m of print.matchAll(/<td class="pc"><div class="v num">(.*?)<\/div>/g)) expect(m[1]).toMatch(/^(1:\d+|[\d.]+)$/);
     }
   });
 
