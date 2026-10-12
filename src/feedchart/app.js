@@ -14,6 +14,7 @@ import { STRINGS } from "./strings.js";
 import { decodeParams, encodeParams } from "./url.js";
 import { buildView, buildSummary, esc } from "./content.js";
 import { renderPrint } from "./print.js";
+import { logoLink } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -68,7 +69,7 @@ export function mount(root, page) {
   function renderGate() {
     document.documentElement.lang = state.lang;
     root.innerHTML = `<main class="gate"><div class="card gate__card">
-      <img class="bar__logo bar__logo--light" src="${assets.logoLight}" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${assets.logoDark}" alt="Front Row Ag">
+      ${logoLink(`<img class="bar__logo bar__logo--light" src="${assets.logoLight}" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${assets.logoDark}" alt="Front Row Ag">`)}
       <h1>${esc(t("gate.team.title"))}</h1>
       <p>${esc(t("gate.team.intro"))}</p>
       <form data-gate><input class="input" name="code" placeholder="${esc(t("gate.placeholder"))}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="${esc(t("gate.placeholder"))}">
@@ -222,7 +223,7 @@ export function mount(root, page) {
   function barHtml() {
     const dark = currentTheme() === "dark";
     return `<header class="bar" data-bar>
-      <img class="bar__logo bar__logo--light" src="${assets.logoLight}" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${assets.logoDark}" alt="Front Row Ag">
+      ${logoLink(`<img class="bar__logo bar__logo--light" src="${assets.logoLight}" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="${assets.logoDark}" alt="Front Row Ag">`, "bar__home")}
       <span class="bar__tool">${esc(t("tool.name"))}</span><span class="bar__sp"></span>
       <button class="ib" data-set="lang" aria-label="${esc(t("lang.toggleLabel"))}" lang="${state.lang === "en" ? "es" : "en"}">${state.lang === "en" ? "ES" : "EN"}</button>
       <button class="ib" data-act="theme" aria-label="${esc(t("theme.toggle"))}">${dark ? ICONS.sun : ICONS.moon}</button>

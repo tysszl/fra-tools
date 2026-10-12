@@ -3,7 +3,7 @@
 // page 2 is the mixing procedure, stock table with validation, and additive rates.
 import { DATA } from "../engine/index.js";
 import { esc } from "./content.js";
-import { sheetLinesHtml } from "../../shared/chrome.js";
+import { logoLink, sheetLinesHtml } from "../../shared/chrome.js";
 import { doserArt, stepArt } from "./art.js";
 
 /** @typedef {import("./content.js").View} View */
@@ -27,7 +27,7 @@ export function renderPrint(view, t, assets) {
  */
 function head(view, t, assets, title, withQr) {
   return `<header class="s-head">`
-    + `<img class="logo" src="${assets.logo}" alt="Front Row Ag">`
+    + logoLink(`<img class="logo" src="${assets.logo}" alt="Front Row Ag">`)
     + `<div class="s-title"><div class="s-kicker">${esc(t("print.kicker", { line: view.lineLabel, application: view.applicationLabel }))}</div><h3>${esc(title)}</h3></div>`
     + `<div class="s-meta">${view.facility ? `${esc(t("print.preparedFor"))} <b>${esc(view.facility)}</b><br>` : ""}${esc(view.date)}<br>tools.frontrowag.com</div>`
     + (withQr ? `<img class="s-qr" src="${assets.qr}" alt="${esc(t("print.qr"))}">` : "")

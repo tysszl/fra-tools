@@ -13,7 +13,7 @@ import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { readStored, writeStored } from "../../shared/storage.js";
 import { gateFind, gateUnlock } from "../../shared/gate.js";
 import { fileSafe, printDocument } from "../../shared/print.js";
-import { ICONS, barHtml, esc, footHtml, toast } from "../../shared/chrome.js";
+import { ICONS, barHtml, esc, footHtml, logoLink, toast } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -267,7 +267,7 @@ export function mount(root) {
   function gate() {
     document.title = "Usage Estimator · Front Row Ag";
     root.innerHTML = `<main class="gate"><div class="card gate__card">
-      <img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="bar__logo--light"><img src="assets/feed-chart/logo-white.png" alt="Front Row Ag" class="bar__logo--dark">
+      ${logoLink(`<img src="assets/feed-chart/logo-dark.png" alt="Front Row Ag" class="bar__logo--light"><img src="assets/feed-chart/logo-white.png" alt="Front Row Ag" class="bar__logo--dark">`)}
       <h1>Usage Estimator</h1>
       <p>This is an internal Front Row Ag team tool. Enter the team access code.</p>
       <form data-gate><input class="input" name="code" placeholder="Access code" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Access code">
@@ -477,7 +477,7 @@ export function mount(root) {
       const lede = quick()
         ? "A year of product from flowering canopy, on FRA's standard feed volumes and the high-strength commercial chart."
         : "Product and cost for one cycle on the customer's feed chart, column by column.";
-      app.innerHTML = barHtml({ root: "", tool: "Usage Estimator", home: "./" })
+      app.innerHTML = barHtml({ root: "", tool: "Usage Estimator" })
         + `<p class="banner">Team tool. Not for customers: it is not linked from the public tools page.</p>`
         + `<h1 class="title">Usage Estimator</h1><p class="lede">${lede}</p>`
         + `<div style="margin:14px 0 4px">${seg("mode", [["quick", "Quick"], ["advanced", "Advanced"]], state.mode)}</div>`

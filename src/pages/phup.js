@@ -277,7 +277,7 @@ export function mount(root) {
       anyAtLine ? `<div class="card note note--warn"><span class="note__ic">!</span><div>${esc(atLineText(cols))}</div></div>` : "",
       state.warm ? `<div class="card note"><span class="note__ic">i</span><div>${esc(COPY.warm)}</div></div>` : "",
     ].join("");
-    app.innerHTML = barHtml({ root: "", tool: "pH Up", home: "./" })
+    app.innerHTML = barHtml({ root: "", tool: "pH Up" })
       + backLinkHtml("All tools")
       + `<h1 class="title">pH Up Calculator</h1><p class="lede">${esc(COPY.lede)}</p>`
       + `<section class="card setup"><div class="setup__chips">${chips().map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div>`

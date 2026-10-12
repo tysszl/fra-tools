@@ -4,7 +4,7 @@
 // only when the rep turns them on) and "internal" (team analysis: cost, pH Up by column,
 // every input). Every number arrives already computed by the engine; this module formats.
 import { DATA } from "../engine/index.js";
-import { CONTACT, esc, sheetFootHtml, sheetLinesHtml } from "../../shared/chrome.js";
+import { CONTACT, esc, logoLink, sheetFootHtml, sheetLinesHtml } from "../../shared/chrome.js";
 
 /** @typedef {ReturnType<typeof import("../engine/usage.js").usageEstimate>} Estimate */
 /** @typedef {ReturnType<typeof import("../engine/usage.js").usageCost>} Cost */
@@ -82,7 +82,7 @@ function packages(p, n) {
 /** @param {UsagePrintView} v @param {string} kicker @param {string} title */
 function head(v, kicker, title) {
   const meta = [v.date, v.preparedBy ? `Prepared by <b>${esc(v.preparedBy)}</b>` : "", "tools.frontrowag.com"].filter(Boolean).join("<br>");
-  return `<header class="s-head"><img class="logo" src="${v.root}assets/feed-chart/logo-dark.png" alt="Front Row Ag">`
+  return `<header class="s-head">${logoLink(`<img class="logo" src="${v.root}assets/feed-chart/logo-dark.png" alt="Front Row Ag">`)}`
     + `<div class="s-title"><div class="s-kicker">${esc(kicker)}</div><h3>${esc(title)}</h3>`
     + (v.facility ? `<div class="s-for">Prepared for <b>${esc(v.facility)}</b></div>` : "")
     + `</div><div class="s-meta">${meta}</div></header>`;
