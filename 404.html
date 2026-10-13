@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f6f7f6">
+<meta name="robots" content="noindex">
+<title>Page not found · Front Row Ag</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="/shared/fra.css">
+<script>
+  // Served at any missing path, so paths are absolute. Same theme order as shared/theme.js: ?t=, saved, system.
+  try {
+    var t = new URLSearchParams(location.search).get("t") || localStorage.getItem("fra-theme");
+    if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
+</head>
+<body>
+<div class="app app--fill">
+  <header class="bar"><a class="bar__home" href="https://www.frontrowag.com/" aria-label="Front Row Ag home"><img class="bar__logo bar__logo--light" src="/assets/feed-chart/logo-dark.png" alt="Front Row Ag"><img class="bar__logo bar__logo--dark" src="/assets/feed-chart/logo-white.png" alt="Front Row Ag"></a><span class="bar__sp"></span></header>
+  <header class="hero"><p class="hero__k">404</p><h1 class="title">That page isn't here</h1><p class="lede">The link may be old or mistyped. These are the current calculator tools.</p></header>
+  <nav class="hub">
+    <a class="card tool" href="/feed-calc.html"><span class="tool__n">Feed Chart</span><span class="tool__d">Stock tank recipes, injection rates and mixing steps for every phase.</span><span class="tool__go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="card tool" href="/ph-up-calc.html"><span class="tool__n">pH Up</span><span class="tool__d">Target pH and pH Up dose for each column of your feed chart.</span><span class="tool__go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="card tool" href="/ph-down-calc.html"><span class="tool__n">pH Down</span><span class="tool__d">Phosphoric acid needed to bring source-water alkalinity down to the target.</span><span class="tool__go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+    <a class="card tool" href="/cal-hypo/"><span class="tool__n">Calcium Hypochlorite</span><span class="tool__d">DryTec stock recipes, injection rates and direct dosing.</span><span class="tool__go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a>
+  </nav>
+  <p class="lede" style="margin-top:20px"><a href="/">All calculator tools</a></p>
+  <footer class="foot"><div><b>Front Row Ag</b> · <a href="mailto:order@solsticeag.com">order@solsticeag.com</a> · <a href="tel:+18444206883">+1 844-420-6883</a> · <a href="https://www.frontrowag.com">frontrowag.com</a></div></footer>
+</div>
+</body>
+</html>
