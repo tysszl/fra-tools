@@ -250,6 +250,12 @@ td.pc, th.pc { color: var(--pc); }
 /* Feed rows layout: the phase column hugs its content, so spare width goes between the number columns
    instead of opening a gap after the phase name. */
 .chart--rows.chart--feed th:first-child, .chart--rows.chart--feed td:first-child { width: 1%; }
+/* Feed rows layout: the EC and amount cells centre on the phase cell (name, recipe, pH, mix bar). The EC
+   cell and dash cells get an empty second line the height of "EC x.xx", so every number shares one line. */
+.chart--rows.chart--feed tbody td:not(:first-child) { vertical-align: middle; }
+.chart--rows.chart--feed tbody td .ec::after,
+.chart--rows.chart--feed tbody td > .dash::after { content: "\00a0"; display: block; font: 10.5px var(--num); margin-top: 2px; }
+.chart--rows.chart--feed tbody td > .dash { display: block; font-size: 17px; font-weight: 650; line-height: 1.1; }
 @media (max-width: 419px) {
   /* Small phones (320-414): tighter cells and wrapping phase names keep all five columns on screen. */
   .chart--rows.chart--feed th, .chart--rows.chart--feed td { padding-left: 5px; padding-right: 5px; }
