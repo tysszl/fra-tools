@@ -14,7 +14,7 @@ import { STRINGS } from "./strings.js";
 import { decodeParams, encodeParams } from "./url.js";
 import { buildView, buildSummary, esc } from "./content.js";
 import { renderPrint, unitHelper, productName } from "./print.js";
-import { footHtml, logoLink } from "../../shared/chrome.js";
+import { backLinkHtml, footHtml, logoLink } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -235,6 +235,7 @@ export function mount(root, page) {
     const v = view();
     const app = /** @type {HTMLElement} */ (root.querySelector("[data-app]"));
     app.innerHTML = barHtml()
+      + backLinkHtml(t("nav.back"))
       + (mode === "team" ? `<p class="banner">${esc(t("team.banner"))}</p>` : "")
       + `<h1 class="title">${esc(v.title)}</h1><p class="lede">${esc(v.lede)}</p>`
       + `<section class="card setup"><div class="setup__chips">${v.chips.map(chip => `<span class="chip">${esc(chip)}</span>`).join("")}</div>`
