@@ -83,7 +83,7 @@ export function mount(root) {
   }
 
   function render() {
-    root.innerHTML = `<div class="app">`
+    root.innerHTML = `<div class="app" data-app>`
       + barHtml({ root: "", tool: "pH Down" })
       + backLinkHtml("All tools")
       + englishOnlyHtml()

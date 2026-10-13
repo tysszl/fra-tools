@@ -94,6 +94,9 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
 .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
+.noscript { max-width: 640px; margin: 48px auto; padding: 0 var(--gutter); font-size: 15px; color: var(--ink-2); }
+.noscript img { height: 38px; display: block; margin-bottom: 16px; }
+.noscript a { color: var(--ink); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* ---------- layout ---------- */
@@ -593,8 +596,15 @@ textarea.input { height: auto; min-height: 96px; padding: 10px 12px; line-height
   @page { size: letter; margin: .5in; }
   html, body { background: #fff !important; color: #141716; }
   :root { color-scheme: light; }
-  .app, .scrim, .sheet-panel, .toast, .gate { display: none !important; }
+  .scrim, .sheet-panel, .toast { display: none !important; }
+  /* Tools print their sheet (.print-root); pages without one (hub, team portal, gates) print their screen view. */
   .print-root { display: block; }
+  [data-app] { display: none !important; }
+  .app:has(~ .print-root) { display: none !important; }
+  .ib, .backlink, .bar__sp { display: none !important; }
+  .bar { position: static; background: none; }
+  .app--fill { min-height: 0; }
+  .gate { min-height: 0; }
   .logo-link, .bar__home { text-decoration: none; color: inherit; outline: none; }
   .sheet { break-after: page; page-break-after: always; }
   .sheet:last-child { break-after: auto; page-break-after: auto; }
