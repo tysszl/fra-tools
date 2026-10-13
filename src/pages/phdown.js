@@ -91,7 +91,7 @@ export function mount(root) {
       + `<section class="card form">
           <div class="field"><label class="field__label" for="alk">Starting alkalinity</label><span class="input-row"><input class="input" id="alk" data-input="start" type="number" inputmode="decimal" min="0" max="999" step="1" value="${state.start}"><span>ppm</span></span></div>
           <div class="field field--stack"><div class="input-row" style="justify-content:space-between"><label class="field__label" for="target">Target alkalinity</label><span class="input-row"><input class="input" id="target" data-input="target" type="number" inputmode="decimal" min="0" max="999" step="1" value="${state.target}"><span>ppm</span></span></div>
-            <div class="seg" style="margin-top:10px" role="group" aria-label="Target presets">
+            <div class="seg seg--even" style="margin-top:10px" role="group" aria-label="Target presets">
               <button data-target="${rule.defaultTargetPpm}" aria-pressed="${state.target === rule.defaultTargetPpm}">${rule.defaultTargetPpm} ppm · Flower, Ripen</button>
               <button data-target="${rule.vegTargetPpm}" aria-pressed="${state.target === rule.vegTargetPpm}">${rule.vegTargetPpm} ppm · Veg</button>
             </div></div>

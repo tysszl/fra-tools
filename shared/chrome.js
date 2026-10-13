@@ -17,8 +17,9 @@ export const ICONS = {
 
 export const CONTACT = "order@solsticeag.com · +1 844-420-6883";
 
-/** The contact line as links: tap to email, call, or open the main site. Screen footers and print sheets share it. */
-export const CONTACT_LINKS = `<a href="mailto:order@solsticeag.com">order@solsticeag.com</a> · <a href="tel:+18444206883">+1 844-420-6883</a> · <a href="https://www.frontrowag.com">frontrowag.com</a>`;
+/** The contact line as links: tap to email, call, or open the main site. Screen footers and print sheets share it.
+ * On a phone the screen footer drops the dots and spaces the items (fra.css .foot__c), so no line starts or ends with one. */
+export const CONTACT_LINKS = `<a href="mailto:order@solsticeag.com">order@solsticeag.com</a><span class="sep"> · </span><a href="tel:+18444206883">+1 844-420-6883</a><span class="sep"> · </span><a href="https://www.frontrowag.com">frontrowag.com</a>`;
 
 /** The FRA logo links to the main site on every page and print sheet (same tab). */
 export const HOME_URL = "https://www.frontrowag.com/";
@@ -65,7 +66,7 @@ export function barHtml({ root, tool, lang, themeLabel = "Switch light or dark t
 export function footHtml({ contact, back, root = "" }) {
   return `<footer class="foot">`
     + (contact ? `<div>${esc(contact)}</div>` : "")
-    + `<div><b>Front Row Ag</b> · ${CONTACT_LINKS}</div>`
+    + `<div class="foot__c"><b>Front Row Ag</b><span class="sep"> · </span>${CONTACT_LINKS}</div>`
     + (back ? `<div><a href="${root || "./"}">${esc(back)}</a></div>` : "")
     + `</footer>`;
 }

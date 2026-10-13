@@ -94,8 +94,8 @@ a { color: inherit; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 [hidden] { display: none !important; }
 .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
-.noscript { max-width: 640px; margin: 48px auto; padding: 0 var(--gutter); font-size: 15px; color: var(--ink-2); }
-.noscript img { height: 38px; display: block; margin-bottom: 16px; }
+.noscript { max-width: 520px; margin: 48px auto; text-align: center; padding: 0 var(--gutter); font-size: 15px; color: var(--ink-2); }
+.noscript img { height: 38px; display: block; margin: 0 auto 16px; }
 .noscript a { color: var(--ink); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
@@ -148,6 +148,8 @@ h1.title { font-weight: 700; font-size: 26px; letter-spacing: -.02em; line-heigh
 .seg button[aria-pressed="true"] { background: var(--seg-on); color: var(--ink); box-shadow: var(--seg-shadow); }
 .seg--wrap { flex-wrap: wrap; }
 .seg--wrap button { flex: 1 1 auto; }
+/* Equal halves whose labels can wrap: pH Down target presets. */
+.seg--even button { flex: 1 1 0; min-width: 0; font-size: 13px; letter-spacing: -.01em; line-height: 1.25; padding-top: 6px; padding-bottom: 6px; }
 
 /* ---------- cards ---------- */
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); }
@@ -308,6 +310,11 @@ td.pc, th.pc { color: var(--pc); }
 .foot { margin-top: 32px; font-size: 12.5px; color: var(--faint); text-align: center; line-height: 1.6; }
 .foot a { color: var(--muted); display: inline-block; padding: 6px 0; text-underline-offset: 3px; }
 .foot a:hover { color: var(--ink); }
+@media (max-width: 639px) {
+  .foot__c { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 16px; }
+  .foot__c .sep { display: none; }
+  .foot__c b { flex-basis: 100%; }
+}
 
 /* ---------- edit sheet: bottom sheet on phone, side panel on desktop ---------- */
 .scrim { position: fixed; inset: 0; background: var(--scrim); z-index: 40; opacity: 0; transition: opacity .2s; }
@@ -354,6 +361,7 @@ td.pc, th.pc { color: var(--pc); }
   border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); font-size: 15px;
 }
 .input:focus { outline: none; border-color: var(--accent); }
+.input[type="number"], .input[inputmode="decimal"] { font-family: var(--num); font-variant-numeric: tabular-nums; }
 .input-row { display: flex; align-items: center; gap: 8px; }
 .input-row .input { width: 110px; }
 .input-row span { font-size: 13px; color: var(--muted); }
@@ -605,6 +613,7 @@ textarea.input { height: auto; min-height: 96px; padding: 10px 12px; line-height
   .bar { position: static; background: none; }
   .app--fill { min-height: 0; }
   .gate { min-height: 0; }
+  .gate__card .input, .gate__card .btn, .gate__err { display: none !important; }
   .logo-link, .bar__home { text-decoration: none; color: inherit; outline: none; }
   .sheet { break-after: page; page-break-after: always; }
   .sheet:last-child { break-after: auto; page-break-after: auto; }
