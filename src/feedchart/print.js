@@ -3,13 +3,12 @@
 // page 2 is the mixing procedure, stock table with validation, and additive rates.
 import { DATA } from "../engine/index.js";
 import { esc } from "./content.js";
-import { logoLink, sheetLinesHtml } from "../../shared/chrome.js";
+import { CONTACT_LINKS, logoLink, sheetLinesHtml } from "../../shared/chrome.js";
 import { doserArt, stepArt } from "./art.js";
 
 /** @typedef {import("./content.js").View} View */
 /** @typedef {(key: string, vars?: Record<string, string | number>) => string} T */
 
-const FOOTER = "order@solsticeag.com · +1 844-420-6883 · frontrowag.com";
 
 /**
  * @param {View} view
@@ -48,7 +47,7 @@ export function unitHelper(view) {
 
 /** @param {number} n @param {number} total @param {T} t */
 function foot(n, total, t) {
-  return `<footer class="s-foot"><div><b>Front Row Ag</b> · ${FOOTER}</div><div>${esc(t("print.page", { n, total }))}</div></footer>`;
+  return `<footer class="s-foot"><div><b>Front Row Ag</b> · ${CONTACT_LINKS}</div><div>${esc(t("print.page", { n, total }))}</div></footer>`;
 }
 
 /** @param {View} view @param {T} t @param {{ logo: string, qr: string }} assets @param {number} total */

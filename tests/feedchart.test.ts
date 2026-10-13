@@ -272,7 +272,11 @@ describe("printed chart", () => {
     for (const input of configs()) {
       const { print } = render(input, "en");
       expect(sheets(print)).toBe(2);
-      expect(print.match(/order@solsticeag\.com · \+1 844-420-6883 · frontrowag\.com/g)?.length).toBe(2);
+      // Rendered text reads "order@solsticeag.com · +1 844-420-6883 · frontrowag.com", each one a link.
+      const text = print.replace(/<[^>]+>/g, "");
+      expect(text.match(/order@solsticeag\.com · \+1 844-420-6883 · frontrowag\.com/g)?.length).toBe(2);
+      expect(print.match(/href="mailto:order@solsticeag\.com"/g)?.length).toBe(2);
+      expect(print.match(/href="tel:\+18444206883"/g)?.length).toBe(2);
     }
   });
 

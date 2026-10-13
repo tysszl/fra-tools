@@ -30,9 +30,7 @@ export function isMetricUnit(unit) {
 
 /** @param {string} unit */
 export function feedUnitDecimals(unit) {
-  if (unit === "mL/gal") return 0;
-  if (unit === "mL/L" || unit === "g/gal" || unit === "g/L") return 1;
-  return 2;
+  return /** @type {Record<string, number>} */ (DATA.feedUnits.decimals)[unit] ?? 2;
 }
 
 /**

@@ -143,6 +143,7 @@ const EXCEPTIONS = {
   cplusMinTank: "N14: C+ minimum stock tank is 10 gal (was 1); smaller entries fall back to 50",
   metricCharge: "N17: metric stock weights from exact litres and g/L, rounded once, on both lines (3-Part rounded litres and g/L first)",
   metricValidation: "N18: metric validation is 250 mL of stock in 20 L (was 400 mL), validation EC computed for that sample from exact g/L",
+  metricGlTwoDecimals: "metric DTR g/L doses show two decimals (was one); display rounding only, droppable commit",
   supplementCopy: "N4-N11: one set of supplement rates on every surface (BioFlo 15 maintenance, pH Up 0.2-0.25 max with the high-strength stop on both lines, Triologic up to 2 mL/gal)",
 } as const;
 type ExceptionId = keyof typeof EXCEPTIONS;
@@ -172,6 +173,11 @@ function cellDiffers(legacy: any, engine: any, c: Config, row: string, phase: Ph
   if (legacyValue === 0 && engineValue > 0) { applied.nonzeroNeverDash++; return false; }
   // Both displays round the same raw value; they agree within the two rounding half-steps.
   const window = 0.5 * 10 ** -decimalsOf(legacy.display) + 0.5 * 10 ** -decimalsOf(engine.display) + 1e-9;
+  const extra = decimalsOf(engine.display) - decimalsOf(legacy.display);
+  if (c.unit === "g/L" && extra >= 1 && extra <= 2 && Math.abs(engineValue - legacyValue) <= window) {
+    applied.metricGlTwoDecimals++;
+    return false;
+  }
   if (c.doserCount === 2 && decimalsOf(engine.display) === decimalsOf(legacy.display) + 1 && Math.abs(engineValue - legacyValue) <= window) {
     applied.twoDoserPrecision++;
     return false;
@@ -419,7 +425,7 @@ function compareMetricStock(chart: any, legacy: any, engine: any, check: (w: str
 describe("named exceptions", () => {
   test("each exception is intended and documented", () => {
     expect(Object.keys(EXCEPTIONS).sort()).toEqual([
-      "cplusMinTank", "metricCharge", "metricValidation", "nonzeroNeverDash", "perColumnCeiling", "supplementCopy", "twoDoserPrecision", "twoDoserVegLabel",
+      "cplusMinTank", "metricCharge", "metricGlTwoDecimals", "metricValidation", "nonzeroNeverDash", "perColumnCeiling", "supplementCopy", "twoDoserPrecision", "twoDoserVegLabel",
     ]);
   });
 

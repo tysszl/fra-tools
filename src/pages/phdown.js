@@ -4,7 +4,7 @@ import { DATA, phDownDose, phDownReference } from "../engine/index.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { printDocument } from "../../shared/print.js";
-import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
+import { ICONS, backLinkHtml, barHtml, englishOnlyHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
 
 const L_PER_GAL = DATA.units.litersPerGallon;
 const HOW_IT_WORKS = [
@@ -83,14 +83,15 @@ export function mount(root) {
   }
 
   function render() {
-    root.innerHTML = `<div class="app">`
+    root.innerHTML = `<div class="app" data-app>`
       + barHtml({ root: "", tool: "pH Down" })
       + backLinkHtml("All tools")
+      + englishOnlyHtml()
       + `<h1 class="title">pH Down Calculator</h1><p class="lede">70% phosphoric acid to neutralize source-water alkalinity before feeding.</p>`
       + `<section class="card form">
           <div class="field"><label class="field__label" for="alk">Starting alkalinity</label><span class="input-row"><input class="input" id="alk" data-input="start" type="number" inputmode="decimal" min="0" max="999" step="1" value="${state.start}"><span>ppm</span></span></div>
           <div class="field field--stack"><div class="input-row" style="justify-content:space-between"><label class="field__label" for="target">Target alkalinity</label><span class="input-row"><input class="input" id="target" data-input="target" type="number" inputmode="decimal" min="0" max="999" step="1" value="${state.target}"><span>ppm</span></span></div>
-            <div class="seg" style="margin-top:10px" role="group" aria-label="Target presets">
+            <div class="seg seg--even" style="margin-top:10px" role="group" aria-label="Target presets">
               <button data-target="${rule.defaultTargetPpm}" aria-pressed="${state.target === rule.defaultTargetPpm}">${rule.defaultTargetPpm} ppm · Flower, Ripen</button>
               <button data-target="${rule.vegTargetPpm}" aria-pressed="${state.target === rule.vegTargetPpm}">${rule.vegTargetPpm} ppm · Veg</button>
             </div></div>

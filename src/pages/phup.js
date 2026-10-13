@@ -6,7 +6,7 @@ import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { copyText } from "../../shared/clipboard.js";
 import { printDocument } from "../../shared/print.js";
-import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
+import { ICONS, backLinkHtml, barHtml, englishOnlyHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -279,6 +279,7 @@ export function mount(root) {
     ].join("");
     app.innerHTML = barHtml({ root: "", tool: "pH Up" })
       + backLinkHtml("All tools")
+      + englishOnlyHtml()
       + `<h1 class="title">pH Up Calculator</h1><p class="lede">${esc(COPY.lede)}</p>`
       + `<section class="card setup"><div class="setup__chips">${chips().map(c => `<span class="chip">${esc(c)}</span>`).join("")}</div>`
       + `<button class="edit-btn" data-act="edit" aria-haspopup="dialog">${ICONS.edit}Edit</button></section>`

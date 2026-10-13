@@ -1,6 +1,7 @@
 // @ts-check
 // Page chrome shared by the tool pages: header bar, footer, icons, toast, escaping.
 import { currentTheme } from "./theme.js";
+import { initialLang } from "./i18n.js";
 
 export const ICONS = {
   sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
@@ -15,6 +16,10 @@ export const ICONS = {
 };
 
 export const CONTACT = "order@solsticeag.com · +1 844-420-6883";
+
+/** The contact line as links: tap to email, call, or open the main site. Screen footers and print sheets share it.
+ * On a phone the screen footer drops the dots and spaces the items (fra.css .foot__c), so no line starts or ends with one. */
+export const CONTACT_LINKS = `<a href="mailto:order@solsticeag.com">order@solsticeag.com</a><span class="sep"> · </span><a href="tel:+18444206883">+1 844-420-6883</a><span class="sep"> · </span><a href="https://www.frontrowag.com">frontrowag.com</a>`;
 
 /** The FRA logo links to the main site on every page and print sheet (same tab). */
 export const HOME_URL = "https://www.frontrowag.com/";
@@ -61,7 +66,7 @@ export function barHtml({ root, tool, lang, themeLabel = "Switch light or dark t
 export function footHtml({ contact, back, root = "" }) {
   return `<footer class="foot">`
     + (contact ? `<div>${esc(contact)}</div>` : "")
-    + `<div><b>Front Row Ag</b> · ${CONTACT} · <a href="https://www.frontrowag.com">frontrowag.com</a></div>`
+    + `<div class="foot__c"><b>Front Row Ag</b><span class="sep"> · </span>${CONTACT_LINKS}</div>`
     + (back ? `<div><a href="${root || "./"}">${esc(back)}</a></div>` : "")
     + `</footer>`;
 }
@@ -70,6 +75,11 @@ export function footHtml({ contact, back, root = "" }) {
 /** @param {string} text @param {string} [root] */
 export function backLinkHtml(text, root = "./") {
   return `<a class="backlink" href="${root}">${ICONS.back}${esc(text)}</a>`;
+}
+
+/** On a tool with no Spanish copy, tell a reader who chose Spanish (on the hub or by ?lang=es) that it is in English. */
+export function englishOnlyHtml() {
+  return initialLang() === "es" ? `<p class="lang-note" lang="es">Esta herramienta solo está disponible en inglés.</p>` : "";
 }
 
 /** @type {ReturnType<typeof setTimeout> | undefined} */
@@ -92,7 +102,7 @@ export function toast(message) {
 /** Letter-sheet footer. */
 /** @param {string} [right] */
 export function sheetFootHtml(right = "") {
-  return `<footer class="s-foot"><div><b>Front Row Ag</b> · ${CONTACT} · frontrowag.com</div><div>${esc(right)}</div></footer>`;
+  return `<footer class="s-foot"><div><b>Front Row Ag</b> · ${CONTACT_LINKS}</div><div>${esc(right)}</div></footer>`;
 }
 
 /**
