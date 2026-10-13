@@ -14,7 +14,7 @@ import { STRINGS } from "./strings.js";
 import { decodeParams, encodeParams } from "./url.js";
 import { buildView, buildSummary, esc } from "./content.js";
 import { renderPrint, unitHelper, productName } from "./print.js";
-import { logoLink } from "../../shared/chrome.js";
+import { footHtml, logoLink } from "../../shared/chrome.js";
 
 /** @typedef {import("../engine/data.js").LineId} LineId */
 /** @typedef {import("../engine/data.js").Phase} Phase */
@@ -251,7 +251,7 @@ export function mount(root, page) {
       + tanksSection(v)
       + stepsSection(v)
       + suppsSection(v)
-      + `<footer class="foot"><div>${esc(t("foot.contact"))}</div><div><b>Front Row Ag</b> · order@solsticeag.com · +1 844-420-6883 · <a href="https://www.frontrowag.com">frontrowag.com</a></div><div><a href="./">${esc(t("foot.back"))}</a></div></footer>`;
+      + footHtml({ back: t("foot.back") });
     /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = renderPrint(v, t, { logo: assets.logoLight, qr: assets.qr });
     syncUrl();
   }
