@@ -15,11 +15,11 @@ export const ICONS = {
   arrow: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
 };
 
-export const CONTACT = "order@solsticeag.com · +1 844-420-6883";
+export const CONTACT = "order@frontrowag.com · +1 844-420-6883";
 
 /** The contact line as links: tap to email, call, or open the main site. Screen footers and print sheets share it.
  * On a phone the screen footer drops the dots and spaces the items (fra.css .foot__c), so no line starts or ends with one. */
-export const CONTACT_LINKS = `<a href="mailto:order@solsticeag.com">order@solsticeag.com</a><span class="sep"> · </span><a href="tel:+18444206883">+1 844-420-6883</a><span class="sep"> · </span><a href="https://www.frontrowag.com">frontrowag.com</a>`;
+export const CONTACT_LINKS = `<a href="mailto:order@frontrowag.com">order@frontrowag.com</a><span class="sep"> · </span><a href="tel:+18444206883">+1 844-420-6883</a><span class="sep"> · </span><a href="https://www.frontrowag.com">frontrowag.com</a>`;
 
 /** The FRA logo links to the main site on every page and print sheet (same tab). */
 export const HOME_URL = "https://www.frontrowag.com/";

@@ -114,7 +114,9 @@ a { color: inherit; }
 .bar__tool {
   font-weight: 650; font-size: 15px; color: var(--ink); letter-spacing: -.01em;
   padding-left: 12px; border-left: 1px solid var(--line); white-space: nowrap;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
 }
+.bar__home, .bar .ib { flex: none; }
 .bar__sp { flex: 1; }
 
 .ib {
@@ -245,6 +247,31 @@ td.pc, th.pc { color: var(--pc); }
 .chart--wide td.hu .v { font-size: 11px; font-weight: 550; line-height: 22px; }
 .chart select { font-size: 13px; }
 
+/* Feed rows layout: the phase column hugs its content, so spare width goes between the number columns
+   instead of opening a gap after the phase name. */
+.chart--rows.chart--feed th:first-child, .chart--rows.chart--feed td:first-child { width: 1%; }
+/* Feed rows layout: the EC and amount cells centre on the phase cell (name, recipe, pH, mix bar). The EC
+   cell and dash cells get an empty second line the height of "EC x.xx", so every number shares one line. */
+.chart--rows.chart--feed tbody td:not(:first-child) { vertical-align: middle; }
+.chart--rows.chart--feed tbody td .ec::after,
+.chart--rows.chart--feed tbody td > .dash::after { content: "\00a0"; display: block; font: 10.5px var(--num); margin-top: 2px; }
+.chart--rows.chart--feed tbody td > .dash { display: block; font-size: 17px; font-weight: 650; line-height: 1.1; }
+@media (max-width: 419px) {
+  /* Small phones (320-414): tighter cells and wrapping phase names keep all five columns on screen. */
+  .chart--rows.chart--feed th, .chart--rows.chart--feed td { padding-left: 5px; padding-right: 5px; }
+  .chart--rows.chart--feed th:first-child, .chart--rows.chart--feed td:first-child { padding-left: 10px; }
+  .chart--rows.chart--feed th:last-child, .chart--rows.chart--feed td:last-child { padding-right: 10px; }
+}
+@media (max-width: 379px) {
+  /* Only the smallest phones (360-375) need long phase names to wrap. */
+  .chart--rows.chart--feed .ph { white-space: normal; }
+}
+/* Feed charts switch to the wide layout once every chart variant fits without sideways scroll: the widest
+   (2-doser, Spanish) needs 618px; 640 leaves room for font differences. So tablets in portrait get it too. */
+@media (min-width: 640px) {
+  .chart--rows.chart--feed { display: none; }
+  .chart--wide.chart--feed { display: block; }
+}
 @media (min-width: 760px) {
   .chart--rows { display: none; }
   .chart--wide { display: block; }

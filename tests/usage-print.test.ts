@@ -31,7 +31,7 @@ describe("usage PDF", () => {
     expect(html).not.toMatch(/refit|bench check|g\/gal<\/th>|Internal/);
     expect(html).toContain("Prepared for <b>Green Valley Farms</b>");
     expect(html).toContain("Prepared by <b>Alex Rep</b>");
-    expect(html).toContain("order@solsticeag.com");
+    expect(html).toContain("order@frontrowag.com");
     expect(html).toContain("Line 2 &lt;b&gt;");
     expect(html).toContain("Annual product order");
     const v = view();
