@@ -272,24 +272,30 @@ export function mount(root, page) {
         : `<div class="rc">${esc(t("chart.notServed"))}</div>`;
       return `<tr class="${p.served ? "" : "off"}"><td><div class="ph">${esc(p.short)}</div>${sub}${bar ? barHtml2(bar, 92) : ""}</td><td><div class="ec num">${p.served ? esc(p.ec) : "–"}</div></td>${cells}</tr>`;
     }).join("");
-    return `<div class="card chart chart--rows"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
+    return `<div class="card chart chart--rows chart--feed"><table><thead>${head}</thead><tbody>${body}</tbody></table></div>`;
   }
 
-  /** @param {{ widthPct: number, segments: Array<{ cls: string, ec: number }> }} bar @param {number} maxPx */
-  function barHtml2(bar, maxPx) {
-    return `<div class="mix" style="width:${Math.round(bar.widthPct * maxPx / 100)}px" aria-hidden="true">${bar.segments.map(seg => `<i class="${seg.cls}" style="flex:${seg.ec.toFixed(3)}"></i>`).join("")}</div>`;
+  /**
+   * Mix bar sized to the column's EC. With `fluid`, the bar also shrinks with its cell (same share of the cell
+   * in every column), so it never sets the table's minimum width.
+   * @param {{ widthPct: number, segments: Array<{ cls: string, ec: number }> }} bar @param {number} maxPx @param {boolean} [fluid]
+   */
+  function barHtml2(bar, maxPx, fluid = false) {
+    const px = Math.round(bar.widthPct * maxPx / 100);
+    const width = fluid ? `min(${px}px, ${(bar.widthPct * 0.9).toFixed(1)}%)` : `${px}px`;
+    return `<div class="mix" style="width:${width}" aria-hidden="true">${bar.segments.map(seg => `<i class="${seg.cls}" style="flex:${seg.ec.toFixed(3)}"></i>`).join("")}</div>`;
   }
 
   /** @param {View} v */
   function chartWide(v) {
     const head = `<tr><th colspan="2"></th>${v.phases.map(p => `<th>${esc(p.short)}</th>`).join("")}</tr>`;
     const recipe = `<tr class="rec"><th colspan="2">${esc(t("chart.recipe"))}</th>${v.phases.map(p => `<td>${p.served ? esc(p.recipe) : `<span class="dash">${esc(t("chart.notServed"))}</span>`}</td>`).join("")}</tr>`;
-    const ec = `<tr class="ecr"><th colspan="2">${esc(t("chart.targetEc"))}</th>${v.phases.map((p, i) => `<td><span class="num">${p.served ? esc(p.ec) : "–"}</span>${v.bars[i] ? barHtml2(/** @type {any} */ (v.bars[i]), 110) : ""}</td>`).join("")}</tr>`;
+    const ec = `<tr class="ecr"><th colspan="2">${esc(t("chart.targetEc"))}</th>${v.phases.map((p, i) => `<td><span class="num">${p.served ? esc(p.ec) : "–"}</span>${v.bars[i] ? barHtml2(/** @type {any} */ (v.bars[i]), 110, true) : ""}</td>`).join("")}</tr>`;
     const parts = v.rows.map(row => `<tr class="${row.cls}"><th class="pc"><span class="dot"></span> ${productName(row.label)}</th>${unitHelper(v)}${row.cells.map(cell => (!cell || cell.dash
       ? `<td><div class="v dash">–</div><div class="s">&nbsp;</div></td>`
       : `<td class="pc"><div class="v num">${esc(cell.display)}</div><div class="s num">${esc(cell.ecText)}</div></td>`)).join("")}</tr>`).join("");
     const ph = `<tr class="phrow"><th colspan="2">${esc(t("chart.dripperPh"))}</th>${v.phases.map(p => `<td class="num">${p.ph ? esc(p.ph.text) : "–"}</td>`).join("")}</tr>`;
-    return `<div class="card chart chart--wide"><table><thead>${head}</thead><tbody>${recipe}${ec}${parts}${ph}</tbody></table></div>`;
+    return `<div class="card chart chart--wide chart--feed"><table><thead>${head}</thead><tbody>${recipe}${ec}${parts}${ph}</tbody></table></div>`;
   }
 
   /** @param {View} v */
