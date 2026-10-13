@@ -45,6 +45,8 @@ export function mount(root, page) {
     logoLight: `${base}logo-dark.png`,
     logoDark: `${base}logo-white.png`,
     qr: `${base}qr-moreinfo.png`,
+    // Same QR with the label "Más info" for Spanish sheets.
+    qrEs: `${base}qr-moreinfo-es.png`,
   };
 
   /** @type {"customer" | "team"} */
@@ -253,7 +255,7 @@ export function mount(root, page) {
       + stepsSection(v)
       + suppsSection(v)
       + footHtml({ back: t("foot.back") });
-    /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = renderPrint(v, t, { logo: assets.logoLight, qr: assets.qr });
+    /** @type {HTMLElement} */ (root.querySelector("[data-print]")).innerHTML = renderPrint(v, t, { logo: assets.logoLight, qr: state.lang === "es" ? assets.qrEs : assets.qr });
     syncUrl();
   }
 
