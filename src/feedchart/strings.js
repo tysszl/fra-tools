@@ -19,7 +19,7 @@ const en = {
   "lang.toggleLabel": "Ver en español",
   "foot.back": "All calculator tools",
   "nav.back": "All tools",
-  "foot.contact": "Using an earlier chart? Contact us at order@solsticeag.com or +1 844-420-6883.",
+  "foot.contact": "Using an earlier chart? Contact us at order@frontrowag.com or +1 844-420-6883.",
 
   // Actions
   "action.edit": "Edit",
@@ -323,7 +323,7 @@ const es = {
   "lang.toggleLabel": "View in English",
   "foot.back": "Todas las calculadoras",
   "nav.back": "Todas las herramientas",
-  "foot.contact": "¿Usa una tabla anterior? Contáctenos en order@solsticeag.com o al +1 844-420-6883.",
+  "foot.contact": "¿Usa una tabla anterior? Contáctenos en order@frontrowag.com o al +1 844-420-6883.",
 
   "action.edit": "Editar",
   "action.exportPdf": "Exportar PDF",
