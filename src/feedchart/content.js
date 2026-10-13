@@ -15,7 +15,7 @@ import { DATA, getLine, supplementRates, formatTargetEc, isMetricUnit, formatSto
  * @property {"customer" | "team"} mode
  */
 
-const HIGHER_LOWER_ROWS = 8;
+const HIGHER_LOWER_ROWS = 7;
 
 /** Unit printed after every chart amount. Ratio cells ("1:125") carry their own. */
 const CELL_UNIT = /** @type {Record<string, string>} */ ({
