@@ -56,9 +56,9 @@ export function mount(root) {
         <span class="tool__n">${esc(t(`${key}.n`))}${tag ? `<span class="tool__tag">${esc(t(`${key}.tag`))}</span>` : ""}</span>
         <span class="tool__d">${esc(t(`${key}.d`))}</span>
         <span class="tool__go" aria-hidden="true">${ICONS.arrow}</span></a>`;
-    root.innerHTML = `<div class="app">`
+    root.innerHTML = `<div class="app app--fill">`
       + barHtml({ root: "", lang: { lang, label: t("lang.label") }, themeLabel: t("theme.label") })
-      + `<h1 class="title">${esc(t("title"))}</h1><p class="lede">${esc(t("lede"))}</p>`
+      + `<header class="hero"><p class="hero__k">Front Row Ag</p><h1 class="title">${esc(t("title"))}</h1><p class="lede">${esc(t("lede"))}</p></header>`
       + `<nav class="hub">${tool("feed-calc.html", "feed", true)}${tool("ph-up-calc.html", "phup")}${tool("ph-down-calc.html", "phdown")}${tool("cal-hypo/", "calhypo")}</nav>`
       + footHtml({ contact: t("foot.contact") })
       + `</div>`;

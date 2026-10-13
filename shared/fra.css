@@ -398,7 +398,15 @@ td.pc, th.pc { color: var(--pc); }
 /* ---------- hub ---------- */
 .hub { display: grid; gap: 10px; margin-top: 20px; }
 @media (min-width: 640px) { .hub { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
-@media (min-width: 960px) { .hub { grid-template-columns: repeat(3, 1fr); } .tool { align-content: start; } }
+@media (min-width: 960px) { .hub--3 { grid-template-columns: repeat(3, 1fr); } .tool { align-content: start; } }
+/* Short pages (hub, team portal): the footer sits at the bottom of the screen. */
+.app--fill { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.app--fill > .foot { margin-top: auto; padding-top: 40px; }
+.hero { padding: 36px 0 8px; }
+.hero__k { font-size: 12px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.hero h1.title { font-size: 34px; margin: 6px 0 8px; }
+.hero .lede { font-size: 16px; }
+@media (min-width: 640px) { .hero { padding: 64px 0 12px; } .hero h1.title { font-size: 44px; } .hub { margin-top: 28px; } .tool { min-height: 120px; padding: 22px 20px 22px 22px; } }
 .tool {
   display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center;
   padding: 18px 16px 18px 18px; text-decoration: none; color: var(--ink); min-height: 96px;
