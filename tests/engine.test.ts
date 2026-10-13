@@ -199,6 +199,11 @@ describe("matches src/nutrition-core.js", () => {
         const legacy = core.formatFeedDoseFromInjectionPercent(pct, unit);
         // Ruled: a nonzero dose gets extra decimals instead of printing as zero.
         if (pct > 0 && legacy.dosage === 0) expect(engine.dosage).toBeGreaterThan(0);
+        // Intended (droppable commit): g/L shows one more decimal; same value within rounding.
+        else if (unit === "g/L" && pct > 0) {
+          expect(engine.display.split(".")[1]?.length).toBe(2);
+          expect(Math.abs(engine.dosage - legacy.dosage)).toBeLessThanOrEqual(0.05 + 1e-9);
+        }
         else expect(engine).toEqual(legacy);
       }
     }
@@ -615,5 +620,16 @@ describe("stock and 2-doser rulings", () => {
     const delivered = cplusGramsPerGal * 0.283 + cplusGramsPerGal * 0.84 * 0.195;
     expect(cell.ec).toBeCloseTo(delivered, 12);
     expect(cell.ec).toBeCloseTo(3.0 * (0.32 + 0.184), 12);
+  });
+});
+
+// Intended difference from main (droppable commit): metric DTR g/L shows two decimals instead of one.
+// Display rounding only; the dose math is unchanged.
+describe("metric DTR display precision", () => {
+  test("g/L shows two decimals; the other units keep theirs", () => {
+    expect(E.feedUnitDecimals("g/L")).toBe(2);
+    expect(E.feedUnitDecimals("g/gal")).toBe(1);
+    expect(E.feedUnitDecimals("mL/L")).toBe(1);
+    expect(E.feedUnitDecimals("mL/gal")).toBe(0);
   });
 });

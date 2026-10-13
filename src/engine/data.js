@@ -51,7 +51,7 @@ export const DATA = deepFreeze({
     defaultStock: "mL/gal",
     defaultDirect: "g/gal",
     // Display decimals per unit; "ratio" displays as 1:N with N = round(100 / injection %).
-    decimals: { "mL/gal": 0, "mL/L": 1, "g/gal": 1, "g/L": 1, "injection %": 2 },
+    decimals: { "mL/gal": 0, "mL/L": 1, "g/gal": 1, "g/L": 2, "injection %": 2 },
     // Conversion from g/gal of final feed at a 1 lb/gal stock. Derived exactly as the pages do.
     factors: {
       "g/gal": 1,
