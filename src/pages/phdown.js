@@ -4,7 +4,7 @@ import { DATA, phDownDose, phDownReference } from "../engine/index.js";
 import { initTheme, toggleTheme } from "../../shared/theme.js";
 import { replaceUrl, shareUrl } from "../../shared/share.js";
 import { printDocument } from "../../shared/print.js";
-import { ICONS, backLinkHtml, barHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
+import { ICONS, backLinkHtml, barHtml, englishOnlyHtml, esc, footHtml, sheetFootHtml, sheetHeadHtml, sheetLinesHtml, toast } from "../../shared/chrome.js";
 
 const L_PER_GAL = DATA.units.litersPerGallon;
 const HOW_IT_WORKS = [
@@ -86,6 +86,7 @@ export function mount(root) {
     root.innerHTML = `<div class="app">`
       + barHtml({ root: "", tool: "pH Down" })
       + backLinkHtml("All tools")
+      + englishOnlyHtml()
       + `<h1 class="title">pH Down Calculator</h1><p class="lede">70% phosphoric acid to neutralize source-water alkalinity before feeding.</p>`
       + `<section class="card form">
           <div class="field"><label class="field__label" for="alk">Starting alkalinity</label><span class="input-row"><input class="input" id="alk" data-input="start" type="number" inputmode="decimal" min="0" max="999" step="1" value="${state.start}"><span>ppm</span></span></div>
