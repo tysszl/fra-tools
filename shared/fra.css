@@ -311,6 +311,7 @@ td.pc, th.pc { color: var(--pc); }
 .foot a { color: var(--muted); display: inline-block; padding: 6px 0; text-underline-offset: 3px; }
 .foot a:hover { color: var(--ink); }
 @media (max-width: 639px) {
+  .foot > div + .foot__c { margin-top: 10px; }
   .foot__c { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 16px; }
   .foot__c .sep { display: none; }
   .foot__c b { flex-basis: 100%; }
